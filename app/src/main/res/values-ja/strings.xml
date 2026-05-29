@@ -84,7 +84,7 @@
     <string name="faq_3_title">アプリは予約メッセージをサポートしていますか？</string>
     <string name="faq_3_text">はい、送信ボタンを長押しして、希望の日付と時刻を選択することで、今後送信したいメッセージを予約できます。</string>
     <string name="message_details_sender">送信者</string>
-    <string name="app_launcher_name">メッセージ</string>
+    <string name="app_launcher_name">白い熊 メッセージ</string>
     <string name="message_details">メッセージ詳細</string>
     <string name="message_details_receiver">受信者</string>
     <string name="empty_archive">すべてのアーカイブされた会話を削除する</string>
