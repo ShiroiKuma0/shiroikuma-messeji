@@ -5,7 +5,6 @@ import android.os.Bundle
 import androidx.activity.result.contract.ActivityResultContracts
 import org.fossify.commons.activities.ManageBlockedNumbersActivity
 import org.fossify.commons.dialogs.ChangeDateTimeFormatDialog
-import org.fossify.commons.dialogs.ColorPickerDialog
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.FeatureLockedDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
@@ -101,8 +100,7 @@ class SettingsActivity : SimpleActivity() {
         super.onResume()
         setupTopAppBar(binding.settingsAppbar, NavigationIcon.Arrow)
 
-        setupThemeAndColors()
-        setupPrimaryColor()
+        setupShiroikumaUi()
         setupCustomizeColors()
         setupCustomizeNotifications()
         setupUseEnglish()
@@ -134,7 +132,6 @@ class SettingsActivity : SimpleActivity() {
         }
 
         arrayOf(
-            binding.settingsShiroikumaUiLabel,
             binding.settingsColorCustomizationSectionLabel,
             binding.settingsGeneralSettingsLabel,
             binding.settingsOutgoingMessagesLabel,
@@ -167,32 +164,10 @@ class SettingsActivity : SimpleActivity() {
         blockedNumbersAtPause = getBlockedNumbers().hashCode()
     }
 
-    private fun setupThemeAndColors() {
-        binding.settingsThemeAndColorsHolder.setOnClickListener {
+    private fun setupShiroikumaUi() {
+        binding.settingsShiroikumaUiHolder.setOnClickListener {
             startActivity(Intent(this, ThemeActivity::class.java))
         }
-    }
-
-    private fun setupPrimaryColor() {
-        binding.apply {
-            settingsPrimaryColorPreview.background.setTint(getProperPrimaryColor())
-            settingsPrimaryColorHolder.setOnClickListener {
-                ColorPickerDialog(this@SettingsActivity, getProperPrimaryColor()) { wasPositive, color ->
-                    if (wasPositive) {
-                        applyPrimaryColor(color)
-                    }
-                }
-            }
-        }
-    }
-
-    private fun applyPrimaryColor(color: Int) {
-        // A custom primary color is incompatible with Material You, so leave the system theme –
-        // otherwise getProperPrimaryColor() keeps returning the dynamic color and the pick is ignored.
-        config.isSystemThemeEnabled = false
-        config.primaryColor = color
-        // re-theme Settings immediately; other screens re-read the color on their next launch
-        recreate()
     }
 
     private fun setupCustomizeColors() = binding.apply {
