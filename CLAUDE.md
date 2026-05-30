@@ -27,7 +27,7 @@ customizations on top of upstream and rebuild as upstream releases new versions.
 
 | What | Value | Where |
 | --- | --- | --- |
-| Installed app ID | `shiroikuma.messages` | `gradle.properties` → `APP_ID` |
+| Installed app ID | `shiroikuma.messeji` | `gradle.properties` → `APP_ID` |
 | Code namespace | `org.fossify.messages` (unchanged from upstream) | `gradle.properties` → `APP_NAMESPACE` |
 | App launcher label | `白い熊 メッセージ` | `app_launcher_name` in `values/strings.xml` + `values-ja/strings.xml` |
 | Signing | per-app keystore | `keystore.properties` (gitignored) → `~/.android-keystores/shiroikuma-messages.jks` |
@@ -44,8 +44,8 @@ We base our version on upstream and add a fork increment (`BUILD_NUMBER`).
 - `BUILD_NUMBER` is **our** increment. It starts at `1` and bumps by `1` on every build with changes.
 - Fork `versionName` = `"<VERSION_NAME>+<BUILD_NUMBER>"` (e.g. `1.8.0+1`).
 - Fork `versionCode` = `VERSION_CODE * 10000 + BUILD_NUMBER` (e.g. `20 * 10000 + 1 = 200001`).
-- Output APK filename = `shiroikuma-messages_<VERSION_NAME>+<BUILD_NUMBER>_arm64-v8a.apk`
-  (e.g. `shiroikuma-messages_1.8.0+1_arm64-v8a.apk`).
+- Output APK filename = `shiroikuma-messeji_<VERSION_NAME>+<BUILD_NUMBER>_arm64-v8a.apk`
+  (e.g. `shiroikuma-messeji_1.8.0+1_arm64-v8a.apk`).
 
 So the first build is `+1` (`200001`), the next build with changes is `+2` (`200002`), and so on.
 
@@ -62,7 +62,7 @@ JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew buildFoss
 
 `buildFoss` (defined in `app/build.gradle.kts`):
 1. builds `assembleFossRelease` (signed, via `keystore.properties`),
-2. copies the APK to `~/tmp/shiroikuma-messages_<version>_arm64-v8a.apk`,
+2. copies the APK to `~/tmp/shiroikuma-messeji_<version>_arm64-v8a.apk`,
 3. **auto-increments `BUILD_NUMBER`** in `gradle.properties` for the next build.
 
 ### Rebasing onto a new upstream release
