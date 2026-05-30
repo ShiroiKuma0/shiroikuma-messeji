@@ -91,6 +91,7 @@
     <string name="theme_section_conversations">会話一覧</string>
     <string name="theme_section_thread">メッセージ画面</string>
     <string name="theme_section_search">検索バー</string>
+    <string name="theme_section_settings">設定画面</string>
     <!-- Message thread subgroups -->
     <string name="theme_group_thread_received">受信メッセージ</string>
     <string name="theme_group_thread_sent">送信メッセージ</string>
@@ -123,6 +124,11 @@
     <string name="theme_search_hint">検索バーのヒント</string>
     <string name="theme_search_icon">検索バーのアイコン</string>
     <string name="theme_search_border">検索バーの枠線</string>
+    <string name="theme_search_menu">メニューアイコン</string>
+    <string name="theme_menu_background">メニューの背景</string>
+    <string name="theme_menu_text">メニューの文字</string>
+    <string name="theme_settings_title">ヘッダー</string>
+    <string name="theme_settings_back">戻る矢印</string>
     <string name="theme_conversation_name">連絡先の名前</string>
     <string name="theme_conversation_snippet">メッセージのプレビュー</string>
     <string name="theme_conversation_date">日時</string>
