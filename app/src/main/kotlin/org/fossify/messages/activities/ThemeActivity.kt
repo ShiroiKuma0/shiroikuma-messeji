@@ -33,6 +33,9 @@ import org.fossify.messages.extensions.showFontSample
 import org.fossify.messages.extensions.themeColor
 import org.fossify.messages.helpers.MAX_FONT_SIZE_SP
 
+// Multiplier on activity_margin for one level of category/subcategory indentation.
+private const val INDENT_STEP_MULTIPLIER = 3
+
 @Suppress("TooManyFunctions")
 class ThemeActivity : SimpleActivity() {
     private val binding by viewBinding(ActivityThemeBinding::inflate)
@@ -70,16 +73,20 @@ class ThemeActivity : SimpleActivity() {
             val showSubgroups = groups.size > 1
             groups.forEach { group ->
                 if (showSubgroups) {
+                    // subgroup header sits one level in; its rows another level in
                     addSubgroupHeader(getString(group.labelRes), primaryColor)
+                    addGroupSlots(group, indentLevel = 2)
+                } else {
+                    // section with no subgroups: its rows sit one level in
+                    addGroupSlots(group, indentLevel = 1)
                 }
-                addGroupSlots(group, showSubgroups)
             }
         }
     }
 
-    private fun addGroupSlots(group: ThemeGroup, indent: Boolean) {
+    private fun addGroupSlots(group: ThemeGroup, indentLevel: Int) {
         ThemeSlot.entries.filter { it.group == group }.forEach { slot ->
-            if (slot.hasFont) addTextSlot(slot, indent) else addColorSlot(slot, indent)
+            if (slot.hasFont) addTextSlot(slot, indentLevel) else addColorSlot(slot, indentLevel)
         }
     }
 
@@ -96,24 +103,23 @@ class ThemeActivity : SimpleActivity() {
         item.themeSubgroupLabel.text = label
         item.themeSubgroupLabel.setTextColor(primaryColor)
         item.themeSubgroupUnderline.setBackgroundColor(primaryColor)
+        indentRow(item.root, level = 1)
         binding.themeHolder.addView(item.root)
     }
 
-    private fun addColorSlot(slot: ThemeSlot, indent: Boolean) {
+    private fun addColorSlot(slot: ThemeSlot, indentLevel: Int) {
         val row = ItemThemeColorBinding.inflate(layoutInflater, binding.themeHolder, false)
         row.themeColorLabel.text = getString(slot.labelRes)
         row.themeColorLabel.setTextColor(getProperTextColor())
         row.themeColorPreview.background.setTint(themeColor(slot))
         row.root.setOnClickListener { openColorPicker(slot) }
-        if (indent) {
-            indentRow(row.root)
-        }
+        indentRow(row.root, indentLevel)
         previews[slot] = row.themeColorPreview
         binding.themeHolder.addView(row.root)
     }
 
     @Suppress("EmptyFunctionBlock") // SeekBar's start/stop-tracking callbacks are intentionally no-ops
-    private fun addTextSlot(slot: ThemeSlot, indent: Boolean) {
+    private fun addTextSlot(slot: ThemeSlot, indentLevel: Int) {
         val textColor = getProperTextColor()
         val b = ItemThemeTextBinding.inflate(layoutInflater, binding.themeHolder, false)
         b.themeTextLabel.text = getString(slot.labelRes)
@@ -144,15 +150,29 @@ class ThemeActivity : SimpleActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar) {}
         })
 
-        if (indent) {
-            indentRow(b.root)
-        }
+        indentRow(b.root, indentLevel, contentHasInset = true)
+        indentTextControls(b)
         binding.themeHolder.addView(b.root)
     }
 
-    private fun indentRow(view: android.view.View) {
-        val indentPx = resources.getDimensionPixelSize(org.fossify.commons.R.dimen.activity_margin)
-        view.setPaddingRelative(view.paddingStart + indentPx, view.paddingTop, view.paddingEnd, view.paddingBottom)
+    private fun indentStepPx() =
+        resources.getDimensionPixelSize(org.fossify.commons.R.dimen.activity_margin) * INDENT_STEP_MULTIPLIER
+
+    // Place a row's content at an absolute (baseInset + level*step) so every level nests in equal,
+    // prominent steps regardless of the item's own base padding. contentHasInset = true for the text
+    // block whose inner header already carries the base label inset.
+    private fun indentRow(view: android.view.View, level: Int, contentHasInset: Boolean = false) {
+        val baseInset = resources.getDimensionPixelSize(org.fossify.commons.R.dimen.settings_label_start_margin)
+        val start = level * indentStepPx() + (if (contentHasInset) 0 else baseInset)
+        view.setPaddingRelative(start, view.paddingTop, view.paddingEnd, view.paddingBottom)
+    }
+
+    // Indent a text element's font/weight/size/sample controls one full step past its name.
+    private fun indentTextControls(b: ItemThemeTextBinding) {
+        val step = indentStepPx()
+        listOf(b.themeTextFontRow, b.themeTextWeightRow, b.themeTextSizeRow, b.themeTextSample).forEach {
+            it.setPaddingRelative(it.paddingStart + step, it.paddingTop, it.paddingEnd, it.paddingBottom)
+        }
     }
 
     private fun refreshSample(b: ItemThemeTextBinding, slot: ThemeSlot) {
