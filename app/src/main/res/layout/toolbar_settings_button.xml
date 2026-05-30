@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The 設定 toolbar launcher: two independently styled, tightly-adjacent characters.
+  Left (設) opens the 白い熊 メッセージ UI page; right (定) opens the regular Settings screen.
+  No inner padding between them so the glyphs read as a single 設定 word; per-character
+  font / weight / size / colour are applied at runtime from the theme slots.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/settings_button_holder"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/settings_button_left"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/theme_settings_button_left"
+        android:focusable="true"
+        android:gravity="center"
+        android:paddingStart="@dimen/normal_margin"
+        android:paddingEnd="0dp"
+        android:text="@string/settings_button_left_char"
+        android:textSize="22sp" />
+
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/settings_button_right"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/theme_settings_button_right"
+        android:focusable="true"
+        android:gravity="center"
+        android:paddingStart="0dp"
+        android:paddingEnd="@dimen/normal_margin"
+        android:text="@string/settings_button_right_char"
+        android:textSize="22sp" />
+
+</LinearLayout>

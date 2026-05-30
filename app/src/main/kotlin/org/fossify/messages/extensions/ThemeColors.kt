@@ -29,6 +29,7 @@ enum class ThemeSection(@StringRes val labelRes: Int) {
     CONVERSATIONS(R.string.theme_section_conversations),
     THREAD(R.string.theme_section_thread),
     SEARCH(R.string.theme_section_search),
+    SETTINGS_BUTTON(R.string.theme_section_settings_button),
     SETTINGS(R.string.theme_section_settings),
 }
 
@@ -41,6 +42,7 @@ enum class ThemeGroup(val section: ThemeSection, @StringRes val labelRes: Int) {
     THREAD_SENT(ThemeSection.THREAD, R.string.theme_group_thread_sent),
     THREAD_META(ThemeSection.THREAD, R.string.theme_group_thread_meta),
     SEARCH(ThemeSection.SEARCH, R.string.theme_section_search),
+    SETTINGS_BUTTON(ThemeSection.SETTINGS_BUTTON, R.string.theme_section_settings_button),
     SETTINGS(ThemeSection.SETTINGS, R.string.theme_section_settings),
 }
 
@@ -102,6 +104,15 @@ enum class ThemeSlot(
     MENU_BACKGROUND("theme_menu_background", ThemeGroup.SEARCH, R.string.theme_menu_background),
     MENU_TEXT("theme_menu_text", ThemeGroup.SEARCH, R.string.theme_menu_text),
 
+    // Toolbar 設定 launcher — two adjacent characters, each with its own font / weight / size / colour.
+    // Left (設) opens the 白い熊 メッセージ UI page; right (定) opens the regular Settings screen.
+    SETTINGS_BUTTON_LEFT(
+        "theme_settings_button_left", ThemeGroup.SETTINGS_BUTTON, R.string.theme_settings_button_left, hasFont = true
+    ),
+    SETTINGS_BUTTON_RIGHT(
+        "theme_settings_button_right", ThemeGroup.SETTINGS_BUTTON, R.string.theme_settings_button_right, hasFont = true
+    ),
+
     // Settings screen chrome
     SETTINGS_TITLE("theme_settings_title", ThemeGroup.SETTINGS, R.string.theme_settings_title),
     SETTINGS_BACK("theme_settings_back", ThemeGroup.SETTINGS, R.string.theme_settings_back),
@@ -132,6 +143,10 @@ private fun Context.themeDefault(slot: ThemeSlot): Int = when (slot) {
     // Overflow menu popup: background follows the app background, text follows the app text colour
     ThemeSlot.MENU_BACKGROUND -> themeColor(ThemeSlot.BACKGROUND)
     ThemeSlot.MENU_TEXT -> themeColor(ThemeSlot.TEXT)
+
+    // Toolbar 設定 launcher characters inherit the menu-icon colour by default
+    ThemeSlot.SETTINGS_BUTTON_LEFT -> themeColor(ThemeSlot.SEARCH_MENU_ICON)
+    ThemeSlot.SETTINGS_BUTTON_RIGHT -> themeColor(ThemeSlot.SEARCH_MENU_ICON)
 
     // Settings screen: the toolbar sits on the primary colour, so title/arrow contrast it by default
     ThemeSlot.SETTINGS_TITLE -> themeColor(ThemeSlot.PRIMARY).getContrastColor()

@@ -17,6 +17,7 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupWindow
+import android.widget.TextView
 import androidx.appcompat.content.res.AppCompatResources
 import org.fossify.commons.dialogs.PermissionRequiredDialog
 import org.fossify.commons.extensions.adjustAlpha
@@ -169,6 +170,7 @@ class MainActivity : SimpleActivity() {
         binding.mainMenu.requireToolbar().inflateMenu(R.menu.menu_main)
         binding.mainMenu.toggleHideOnScroll(true)
         binding.mainMenu.setupMenu()
+        setupSettingsButton()
 
         binding.mainMenu.onSearchOpenListener = {
             binding.mainMenu.post { styleSearchBar() }
@@ -264,7 +266,32 @@ class MainActivity : SimpleActivity() {
     private fun updateMenuColors() {
         binding.mainMenu.updateColors()
         styleSearchBar()
+        styleSettingsButton()
     }
+
+    // The 設定 toolbar launcher: 設 (left) opens the 白い熊 メッセージ UI page, 定 (right) opens
+    // the regular Settings screen. Each character is an independent text element (own font /
+    // weight / size / colour) configured on the UI page.
+    private fun setupSettingsButton() {
+        settingsButtonChar(R.id.settings_button_left)?.setOnClickListener { launchUiPage() }
+        settingsButtonChar(R.id.settings_button_right)?.setOnClickListener { launchSettings() }
+        styleSettingsButton()
+    }
+
+    private fun styleSettingsButton() {
+        settingsButtonChar(R.id.settings_button_left)?.apply {
+            setTextColor(themeColor(ThemeSlot.SETTINGS_BUTTON_LEFT))
+            applyThemeFont(ThemeSlot.SETTINGS_BUTTON_LEFT)
+        }
+        settingsButtonChar(R.id.settings_button_right)?.apply {
+            setTextColor(themeColor(ThemeSlot.SETTINGS_BUTTON_RIGHT))
+            applyThemeFont(ThemeSlot.SETTINGS_BUTTON_RIGHT)
+        }
+    }
+
+    private fun settingsButtonChar(id: Int): TextView? =
+        binding.mainMenu.requireToolbar().menu.findItem(R.id.settings_button)
+            ?.actionView?.findViewById(id)
 
     // Apply the granular search-bar theme on top of the commons defaults (must run after updateColors).
     private fun styleSearchBar() {
@@ -703,6 +730,11 @@ class MainActivity : SimpleActivity() {
     private fun launchSettings() {
         hideKeyboard()
         startActivity(Intent(applicationContext, SettingsActivity::class.java))
+    }
+
+    private fun launchUiPage() {
+        hideKeyboard()
+        startActivity(Intent(applicationContext, ThemeActivity::class.java))
     }
 
     private fun launchAbout() {

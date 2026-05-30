@@ -7,6 +7,7 @@
     <string name="theme_section_conversations">Conversation list</string>
     <string name="theme_section_thread">Message thread</string>
     <string name="theme_section_search">Search bar</string>
+    <string name="theme_section_settings_button">Settings button (設定)</string>
     <string name="theme_section_settings">Settings screen</string>
     <!-- Message thread subgroups -->
     <string name="theme_group_thread_received">Received messages</string>
@@ -45,6 +46,10 @@
     <string name="theme_menu_text">Menu text</string>
     <string name="theme_settings_title">Header</string>
     <string name="theme_settings_back">Back arrow</string>
+    <string name="theme_settings_button_left">設 (UI page)</string>
+    <string name="theme_settings_button_right">定 (Settings)</string>
+    <string name="settings_button_left_char" translatable="false">設</string>
+    <string name="settings_button_right_char" translatable="false">定</string>
     <string name="theme_conversation_name">Contact name</string>
     <string name="theme_conversation_snippet">Message preview</string>
     <string name="theme_conversation_date">Date &amp; time</string>
