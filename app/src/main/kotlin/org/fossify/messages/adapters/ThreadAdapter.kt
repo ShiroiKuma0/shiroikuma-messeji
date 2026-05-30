@@ -62,6 +62,7 @@ import org.fossify.messages.databinding.ItemThreadSuccessBinding
 import org.fossify.messages.dialogs.DeleteConfirmationDialog
 import org.fossify.messages.dialogs.MessageDetailsDialog
 import org.fossify.messages.dialogs.SelectTextDialog
+import org.fossify.messages.extensions.ThemeSlot
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.getContactFromAddress
 import org.fossify.messages.extensions.isImageMimeType
@@ -70,6 +71,7 @@ import org.fossify.messages.extensions.isVideoMimeType
 import org.fossify.messages.extensions.launchViewIntent
 import org.fossify.messages.extensions.startContactDetailsIntent
 import org.fossify.messages.extensions.subscriptionManagerCompat
+import org.fossify.messages.extensions.themeColor
 import org.fossify.messages.helpers.EXTRA_VCARD_URI
 import org.fossify.messages.helpers.THREAD_DATE_TIME
 import org.fossify.messages.helpers.THREAD_RECEIVED_MESSAGE
@@ -427,8 +429,9 @@ class ThreadAdapter(
 
             threadMessageBody.apply {
                 background = AppCompatResources.getDrawable(activity, R.drawable.item_received_background)
-                setTextColor(textColor)
-                setLinkTextColor(activity.getProperPrimaryColor())
+                background.applyColorFilter(activity.themeColor(ThemeSlot.THREAD_RECEIVED_BUBBLE))
+                setTextColor(activity.themeColor(ThemeSlot.THREAD_RECEIVED_TEXT))
+                setLinkTextColor(activity.themeColor(ThemeSlot.PRIMARY))
             }
 
             if (!activity.isFinishing && !activity.isDestroyed) {
@@ -459,8 +462,8 @@ class ThreadAdapter(
                 applyTo(threadMessageHolder)
             }
 
-            val primaryColor = activity.getProperPrimaryColor()
-            val contrastColor = primaryColor.getContrastColor()
+            val bubbleColor = activity.themeColor(ThemeSlot.THREAD_SENT_BUBBLE)
+            val contrastColor = activity.themeColor(ThemeSlot.THREAD_SENT_TEXT)
 
             threadMessageBody.apply {
                 updateLayoutParams<RelativeLayout.LayoutParams> {
@@ -469,7 +472,7 @@ class ThreadAdapter(
                 }
 
                 background = AppCompatResources.getDrawable(activity, R.drawable.item_sent_background)
-                background.applyColorFilter(primaryColor)
+                background.applyColorFilter(bubbleColor)
                 setTextColor(contrastColor)
                 setLinkTextColor(contrastColor)
 
@@ -593,14 +596,15 @@ class ThreadAdapter(
                 )
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
             }
-            threadDateTime.setTextColor(textColor)
+            val dateColor = activity.themeColor(ThemeSlot.THREAD_DATE)
+            threadDateTime.setTextColor(dateColor)
 
             threadSimIcon.beVisibleIf(hasMultipleSIMCards)
             threadSimNumber.beVisibleIf(hasMultipleSIMCards)
             if (hasMultipleSIMCards) {
                 threadSimNumber.text = dateTime.simID
-                threadSimNumber.setTextColor(textColor.getContrastColor())
-                threadSimIcon.applyColorFilter(textColor)
+                threadSimNumber.setTextColor(dateColor.getContrastColor())
+                threadSimIcon.applyColorFilter(dateColor)
             }
         }
     }
@@ -608,7 +612,7 @@ class ThreadAdapter(
     private fun setupThreadSuccess(view: View, isDelivered: Boolean) {
         ItemThreadSuccessBinding.bind(view).apply {
             threadSuccess.setImageResource(if (isDelivered) R.drawable.ic_check_double_vector else org.fossify.commons.R.drawable.ic_check_vector)
-            threadSuccess.applyColorFilter(textColor)
+            threadSuccess.applyColorFilter(activity.themeColor(ThemeSlot.THREAD_STATUS))
         }
     }
 
@@ -620,7 +624,7 @@ class ThreadAdapter(
     private fun setupThreadSending(view: View) {
         ItemThreadSendingBinding.bind(view).threadSending.apply {
             setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
-            setTextColor(textColor)
+            setTextColor(activity.themeColor(ThemeSlot.THREAD_STATUS))
         }
     }
 

@@ -5,11 +5,15 @@ import android.app.role.RoleManager
 import android.content.Intent
 import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
+import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.Icon
 import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
 import android.provider.Telephony
 import android.text.TextUtils
+import android.view.View
+import android.widget.EditText
+import android.widget.ImageView
 import androidx.appcompat.content.res.AppCompatResources
 import org.fossify.commons.dialogs.PermissionRequiredDialog
 import org.fossify.commons.extensions.adjustAlpha
@@ -56,12 +60,14 @@ import org.fossify.messages.databinding.ActivityMainBinding
 import org.fossify.messages.extensions.checkAndDeleteOldRecycleBinMessages
 import org.fossify.messages.extensions.clearAllMessagesIfNeeded
 import org.fossify.messages.extensions.clearExpiredScheduledMessages
+import org.fossify.messages.extensions.ThemeSlot
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.conversationsDB
 import org.fossify.messages.extensions.getConversations
 import org.fossify.messages.extensions.getMessages
 import org.fossify.messages.extensions.insertOrUpdateConversation
 import org.fossify.messages.extensions.messagesDB
+import org.fossify.messages.extensions.themeColor
 import org.fossify.messages.helpers.SEARCHED_MESSAGE_ID
 import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.helpers.THREAD_TITLE
@@ -72,6 +78,8 @@ import org.fossify.messages.models.SearchResult
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+
+private const val SEARCH_BAR_CORNER_RADIUS_DP = 16f
 
 class MainActivity : SimpleActivity() {
     override var isSearchBarEnabled = true
@@ -155,8 +163,13 @@ class MainActivity : SimpleActivity() {
         binding.mainMenu.toggleHideOnScroll(true)
         binding.mainMenu.setupMenu()
 
+        binding.mainMenu.onSearchOpenListener = {
+            binding.mainMenu.post { styleSearchBar() }
+        }
+
         binding.mainMenu.onSearchClosedListener = {
             fadeOutSearch()
+            binding.mainMenu.post { styleSearchBar() }
         }
 
         binding.mainMenu.onSearchTextChangedListener = { text ->
@@ -207,6 +220,30 @@ class MainActivity : SimpleActivity() {
 
     private fun updateMenuColors() {
         binding.mainMenu.updateColors()
+        styleSearchBar()
+    }
+
+    // Apply the granular search-bar theme on top of the commons defaults (must run after updateColors).
+    private fun styleSearchBar() {
+        val menu = binding.mainMenu
+        val radiusPx = SEARCH_BAR_CORNER_RADIUS_DP * resources.displayMetrics.density
+        val strokePx = (2 * resources.displayMetrics.density).toInt()
+
+        menu.findViewById<View>(org.fossify.commons.R.id.toolbar_container)?.background =
+            GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = radiusPx
+                setColor(themeColor(ThemeSlot.SEARCH_FILL))
+                setStroke(strokePx, themeColor(ThemeSlot.SEARCH_BORDER))
+            }
+
+        menu.findViewById<EditText>(org.fossify.commons.R.id.top_toolbar_search)?.apply {
+            setTextColor(themeColor(ThemeSlot.SEARCH_TEXT))
+            setHintTextColor(themeColor(ThemeSlot.SEARCH_HINT))
+        }
+
+        menu.findViewById<ImageView>(org.fossify.commons.R.id.top_toolbar_search_icon)
+            ?.applyColorFilter(themeColor(ThemeSlot.SEARCH_ICON))
     }
 
     private fun loadMessages() {

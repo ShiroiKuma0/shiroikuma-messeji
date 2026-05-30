@@ -24,8 +24,10 @@ import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.views.MyRecyclerView
 import org.fossify.messages.activities.SimpleActivity
 import org.fossify.messages.databinding.ItemConversationBinding
+import org.fossify.messages.extensions.ThemeSlot
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.getAllDrafts
+import org.fossify.messages.extensions.themeColor
 import org.fossify.messages.models.Conversation
 
 @Suppress("LeakingThis")
@@ -145,12 +147,12 @@ abstract class BaseConversationsAdapter(
             root.setupViewBackground(activity)
             val smsDraft = drafts[conversation.threadId]
             draftIndicator.beVisibleIf(!smsDraft.isNullOrEmpty())
-            draftIndicator.setTextColor(properPrimaryColor)
+            draftIndicator.setTextColor(activity.themeColor(ThemeSlot.CONVERSATION_DRAFT))
 
             pinIndicator.beVisibleIf(
                 activity.config.pinnedConversations.contains(conversation.threadId.toString())
             )
-            pinIndicator.applyColorFilter(textColor)
+            pinIndicator.applyColorFilter(activity.themeColor(ThemeSlot.CONVERSATION_PIN))
 
             conversationFrame.isSelected = selectedKeys.contains(conversation.hashCode())
 
@@ -187,9 +189,9 @@ abstract class BaseConversationsAdapter(
             conversationBodyShort.setTypeface(customTypeface, style)
             conversationDate.setTypeface(customTypeface, style)
 
-            arrayListOf(conversationAddress, conversationBodyShort, conversationDate).forEach {
-                it.setTextColor(textColor)
-            }
+            conversationAddress.setTextColor(activity.themeColor(ThemeSlot.CONVERSATION_NAME))
+            conversationBodyShort.setTextColor(activity.themeColor(ThemeSlot.CONVERSATION_SNIPPET))
+            conversationDate.setTextColor(activity.themeColor(ThemeSlot.CONVERSATION_DATE))
 
             setupBadgeCount(unreadCountBadge, isUnread, conversation.unreadCount)
             // at group conversations we use an icon as the placeholder, not any letter
@@ -217,8 +219,9 @@ abstract class BaseConversationsAdapter(
                     count == 0 -> ""
                     else -> count.toString()
                 }
-                setTextColor(properPrimaryColor.getContrastColor())
-                background?.applyColorFilter(properPrimaryColor)
+                val unreadColor = activity.themeColor(ThemeSlot.CONVERSATION_UNREAD)
+                setTextColor(unreadColor.getContrastColor())
+                background?.applyColorFilter(unreadColor)
             }
         }
     }

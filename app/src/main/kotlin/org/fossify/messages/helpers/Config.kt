@@ -5,6 +5,7 @@ import org.fossify.commons.helpers.BaseConfig
 import org.fossify.messages.extensions.getDefaultKeyboardHeight
 import org.fossify.messages.models.Conversation
 
+@Suppress("TooManyFunctions")
 class Config(context: Context) : BaseConfig(context) {
     companion object {
         fun newInstance(context: Context) = Config(context)
@@ -148,4 +149,15 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(KEEP_CONVERSATIONS_ARCHIVED, false)
         set(keepConversationsArchived) = prefs.edit()
             .putBoolean(KEEP_CONVERSATIONS_ARCHIVED, keepConversationsArchived).apply()
+
+    // Granular theming: one Int override per color slot, THEME_UNSET means "follow the default".
+    var themeV1Seeded: Boolean
+        get() = prefs.getBoolean(THEME_V1_SEEDED, false)
+        set(value) = prefs.edit().putBoolean(THEME_V1_SEEDED, value).apply()
+
+    fun getThemeOverride(key: String): Int = prefs.getInt(key, THEME_UNSET)
+
+    fun setThemeOverride(key: String, color: Int) = prefs.edit().putInt(key, color).apply()
+
+    fun clearThemeOverride(key: String) = prefs.edit().remove(key).apply()
 }
