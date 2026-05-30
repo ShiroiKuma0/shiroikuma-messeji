@@ -9,10 +9,10 @@ import com.bumptech.glide.Glide
 import org.fossify.commons.adapters.MyRecyclerViewAdapter
 import org.fossify.commons.databinding.ItemContactWithNumberBinding
 import org.fossify.commons.extensions.getTextSize
-import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.models.SimpleContact
 import org.fossify.commons.views.MyRecyclerView
 import org.fossify.messages.activities.SimpleActivity
+import org.fossify.messages.extensions.loadContactPhotoOrUnknown
 
 class ContactsAdapter(
     activity: SimpleActivity, var contacts: ArrayList<SimpleContact>, recyclerView: MyRecyclerView, itemClick: (Any) -> Unit
@@ -75,7 +75,7 @@ class ContactsAdapter(
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
             }
 
-            SimpleContactsHelper(activity).loadContactImage(contact.photoUri, itemContactImage, contact.name)
+            itemContactImage.loadContactPhotoOrUnknown(contact.photoUri, contact.name)
         }
     }
 

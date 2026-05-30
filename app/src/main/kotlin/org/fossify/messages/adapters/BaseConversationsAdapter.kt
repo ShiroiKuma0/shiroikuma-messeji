@@ -27,6 +27,7 @@ import org.fossify.messages.databinding.ItemConversationBinding
 import org.fossify.messages.extensions.ThemeSlot
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.getAllDrafts
+import org.fossify.messages.extensions.loadContactPhotoOrUnknown
 import org.fossify.messages.extensions.themeColor
 import org.fossify.messages.models.Conversation
 
@@ -194,19 +195,17 @@ abstract class BaseConversationsAdapter(
             conversationDate.setTextColor(activity.themeColor(ThemeSlot.CONVERSATION_DATE))
 
             setupBadgeCount(unreadCountBadge, isUnread, conversation.unreadCount)
-            // at group conversations we use an icon as the placeholder, not any letter
-            val placeholder = if (conversation.isGroupConversation) {
-                SimpleContactsHelper(activity).getColoredGroupIcon(conversation.title)
+            if (conversation.isGroupConversation) {
+                // at group conversations we use an icon as the placeholder, not any letter
+                SimpleContactsHelper(activity).loadContactImage(
+                    path = conversation.photoUri,
+                    imageView = conversationImage,
+                    placeholderName = conversation.title,
+                    placeholderImage = SimpleContactsHelper(activity).getColoredGroupIcon(conversation.title)
+                )
             } else {
-                null
+                conversationImage.loadContactPhotoOrUnknown(conversation.photoUri, conversation.title)
             }
-
-            SimpleContactsHelper(activity).loadContactImage(
-                path = conversation.photoUri,
-                imageView = conversationImage,
-                placeholderName = conversation.title,
-                placeholderImage = placeholder
-            )
         }
     }
 
