@@ -93,6 +93,14 @@
     <string name="theme_section_search">検索バー</string>
     <string name="theme_section_settings_button">設定ボタン（設定）</string>
     <string name="theme_section_settings">設定画面</string>
+    <!-- 白い熊 メッセージ UI page: date &amp; time display formats -->
+    <string name="format_section">日時の表示形式</string>
+    <string name="format_time_label">時刻（本日のメッセージ）</string>
+    <string name="format_time_japanese">和風（午前八時）</string>
+    <string name="format_time_system">システム標準</string>
+    <string name="format_time_24h">24時間制（14:53）</string>
+    <string name="format_time_12h">12時間制（午後2:53）</string>
+    <string name="use_imperial_date">和暦の日付（令和八年五月三十日（土曜日））</string>
     <!-- Message thread subgroups -->
     <string name="theme_group_thread_received">受信メッセージ</string>
     <string name="theme_group_thread_sent">送信メッセージ</string>
