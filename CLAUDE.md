@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 an open-source, privacy-focused Android SMS/MMS app. Part of the Fossify ecosystem.
 Written entirely in Kotlin targeting Android API 26–36.
 
-This repository (`ShiroiKuma0/shiroikuma-messages`) is a fork. We track upstream
+This repository (`ShiroiKuma0/shiroikuma-messeji`, local dir `shiroikuma-messages`) is a fork. We track upstream
 (`FossifyOrg/Messages`) and layer our own customizations on top of it.
 
 ## Fork Workflow — READ THIS FIRST
@@ -18,7 +18,7 @@ customizations on top of upstream and rebuild as upstream releases new versions.
 
 ### Git remotes & branches
 
-- `origin` → `git@github.com:ShiroiKuma0/shiroikuma-messages` — our fork (push here).
+- `origin` → `git@github.com:ShiroiKuma0/shiroikuma-messeji` — our fork (push here).
 - `upstream` → `https://github.com/FossifyOrg/Messages.git` — the original (read-only, for rebasing).
 - **`main`** mirrors upstream's `main`. We do **not** develop on it.
 - **`custom`** is our development branch. **All our work lives here.** This is the default working branch.
