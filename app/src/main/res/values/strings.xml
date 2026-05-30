@@ -2,12 +2,15 @@
 <resources>
     <string name="app_launcher_name">白い熊 メッセージ</string>
     <string name="shiroikuma_ui_category">白い熊 メッセージ UI</string>
-    <string name="theme_and_colors">Theme &amp; colors</string>
-    <!-- Theme screen -->
-    <string name="theme_group_foundation">Foundation</string>
-    <string name="theme_group_search">Search bar</string>
-    <string name="theme_group_conversations">Conversation list</string>
-    <string name="theme_group_thread">Message thread</string>
+    <!-- 白い熊 メッセージ UI page: top-level sections -->
+    <string name="theme_section_foundation">Foundation</string>
+    <string name="theme_section_conversations">Conversation list</string>
+    <string name="theme_section_thread">Message thread</string>
+    <string name="theme_section_search">Search bar</string>
+    <!-- Message thread subgroups -->
+    <string name="theme_group_thread_received">Received messages</string>
+    <string name="theme_group_thread_sent">Sent messages</string>
+    <string name="theme_group_thread_meta">Status &amp; time</string>
     <string name="theme_background">Background</string>
     <string name="theme_primary">Primary / accent</string>
     <string name="theme_text">Text</string>

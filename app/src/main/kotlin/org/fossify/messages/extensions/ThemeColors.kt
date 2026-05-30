@@ -23,11 +23,23 @@ private const val SEARCH_HINT_ALPHA = 0.5f
 // only diverges once the user gives it an explicit override (stored as an Int; THEME_UNSET means
 // "follow the default"). The default look is seeded to black background + yellow text/accents.
 
-enum class ThemeGroup(@StringRes val labelRes: Int) {
-    FOUNDATION(R.string.theme_group_foundation),
-    SEARCH(R.string.theme_group_search),
-    CONVERSATIONS(R.string.theme_group_conversations),
-    THREAD(R.string.theme_group_thread),
+// Top-level sections shown on the 白い熊 メッセージ UI page (accent header + divider).
+enum class ThemeSection(@StringRes val labelRes: Int) {
+    FOUNDATION(R.string.theme_section_foundation),
+    CONVERSATIONS(R.string.theme_section_conversations),
+    THREAD(R.string.theme_section_thread),
+    SEARCH(R.string.theme_section_search),
+}
+
+// Subgroups within a section. A subgroup header is only drawn when its section has more than one
+// group; single-group sections render their rows directly under the section header.
+enum class ThemeGroup(val section: ThemeSection, @StringRes val labelRes: Int) {
+    FOUNDATION(ThemeSection.FOUNDATION, R.string.theme_section_foundation),
+    CONVERSATION(ThemeSection.CONVERSATIONS, R.string.theme_section_conversations),
+    THREAD_RECEIVED(ThemeSection.THREAD, R.string.theme_group_thread_received),
+    THREAD_SENT(ThemeSection.THREAD, R.string.theme_group_thread_sent),
+    THREAD_META(ThemeSection.THREAD, R.string.theme_group_thread_meta),
+    SEARCH(ThemeSection.SEARCH, R.string.theme_section_search),
 }
 
 enum class ThemeSlot(
@@ -42,28 +54,34 @@ enum class ThemeSlot(
     TEXT("theme_text", ThemeGroup.FOUNDATION, R.string.theme_text, isFoundation = true),
     TEXT_SECONDARY("theme_text_secondary", ThemeGroup.FOUNDATION, R.string.theme_text_secondary),
 
+    // Conversation list
+    CONVERSATION_NAME("theme_conversation_name", ThemeGroup.CONVERSATION, R.string.theme_conversation_name),
+    CONVERSATION_SNIPPET("theme_conversation_snippet", ThemeGroup.CONVERSATION, R.string.theme_conversation_snippet),
+    CONVERSATION_DATE("theme_conversation_date", ThemeGroup.CONVERSATION, R.string.theme_conversation_date),
+    CONVERSATION_UNREAD("theme_conversation_unread", ThemeGroup.CONVERSATION, R.string.theme_conversation_unread),
+    CONVERSATION_DRAFT("theme_conversation_draft", ThemeGroup.CONVERSATION, R.string.theme_conversation_draft),
+    CONVERSATION_PIN("theme_conversation_pin", ThemeGroup.CONVERSATION, R.string.theme_conversation_pin),
+
+    // Message thread — received bubbles
+    THREAD_RECEIVED_BUBBLE(
+        "theme_thread_received_bubble", ThemeGroup.THREAD_RECEIVED, R.string.theme_thread_received_bubble
+    ),
+    THREAD_RECEIVED_TEXT("theme_thread_received_text", ThemeGroup.THREAD_RECEIVED, R.string.theme_thread_received_text),
+
+    // Message thread — sent bubbles
+    THREAD_SENT_BUBBLE("theme_thread_sent_bubble", ThemeGroup.THREAD_SENT, R.string.theme_thread_sent_bubble),
+    THREAD_SENT_TEXT("theme_thread_sent_text", ThemeGroup.THREAD_SENT, R.string.theme_thread_sent_text),
+
+    // Message thread — status & time
+    THREAD_DATE("theme_thread_date", ThemeGroup.THREAD_META, R.string.theme_thread_date),
+    THREAD_STATUS("theme_thread_status", ThemeGroup.THREAD_META, R.string.theme_thread_status),
+
     // Search bar
     SEARCH_FILL("theme_search_fill", ThemeGroup.SEARCH, R.string.theme_search_fill),
     SEARCH_TEXT("theme_search_text", ThemeGroup.SEARCH, R.string.theme_search_text),
     SEARCH_HINT("theme_search_hint", ThemeGroup.SEARCH, R.string.theme_search_hint),
     SEARCH_ICON("theme_search_icon", ThemeGroup.SEARCH, R.string.theme_search_icon),
     SEARCH_BORDER("theme_search_border", ThemeGroup.SEARCH, R.string.theme_search_border),
-
-    // Conversation list
-    CONVERSATION_NAME("theme_conversation_name", ThemeGroup.CONVERSATIONS, R.string.theme_conversation_name),
-    CONVERSATION_SNIPPET("theme_conversation_snippet", ThemeGroup.CONVERSATIONS, R.string.theme_conversation_snippet),
-    CONVERSATION_DATE("theme_conversation_date", ThemeGroup.CONVERSATIONS, R.string.theme_conversation_date),
-    CONVERSATION_UNREAD("theme_conversation_unread", ThemeGroup.CONVERSATIONS, R.string.theme_conversation_unread),
-    CONVERSATION_DRAFT("theme_conversation_draft", ThemeGroup.CONVERSATIONS, R.string.theme_conversation_draft),
-    CONVERSATION_PIN("theme_conversation_pin", ThemeGroup.CONVERSATIONS, R.string.theme_conversation_pin),
-
-    // Message thread (bubbles)
-    THREAD_RECEIVED_BUBBLE("theme_thread_received_bubble", ThemeGroup.THREAD, R.string.theme_thread_received_bubble),
-    THREAD_RECEIVED_TEXT("theme_thread_received_text", ThemeGroup.THREAD, R.string.theme_thread_received_text),
-    THREAD_SENT_BUBBLE("theme_thread_sent_bubble", ThemeGroup.THREAD, R.string.theme_thread_sent_bubble),
-    THREAD_SENT_TEXT("theme_thread_sent_text", ThemeGroup.THREAD, R.string.theme_thread_sent_text),
-    THREAD_DATE("theme_thread_date", ThemeGroup.THREAD, R.string.theme_thread_date),
-    THREAD_STATUS("theme_thread_status", ThemeGroup.THREAD, R.string.theme_thread_status),
 }
 
 /** The effective color for a slot: the user's override if set, otherwise its inherited default. */

@@ -86,12 +86,15 @@
     <string name="message_details_sender">送信者</string>
     <string name="app_launcher_name">白い熊 メッセージ</string>
     <string name="shiroikuma_ui_category">白い熊 メッセージ UI</string>
-    <string name="theme_and_colors">テーマと色</string>
-    <!-- Theme screen -->
-    <string name="theme_group_foundation">基本</string>
-    <string name="theme_group_search">検索バー</string>
-    <string name="theme_group_conversations">会話一覧</string>
-    <string name="theme_group_thread">メッセージ画面</string>
+    <!-- 白い熊 メッセージ UI page: top-level sections -->
+    <string name="theme_section_foundation">基本</string>
+    <string name="theme_section_conversations">会話一覧</string>
+    <string name="theme_section_thread">メッセージ画面</string>
+    <string name="theme_section_search">検索バー</string>
+    <!-- Message thread subgroups -->
+    <string name="theme_group_thread_received">受信メッセージ</string>
+    <string name="theme_group_thread_sent">送信メッセージ</string>
+    <string name="theme_group_thread_meta">送信状況・日時</string>
     <string name="theme_background">背景</string>
     <string name="theme_primary">プライマリ / アクセント</string>
     <string name="theme_text">文字</string>
