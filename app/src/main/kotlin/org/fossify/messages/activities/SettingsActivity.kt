@@ -99,6 +99,7 @@ class SettingsActivity : SimpleActivity() {
     override fun onResume() {
         super.onResume()
         setupTopAppBar(binding.settingsAppbar, NavigationIcon.Arrow)
+        applyThemeChrome(binding.settingsToolbar)
 
         setupShiroikumaUi()
         setupCustomizeColors()

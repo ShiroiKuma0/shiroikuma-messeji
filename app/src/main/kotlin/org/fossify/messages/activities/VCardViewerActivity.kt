@@ -44,6 +44,7 @@ class VCardViewerActivity : SimpleActivity() {
     override fun onResume() {
         super.onResume()
         setupTopAppBar(binding.vcardAppbar, NavigationIcon.Arrow)
+        applyThemeChrome(binding.vcardToolbar)
     }
 
     private fun setupOptionsMenu(vCardUri: Uri) {

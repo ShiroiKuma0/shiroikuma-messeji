@@ -48,6 +48,7 @@ class RecycleBinConversationsActivity : SimpleActivity() {
     override fun onResume() {
         super.onResume()
         setupTopAppBar(binding.recycleBinAppbar, NavigationIcon.Arrow)
+        applyThemeChrome(binding.recycleBinToolbar)
         loadRecycleBinConversations()
     }
 
