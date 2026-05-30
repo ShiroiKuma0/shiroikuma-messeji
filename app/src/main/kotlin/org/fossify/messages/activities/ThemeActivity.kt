@@ -10,7 +10,9 @@ import org.fossify.commons.helpers.NavigationIcon
 import org.fossify.messages.databinding.ActivityThemeBinding
 import org.fossify.messages.databinding.ItemThemeColorBinding
 import org.fossify.messages.databinding.ItemThemeSectionBinding
+import org.fossify.messages.databinding.ItemThemeSubgroupBinding
 import org.fossify.messages.extensions.ThemeGroup
+import org.fossify.messages.extensions.ThemeSection
 import org.fossify.messages.extensions.ThemeSlot
 import org.fossify.messages.extensions.resetThemeColor
 import org.fossify.messages.extensions.setThemeColor
@@ -37,24 +39,57 @@ class ThemeActivity : SimpleActivity() {
         binding.themeHolder.removeAllViews()
         previews.clear()
 
-        val textColor = getProperTextColor()
         val primaryColor = getProperPrimaryColor()
 
-        ThemeGroup.entries.forEach { group ->
-            val section = ItemThemeSectionBinding.inflate(layoutInflater, binding.themeHolder, false)
-            section.themeSectionLabel.text = getString(group.labelRes)
-            section.themeSectionLabel.setTextColor(primaryColor)
-            binding.themeHolder.addView(section.root)
-
-            ThemeSlot.entries.filter { it.group == group }.forEach { slot ->
-                val row = ItemThemeColorBinding.inflate(layoutInflater, binding.themeHolder, false)
-                row.themeColorLabel.text = getString(slot.labelRes)
-                row.themeColorLabel.setTextColor(textColor)
-                row.themeColorPreview.background.setTint(themeColor(slot))
-                row.root.setOnClickListener { openPicker(slot) }
-                previews[slot] = row.themeColorPreview
-                binding.themeHolder.addView(row.root)
+        ThemeSection.entries.forEach { section ->
+            addSectionHeader(getString(section.labelRes), primaryColor)
+            val groups = ThemeGroup.entries.filter { it.section == section }
+            val showSubgroups = groups.size > 1
+            groups.forEach { group ->
+                if (showSubgroups) {
+                    addSubgroupHeader(getString(group.labelRes), primaryColor)
+                }
+                addColorRows(group, indent = showSubgroups)
             }
+        }
+    }
+
+    private fun addSectionHeader(label: String, primaryColor: Int) {
+        val item = ItemThemeSectionBinding.inflate(layoutInflater, binding.themeHolder, false)
+        item.themeSectionLabel.text = label
+        item.themeSectionLabel.setTextColor(primaryColor)
+        item.themeSectionDivider.setBackgroundColor(primaryColor)
+        binding.themeHolder.addView(item.root)
+    }
+
+    private fun addSubgroupHeader(label: String, primaryColor: Int) {
+        val item = ItemThemeSubgroupBinding.inflate(layoutInflater, binding.themeHolder, false)
+        item.themeSubgroupLabel.text = label
+        item.themeSubgroupLabel.setTextColor(primaryColor)
+        item.themeSubgroupUnderline.setBackgroundColor(primaryColor)
+        binding.themeHolder.addView(item.root)
+    }
+
+    private fun addColorRows(group: ThemeGroup, indent: Boolean) {
+        val textColor = getProperTextColor()
+        val indentPx = resources.getDimensionPixelSize(org.fossify.commons.R.dimen.activity_margin)
+        ThemeSlot.entries.filter { it.group == group }.forEach { slot ->
+            val row = ItemThemeColorBinding.inflate(layoutInflater, binding.themeHolder, false)
+            row.themeColorLabel.text = getString(slot.labelRes)
+            row.themeColorLabel.setTextColor(textColor)
+            row.themeColorPreview.background.setTint(themeColor(slot))
+            row.root.setOnClickListener { openPicker(slot) }
+            if (indent) {
+                // indent rows that sit under a subgroup header to reinforce the hierarchy
+                row.root.setPaddingRelative(
+                    row.root.paddingStart + indentPx,
+                    row.root.paddingTop,
+                    row.root.paddingEnd,
+                    row.root.paddingBottom
+                )
+            }
+            previews[slot] = row.themeColorPreview
+            binding.themeHolder.addView(row.root)
         }
     }
 
