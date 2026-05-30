@@ -50,6 +50,10 @@ const val IS_LAUNCHED_FROM_SHORTCUT = "is_launched_from_shortcut"
 const val KEEP_CONVERSATIONS_ARCHIVED = "keep_conversations_archived"
 const val THEME_V1_SEEDED = "theme_v1_seeded"
 
+// Date & time display formats (白い熊 メッセージ UI page)
+const val MESSAGE_TIME_FORMAT = "message_time_format" // Int, ordinal into MessageTimeFormat; 0 = Japanese kanji
+const val USE_IMPERIAL_DATE = "use_imperial_date"     // Boolean, true = 和暦 (令和…（土曜日）) for earlier dates
+
 // Granular theming
 const val THEME_UNSET = Int.MIN_VALUE // a slot with this stored value follows its inherited default
 const val PALETTE_BLACK = 0xFF000000.toInt()

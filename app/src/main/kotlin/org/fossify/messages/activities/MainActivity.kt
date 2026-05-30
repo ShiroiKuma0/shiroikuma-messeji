@@ -32,7 +32,7 @@ import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.checkWhatsNew
 import org.fossify.commons.extensions.convertToBitmap
 import org.fossify.commons.extensions.fadeIn
-import org.fossify.commons.extensions.formatDateOrTime
+import org.fossify.messages.extensions.formatMessageDateOrTime
 import org.fossify.commons.extensions.getMyContactsCursor
 import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.getProperPrimaryColor
@@ -653,7 +653,7 @@ class MainActivity : SimpleActivity() {
     ) {
         val searchResults = ArrayList<SearchResult>()
         conversations.forEach { conversation ->
-            val date = (conversation.date * 1000L).formatDateOrTime(
+            val date = (conversation.date * 1000L).formatMessageDateOrTime(
                 context = this,
                 hideTimeOnOtherDays = true,
                 showCurrentYear = true
@@ -677,7 +677,7 @@ class MainActivity : SimpleActivity() {
                 recipient = TextUtils.join(", ", participantNames)
             }
 
-            val date = (message.date * 1000L).formatDateOrTime(
+            val date = (message.date * 1000L).formatMessageDateOrTime(
                 context = this,
                 hideTimeOnOtherDays = true,
                 showCurrentYear = true

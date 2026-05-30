@@ -4,7 +4,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.widget.ImageView
 import android.widget.SeekBar
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
@@ -17,10 +19,14 @@ import org.fossify.messages.databinding.ActivityThemeBinding
 import org.fossify.messages.databinding.ItemThemeColorBinding
 import org.fossify.messages.databinding.ItemThemeSectionBinding
 import org.fossify.messages.databinding.ItemThemeSubgroupBinding
+import org.fossify.messages.databinding.ItemThemeSwitchBinding
 import org.fossify.messages.databinding.ItemThemeTextBinding
+import org.fossify.messages.databinding.ItemThemeValueBinding
 import org.fossify.messages.dialogs.AlphaColorPickerDialog
 import org.fossify.messages.dialogs.FontPickerDialog
 import org.fossify.messages.extensions.FontWeightOption
+import org.fossify.messages.extensions.MessageTimeFormat
+import org.fossify.messages.extensions.messageTimeFormatOf
 import org.fossify.messages.extensions.ThemeGroup
 import org.fossify.messages.extensions.ThemeSection
 import org.fossify.messages.extensions.ThemeSlot
@@ -68,6 +74,8 @@ class ThemeActivity : SimpleActivity() {
 
         val primaryColor = getProperPrimaryColor()
 
+        addFormatSection(primaryColor)
+
         ThemeSection.entries.forEach { section ->
             addSectionHeader(getString(section.labelRes), primaryColor)
             val groups = ThemeGroup.entries.filter { it.section == section }
@@ -97,6 +105,47 @@ class ThemeActivity : SimpleActivity() {
         item.themeSectionLabel.setTextColor(primaryColor)
         item.themeSectionDivider.setBackgroundColor(primaryColor)
         binding.themeHolder.addView(item.root)
+    }
+
+    // Date & time display formats, shown above the colour sections. Time-of-day (today's messages)
+    // is a 4-way picker defaulting to the kanji clock; the imperial-era toggle controls earlier dates.
+    private fun addFormatSection(primaryColor: Int) {
+        addSectionHeader(getString(R.string.format_section), primaryColor)
+        addValueRow(
+            R.string.format_time_label,
+            getString(messageTimeFormatOf(config.messageTimeFormat).labelRes)
+        ) { valueView ->
+            val items = ArrayList(MessageTimeFormat.entries.map { RadioItem(it.ordinal, getString(it.labelRes)) })
+            RadioGroupDialog(this, items, config.messageTimeFormat) {
+                config.messageTimeFormat = it as Int
+                valueView.text = getString(messageTimeFormatOf(config.messageTimeFormat).labelRes)
+            }
+        }
+        addSwitchRow(R.string.use_imperial_date, config.useImperialDate) { config.useImperialDate = it }
+    }
+
+    private fun addValueRow(@StringRes labelRes: Int, value: String, onClick: (TextView) -> Unit) {
+        val row = ItemThemeValueBinding.inflate(layoutInflater, binding.themeHolder, false)
+        row.themeValueLabel.text = getString(labelRes)
+        row.themeValueLabel.setTextColor(getProperTextColor())
+        row.themeValue.setTextColor(getProperTextColor())
+        row.themeValue.text = value
+        row.root.setOnClickListener { onClick(row.themeValue) }
+        indentRow(row.root, level = 1)
+        binding.themeHolder.addView(row.root)
+    }
+
+    private fun addSwitchRow(@StringRes labelRes: Int, checked: Boolean, onToggle: (Boolean) -> Unit) {
+        val row = ItemThemeSwitchBinding.inflate(layoutInflater, binding.themeHolder, false)
+        row.themeSwitchLabel.text = getString(labelRes)
+        row.themeSwitchLabel.setTextColor(getProperTextColor())
+        row.themeSwitch.isChecked = checked
+        row.root.setOnClickListener {
+            row.themeSwitch.toggle()
+            onToggle(row.themeSwitch.isChecked)
+        }
+        indentRow(row.root, level = 1)
+        binding.themeHolder.addView(row.root)
     }
 
     private fun addSubgroupHeader(label: String, primaryColor: Int) {

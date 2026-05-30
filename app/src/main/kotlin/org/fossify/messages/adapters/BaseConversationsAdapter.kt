@@ -14,7 +14,7 @@ import com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller
 import org.fossify.commons.adapters.MyRecyclerViewListAdapter
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.beVisibleIf
-import org.fossify.commons.extensions.formatDateOrTime
+import org.fossify.messages.extensions.formatMessageDateOrTime
 import org.fossify.commons.extensions.getContrastColor
 import org.fossify.commons.extensions.getTextSize
 import org.fossify.commons.extensions.setupViewBackground
@@ -175,7 +175,7 @@ abstract class BaseConversationsAdapter(
             }
 
             conversationDate.apply {
-                text = (conversation.date * 1000L).formatDateOrTime(
+                text = (conversation.date * 1000L).formatMessageDateOrTime(
                     context = context,
                     hideTimeOnOtherDays = true,
                     showCurrentYear = false
