@@ -78,9 +78,11 @@ When the user says a new upstream version is out:
 
 ### HARD RULES (do not violate)
 
-- **Never install APKs to the phone automatically.** After building, **ask** the user. Only when they
-  confirm, `adb push` the APK to `/sdcard/tmp/` (the user installs it manually from there). Do **not**
-  use `adb install`.
+- **After implementing a change the user asked for, always build it** with `buildFoss` (via the
+  `build-apk` skill) **without waiting to be asked**, and confirm the build succeeds — **then ask**
+  whether to push the APK to the phone.
+- **Never install/push APKs to the phone automatically.** Only after the user confirms, `adb push`
+  the APK to `/sdcard/tmp/` (the user installs it manually from there). Do **not** use `adb install`.
 - **Never commit or push on your own.** Develop and build, let the user test, and **only commit/push
   when the user explicitly instructs**. Push goes to `origin` (`custom` branch).
 
