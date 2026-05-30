@@ -9,6 +9,14 @@
     <string name="theme_section_search">Search bar</string>
     <string name="theme_section_settings_button">Settings button (設定)</string>
     <string name="theme_section_settings">Settings screen</string>
+    <!-- 白い熊 メッセージ UI page: date &amp; time display formats -->
+    <string name="format_section">Date &amp; time format</string>
+    <string name="format_time_label">Time (today\'s messages)</string>
+    <string name="format_time_japanese">Japanese (午前八時)</string>
+    <string name="format_time_system">System default</string>
+    <string name="format_time_24h">24-hour (14:53)</string>
+    <string name="format_time_12h">12-hour (2:53 PM)</string>
+    <string name="use_imperial_date">Imperial Japanese dates (令和八年五月三十日（土曜日）)</string>
     <!-- Message thread subgroups -->
     <string name="theme_group_thread_received">Received messages</string>
     <string name="theme_group_thread_sent">Sent messages</string>

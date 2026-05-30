@@ -153,6 +153,16 @@ class Config(context: Context) : BaseConfig(context) {
         set(keepConversationsArchived) = prefs.edit()
             .putBoolean(KEEP_CONVERSATIONS_ARCHIVED, keepConversationsArchived).apply()
 
+    // Time-of-day display for today's messages; ordinal into MessageTimeFormat (0 = Japanese kanji default).
+    var messageTimeFormat: Int
+        get() = prefs.getInt(MESSAGE_TIME_FORMAT, 0)
+        set(value) = prefs.edit().putInt(MESSAGE_TIME_FORMAT, value).apply()
+
+    // Show earlier-message dates in the Japanese imperial era (和暦) format; on by default for our fork.
+    var useImperialDate: Boolean
+        get() = prefs.getBoolean(USE_IMPERIAL_DATE, true)
+        set(value) = prefs.edit().putBoolean(USE_IMPERIAL_DATE, value).apply()
+
     // Granular theming: one Int override per color slot, THEME_UNSET means "follow the default".
     var themeV1Seeded: Boolean
         get() = prefs.getBoolean(THEME_V1_SEEDED, false)
