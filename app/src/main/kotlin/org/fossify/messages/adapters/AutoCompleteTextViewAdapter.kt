@@ -10,9 +10,9 @@ import org.fossify.commons.extensions.darkenColor
 import org.fossify.commons.extensions.getContrastColor
 import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.normalizeString
-import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.models.SimpleContact
 import org.fossify.messages.activities.SimpleActivity
+import org.fossify.messages.extensions.loadContactPhotoOrUnknown
 
 class AutoCompleteTextViewAdapter(val activity: SimpleActivity, val contacts: ArrayList<SimpleContact>) : ArrayAdapter<SimpleContact>(activity, 0, contacts) {
     var resultList = ArrayList<SimpleContact>()
@@ -40,7 +40,7 @@ class AutoCompleteTextViewAdapter(val activity: SimpleActivity, val contacts: Ar
             if (contact != null) {
                 itemContactName.text = contact.name
                 itemContactNumber.text = contact.phoneNumbers.first().normalizedNumber
-                SimpleContactsHelper(context).loadContactImage(contact.photoUri, itemContactImage, contact.name)
+                itemContactImage.loadContactPhotoOrUnknown(contact.photoUri, contact.name)
             }
         }
 

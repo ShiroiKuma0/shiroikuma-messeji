@@ -8,10 +8,10 @@ import com.bumptech.glide.Glide
 import org.fossify.commons.adapters.MyRecyclerViewAdapter
 import org.fossify.commons.extensions.getTextSize
 import org.fossify.commons.extensions.highlightTextPart
-import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.views.MyRecyclerView
 import org.fossify.messages.activities.SimpleActivity
 import org.fossify.messages.databinding.ItemSearchResultBinding
+import org.fossify.messages.extensions.loadContactPhotoOrUnknown
 import org.fossify.messages.models.SearchResult
 
 class SearchResultsAdapter(
@@ -85,7 +85,7 @@ class SearchResultsAdapter(
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.8f)
             }
 
-            SimpleContactsHelper(activity).loadContactImage(searchResult.photoUri, searchResultImage, searchResult.title)
+            searchResultImage.loadContactPhotoOrUnknown(searchResult.photoUri, searchResult.title)
         }
     }
 
