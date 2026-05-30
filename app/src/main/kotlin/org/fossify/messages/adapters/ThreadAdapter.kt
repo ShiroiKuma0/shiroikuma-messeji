@@ -434,7 +434,11 @@ class ThreadAdapter(
                 setLinkTextColor(activity.themeColor(ThemeSlot.PRIMARY))
             }
 
-            if (!activity.isFinishing && !activity.isDestroyed) {
+            if (message.senderPhotoUri.isEmpty()) {
+                // sender without a picture — show the 人 icon as-is
+                Glide.with(activity).clear(threadMessageSenderPhoto)
+                threadMessageSenderPhoto.setImageResource(R.drawable.ic_unknown_contact)
+            } else if (!activity.isFinishing && !activity.isDestroyed) {
                 val contactLetterIcon = SimpleContactsHelper(activity).getContactLetterIcon(message.senderName)
                 val placeholder = contactLetterIcon.toDrawable(activity.resources)
 

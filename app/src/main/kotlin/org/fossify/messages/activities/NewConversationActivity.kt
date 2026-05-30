@@ -39,6 +39,7 @@ import org.fossify.messages.databinding.ActivityNewConversationBinding
 import org.fossify.messages.databinding.ItemSuggestedContactBinding
 import org.fossify.messages.extensions.getSuggestedContacts
 import org.fossify.messages.extensions.getThreadId
+import org.fossify.messages.extensions.loadContactPhotoOrUnknown
 import org.fossify.messages.helpers.SmsIntentParser
 import org.fossify.messages.helpers.THREAD_ATTACHMENT_URI
 import org.fossify.messages.helpers.THREAD_ATTACHMENT_URIS
@@ -230,11 +231,7 @@ class NewConversationActivity : SimpleActivity() {
                             suggestedContactName.setTextColor(getProperTextColor())
 
                             if (!isDestroyed) {
-                                SimpleContactsHelper(this@NewConversationActivity).loadContactImage(
-                                    contact.photoUri,
-                                    suggestedContactImage,
-                                    contact.name
-                                )
+                                suggestedContactImage.loadContactPhotoOrUnknown(contact.photoUri, contact.name)
                                 binding.suggestionsHolder.addView(root)
                                 root.setOnClickListener {
                                     launchThreadActivity(
