@@ -81,6 +81,7 @@ class NewConversationActivity : SimpleActivity() {
     override fun onResume() {
         super.onResume()
         setupTopAppBar(binding.newConversationAppbar, NavigationIcon.Arrow)
+        applyThemeChrome(binding.newConversationToolbar)
         binding.noContactsPlaceholder2.setTextColor(getProperPrimaryColor())
         binding.noContactsPlaceholder2.underlineText()
         binding.suggestionsLabel.setTextColor(getProperPrimaryColor())
