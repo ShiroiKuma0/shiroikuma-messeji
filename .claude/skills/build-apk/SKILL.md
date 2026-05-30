@@ -9,7 +9,7 @@ description: Build the signed foss release APK with the buildFoss Gradle task, t
 
 1. **Note the output filename.** Read the current version and build number:
    - `grep -E 'VERSION_NAME|BUILD_NUMBER' gradle.properties`
-   - The APK will be `shiroikuma-messages_<VERSION_NAME>+<BUILD_NUMBER>_arm64-v8a.apk`, using the `BUILD_NUMBER` value **before** the build (the task bumps it afterward).
+   - The APK will be `shiroikuma-messeji_<VERSION_NAME>+<BUILD_NUMBER>_arm64-v8a.apk`, using the `BUILD_NUMBER` value **before** the build (the task bumps it afterward).
    - versionCode for that build = `VERSION_CODE * 10000 + BUILD_NUMBER`.
 
 2. **Build** (needs JDK 21 — the default `java` on this machine is JDK 11):

@@ -28,7 +28,7 @@ val forkVersionCode = project.property("VERSION_CODE").toString().toInt() * 1000
         project.property("BUILD_NUMBER").toString().toInt()
 
 base {
-    archivesName = "shiroikuma-messages_${forkVersionName}_arm64-v8a"
+    archivesName = "shiroikuma-messeji_${forkVersionName}_arm64-v8a"
 }
 
 android {
@@ -147,7 +147,7 @@ tasks.register("buildFoss") {
     description = "Build the foss release APK, copy it to ~/tmp, and bump BUILD_NUMBER for next time."
     dependsOn("assembleFossRelease")
     doLast {
-        val apkName = "shiroikuma-messages_${forkVersionName}_arm64-v8a.apk"
+        val apkName = "shiroikuma-messeji_${forkVersionName}_arm64-v8a.apk"
         val outputDir = layout.buildDirectory.dir("outputs/apk/foss/release").get().asFile
         val targetDir = File(System.getProperty("user.home"), "tmp")
         targetDir.mkdirs()
