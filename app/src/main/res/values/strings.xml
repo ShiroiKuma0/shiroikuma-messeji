@@ -1,6 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_launcher_name">白い熊 メッセージ</string>
+    <string name="shiroikuma_ui_category">白い熊 メッセージ UI</string>
+    <string name="theme_and_colors">Theme &amp; colors</string>
+    <!-- Theme screen -->
+    <string name="theme_group_foundation">Foundation</string>
+    <string name="theme_group_search">Search bar</string>
+    <string name="theme_group_conversations">Conversation list</string>
+    <string name="theme_group_thread">Message thread</string>
+    <string name="theme_background">Background</string>
+    <string name="theme_primary">Primary / accent</string>
+    <string name="theme_text">Text</string>
+    <string name="theme_text_secondary">Secondary text</string>
+    <string name="theme_search_fill">Search bar fill</string>
+    <string name="theme_search_text">Search bar text</string>
+    <string name="theme_search_hint">Search bar hint</string>
+    <string name="theme_search_icon">Search bar icon</string>
+    <string name="theme_search_border">Search bar border</string>
+    <string name="theme_conversation_name">Contact name</string>
+    <string name="theme_conversation_snippet">Message preview</string>
+    <string name="theme_conversation_date">Date &amp; time</string>
+    <string name="theme_conversation_unread">Unread badge</string>
+    <string name="theme_conversation_draft">Draft label</string>
+    <string name="theme_conversation_pin">Pin icon</string>
+    <string name="theme_thread_received_bubble">Received bubble</string>
+    <string name="theme_thread_received_text">Received text</string>
+    <string name="theme_thread_sent_bubble">Sent bubble</string>
+    <string name="theme_thread_sent_text">Sent text</string>
+    <string name="theme_thread_date">Date &amp; time</string>
+    <string name="theme_thread_status">Delivery status</string>
     <string name="type_a_message">Type a message…</string>
     <string name="message_not_sent_short">Message not sent</string>
     <string name="message_not_sent_touch_retry">Not sent. Touch to retry.</string>

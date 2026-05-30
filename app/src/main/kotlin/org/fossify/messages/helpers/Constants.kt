@@ -48,6 +48,12 @@ const val IS_ARCHIVE_AVAILABLE = "is_archive_available"
 const val CUSTOM_NOTIFICATIONS = "custom_notifications"
 const val IS_LAUNCHED_FROM_SHORTCUT = "is_launched_from_shortcut"
 const val KEEP_CONVERSATIONS_ARCHIVED = "keep_conversations_archived"
+const val THEME_V1_SEEDED = "theme_v1_seeded"
+
+// Granular theming
+const val THEME_UNSET = Int.MIN_VALUE // a slot with this stored value follows its inherited default
+const val PALETTE_BLACK = 0xFF000000.toInt()
+const val PALETTE_YELLOW = 0xFFFFEB3B.toInt()
 
 private const val PATH = "org.fossify.org.fossify.messages.action."
 const val MARK_AS_READ = PATH + "mark_as_read"
