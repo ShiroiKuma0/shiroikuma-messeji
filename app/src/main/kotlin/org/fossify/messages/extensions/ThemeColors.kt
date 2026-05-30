@@ -47,6 +47,8 @@ enum class ThemeSlot(
     val group: ThemeGroup,
     @StringRes val labelRes: Int,
     val isFoundation: Boolean = false,
+    // hasFont = true for concrete text views (family / weight / size are configurable per element)
+    val hasFont: Boolean = false,
 ) {
     // Foundation — reuse the stock commons colors (editing these repaints the whole app)
     BACKGROUND("theme_background", ThemeGroup.FOUNDATION, R.string.theme_background, isFoundation = true),
@@ -55,30 +57,42 @@ enum class ThemeSlot(
     TEXT_SECONDARY("theme_text_secondary", ThemeGroup.FOUNDATION, R.string.theme_text_secondary),
 
     // Conversation list
-    CONVERSATION_NAME("theme_conversation_name", ThemeGroup.CONVERSATION, R.string.theme_conversation_name),
-    CONVERSATION_SNIPPET("theme_conversation_snippet", ThemeGroup.CONVERSATION, R.string.theme_conversation_snippet),
-    CONVERSATION_DATE("theme_conversation_date", ThemeGroup.CONVERSATION, R.string.theme_conversation_date),
+    CONVERSATION_NAME(
+        "theme_conversation_name", ThemeGroup.CONVERSATION, R.string.theme_conversation_name, hasFont = true
+    ),
+    CONVERSATION_SNIPPET(
+        "theme_conversation_snippet", ThemeGroup.CONVERSATION, R.string.theme_conversation_snippet, hasFont = true
+    ),
+    CONVERSATION_DATE(
+        "theme_conversation_date", ThemeGroup.CONVERSATION, R.string.theme_conversation_date, hasFont = true
+    ),
     CONVERSATION_UNREAD("theme_conversation_unread", ThemeGroup.CONVERSATION, R.string.theme_conversation_unread),
-    CONVERSATION_DRAFT("theme_conversation_draft", ThemeGroup.CONVERSATION, R.string.theme_conversation_draft),
+    CONVERSATION_DRAFT(
+        "theme_conversation_draft", ThemeGroup.CONVERSATION, R.string.theme_conversation_draft, hasFont = true
+    ),
     CONVERSATION_PIN("theme_conversation_pin", ThemeGroup.CONVERSATION, R.string.theme_conversation_pin),
 
     // Message thread — received bubbles
     THREAD_RECEIVED_BUBBLE(
         "theme_thread_received_bubble", ThemeGroup.THREAD_RECEIVED, R.string.theme_thread_received_bubble
     ),
-    THREAD_RECEIVED_TEXT("theme_thread_received_text", ThemeGroup.THREAD_RECEIVED, R.string.theme_thread_received_text),
+    THREAD_RECEIVED_TEXT(
+        "theme_thread_received_text", ThemeGroup.THREAD_RECEIVED, R.string.theme_thread_received_text, hasFont = true
+    ),
 
     // Message thread — sent bubbles
     THREAD_SENT_BUBBLE("theme_thread_sent_bubble", ThemeGroup.THREAD_SENT, R.string.theme_thread_sent_bubble),
-    THREAD_SENT_TEXT("theme_thread_sent_text", ThemeGroup.THREAD_SENT, R.string.theme_thread_sent_text),
+    THREAD_SENT_TEXT(
+        "theme_thread_sent_text", ThemeGroup.THREAD_SENT, R.string.theme_thread_sent_text, hasFont = true
+    ),
 
     // Message thread — status & time
-    THREAD_DATE("theme_thread_date", ThemeGroup.THREAD_META, R.string.theme_thread_date),
-    THREAD_STATUS("theme_thread_status", ThemeGroup.THREAD_META, R.string.theme_thread_status),
+    THREAD_DATE("theme_thread_date", ThemeGroup.THREAD_META, R.string.theme_thread_date, hasFont = true),
+    THREAD_STATUS("theme_thread_status", ThemeGroup.THREAD_META, R.string.theme_thread_status, hasFont = true),
 
     // Search bar
     SEARCH_FILL("theme_search_fill", ThemeGroup.SEARCH, R.string.theme_search_fill),
-    SEARCH_TEXT("theme_search_text", ThemeGroup.SEARCH, R.string.theme_search_text),
+    SEARCH_TEXT("theme_search_text", ThemeGroup.SEARCH, R.string.theme_search_text, hasFont = true),
     SEARCH_HINT("theme_search_hint", ThemeGroup.SEARCH, R.string.theme_search_hint),
     SEARCH_ICON("theme_search_icon", ThemeGroup.SEARCH, R.string.theme_search_icon),
     SEARCH_BORDER("theme_search_border", ThemeGroup.SEARCH, R.string.theme_search_border),

@@ -61,6 +61,7 @@ import org.fossify.messages.extensions.checkAndDeleteOldRecycleBinMessages
 import org.fossify.messages.extensions.clearAllMessagesIfNeeded
 import org.fossify.messages.extensions.clearExpiredScheduledMessages
 import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.applyThemeFont
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.conversationsDB
 import org.fossify.messages.extensions.getConversations
@@ -124,6 +125,8 @@ class MainActivity : SimpleActivity() {
             }
 
             updateDrafts()
+            // reflect any per-element color/font changes made in Settings
+            refreshTheme()
         }
 
         updateTextColors(binding.mainCoordinator)
@@ -240,6 +243,7 @@ class MainActivity : SimpleActivity() {
         menu.findViewById<EditText>(org.fossify.commons.R.id.top_toolbar_search)?.apply {
             setTextColor(themeColor(ThemeSlot.SEARCH_TEXT))
             setHintTextColor(themeColor(ThemeSlot.SEARCH_HINT))
+            applyThemeFont(ThemeSlot.SEARCH_TEXT)
         }
 
         menu.findViewById<ImageView>(org.fossify.commons.R.id.top_toolbar_search_icon)

@@ -312,6 +312,9 @@ class ThreadActivity : SimpleActivity() {
         val bottomBarColor = getBottomBarColor()
         binding.messageHolder.root.setBackgroundColor(bottomBarColor)
         binding.shortCodeHolder.root.setBackgroundColor(bottomBarColor)
+
+        // reflect any per-element color/font changes made in Settings
+        (binding.threadMessagesList.adapter as? ThreadAdapter)?.refreshTheme()
     }
 
     override fun onPause() {
