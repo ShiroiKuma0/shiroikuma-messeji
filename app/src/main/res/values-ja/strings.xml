@@ -95,6 +95,24 @@
     <string name="theme_group_thread_received">受信メッセージ</string>
     <string name="theme_group_thread_sent">送信メッセージ</string>
     <string name="theme_group_thread_meta">送信状況・日時</string>
+    <!-- Per-element fonts -->
+    <string name="theme_font">フォント</string>
+    <string name="theme_weight">太さ</string>
+    <string name="theme_size">サイズ</string>
+    <string name="theme_size_default">既定</string>
+    <string name="theme_add_font">フォントを追加…</string>
+    <string name="font_system_default">システム標準</string>
+    <string name="font_monospace">等幅</string>
+    <string name="font_invalid">.ttf または .otf フォントファイルを選択してください</string>
+    <string name="font_sample_text">AaIiMmOoQqWw 012 白い熊相撲道 áÁčČďĎéÉěĚíÍňŇóÓřŘšŠťŤúÚůŮýÝžŽ</string>
+    <string name="font_weight_default">既定</string>
+    <string name="font_weight_thin">極細 (100)</string>
+    <string name="font_weight_light">細字 (300)</string>
+    <string name="font_weight_regular">標準 (400)</string>
+    <string name="font_weight_medium">中字 (500)</string>
+    <string name="font_weight_semibold">半太字 (600)</string>
+    <string name="font_weight_bold">太字 (700)</string>
+    <string name="font_weight_black">極太 (900)</string>
     <string name="theme_background">背景</string>
     <string name="theme_primary">プライマリ / アクセント</string>
     <string name="theme_text">文字</string>

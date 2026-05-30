@@ -42,7 +42,6 @@ import org.fossify.commons.extensions.getTimeFormat
 import org.fossify.commons.extensions.shareTextIntent
 import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.extensions.usableScreenSize
-import org.fossify.commons.helpers.FontHelper
 import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.views.MyRecyclerView
@@ -63,6 +62,7 @@ import org.fossify.messages.dialogs.DeleteConfirmationDialog
 import org.fossify.messages.dialogs.MessageDetailsDialog
 import org.fossify.messages.dialogs.SelectTextDialog
 import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.applyThemeFont
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.getContactFromAddress
 import org.fossify.messages.extensions.isImageMimeType
@@ -432,6 +432,7 @@ class ThreadAdapter(
                 background.applyColorFilter(activity.themeColor(ThemeSlot.THREAD_RECEIVED_BUBBLE))
                 setTextColor(activity.themeColor(ThemeSlot.THREAD_RECEIVED_TEXT))
                 setLinkTextColor(activity.themeColor(ThemeSlot.PRIMARY))
+                applyThemeFont(ThemeSlot.THREAD_RECEIVED_TEXT)
             }
 
             if (message.senderPhotoUri.isEmpty()) {
@@ -481,7 +482,7 @@ class ThreadAdapter(
                 setLinkTextColor(contrastColor)
 
                 if (message.isScheduled) {
-                    typeface = Typeface.create(FontHelper.getTypeface(activity), Typeface.ITALIC)
+                    applyThemeFont(ThemeSlot.THREAD_SENT_TEXT, Typeface.ITALIC)
                     val scheduledDrawable = AppCompatResources.getDrawable(activity, org.fossify.commons.R.drawable.ic_clock_vector)?.apply {
                         applyColorFilter(contrastColor)
                         val size = lineHeight
@@ -490,7 +491,7 @@ class ThreadAdapter(
 
                     setCompoundDrawables(null, null, scheduledDrawable, null)
                 } else {
-                    typeface = FontHelper.getTypeface(activity)
+                    applyThemeFont(ThemeSlot.THREAD_SENT_TEXT)
                     setCompoundDrawables(null, null, null, null)
                 }
             }
@@ -602,6 +603,7 @@ class ThreadAdapter(
             }
             val dateColor = activity.themeColor(ThemeSlot.THREAD_DATE)
             threadDateTime.setTextColor(dateColor)
+            threadDateTime.applyThemeFont(ThemeSlot.THREAD_DATE)
 
             threadSimIcon.beVisibleIf(hasMultipleSIMCards)
             threadSimNumber.beVisibleIf(hasMultipleSIMCards)
@@ -629,7 +631,14 @@ class ThreadAdapter(
         ItemThreadSendingBinding.bind(view).threadSending.apply {
             setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
             setTextColor(activity.themeColor(ThemeSlot.THREAD_STATUS))
+            applyThemeFont(ThemeSlot.THREAD_STATUS)
         }
+    }
+
+    // Re-bind every message so per-element theme/font changes from Settings take effect immediately.
+    @SuppressLint("NotifyDataSetChanged")
+    fun refreshTheme() {
+        notifyDataSetChanged()
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
