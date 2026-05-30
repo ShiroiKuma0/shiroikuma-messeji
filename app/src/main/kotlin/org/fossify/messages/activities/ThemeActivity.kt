@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.widget.ImageView
 import android.widget.SeekBar
 import androidx.activity.result.contract.ActivityResultContracts
-import org.fossify.commons.dialogs.ColorPickerDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
@@ -19,6 +18,7 @@ import org.fossify.messages.databinding.ItemThemeColorBinding
 import org.fossify.messages.databinding.ItemThemeSectionBinding
 import org.fossify.messages.databinding.ItemThemeSubgroupBinding
 import org.fossify.messages.databinding.ItemThemeTextBinding
+import org.fossify.messages.dialogs.AlphaColorPickerDialog
 import org.fossify.messages.dialogs.FontPickerDialog
 import org.fossify.messages.extensions.FontWeightOption
 import org.fossify.messages.extensions.ThemeGroup
@@ -167,7 +167,7 @@ class ThemeActivity : SimpleActivity() {
     private fun sizeLabel(sp: Int) = if (sp > 0) "$sp sp" else getString(R.string.theme_size_default)
 
     private fun openColorPicker(slot: ThemeSlot) {
-        ColorPickerDialog(this, themeColor(slot), addDefaultColorButton = true) { wasPositive, color ->
+        AlphaColorPickerDialog(this, themeColor(slot), addDefaultColorButton = true) { wasPositive, color ->
             if (wasPositive) setThemeColor(slot, color) else resetThemeColor(slot)
             if (slot.isFoundation) {
                 // foundation cascades into the chrome + every inheriting preview
@@ -179,7 +179,7 @@ class ThemeActivity : SimpleActivity() {
     }
 
     private fun openTextColorPicker(slot: ThemeSlot, b: ItemThemeTextBinding) {
-        ColorPickerDialog(this, themeColor(slot), addDefaultColorButton = true) { wasPositive, color ->
+        AlphaColorPickerDialog(this, themeColor(slot), addDefaultColorButton = true) { wasPositive, color ->
             if (wasPositive) setThemeColor(slot, color) else resetThemeColor(slot)
             b.themeTextColorPreview.background.setTint(themeColor(slot))
             refreshSample(b, slot)

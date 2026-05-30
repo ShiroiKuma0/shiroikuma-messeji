@@ -101,6 +101,7 @@
     <string name="theme_size">サイズ</string>
     <string name="theme_size_default">既定</string>
     <string name="theme_add_font">フォントを追加…</string>
+    <string name="theme_alpha">アルファ</string>
     <string name="font_system_default">システム標準</string>
     <string name="font_monospace">等幅</string>
     <string name="font_invalid">.ttf または .otf フォントファイルを選択してください</string>
