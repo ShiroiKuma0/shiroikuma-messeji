@@ -7,6 +7,7 @@
     <string name="theme_section_conversations">Conversation list</string>
     <string name="theme_section_thread">Message thread</string>
     <string name="theme_section_search">Search bar</string>
+    <string name="theme_section_settings">Settings screen</string>
     <!-- Message thread subgroups -->
     <string name="theme_group_thread_received">Received messages</string>
     <string name="theme_group_thread_sent">Sent messages</string>
@@ -39,6 +40,11 @@
     <string name="theme_search_hint">Search bar hint</string>
     <string name="theme_search_icon">Search bar icon</string>
     <string name="theme_search_border">Search bar border</string>
+    <string name="theme_search_menu">Menu icon</string>
+    <string name="theme_menu_background">Menu background</string>
+    <string name="theme_menu_text">Menu text</string>
+    <string name="theme_settings_title">Header</string>
+    <string name="theme_settings_back">Back arrow</string>
     <string name="theme_conversation_name">Contact name</string>
     <string name="theme_conversation_snippet">Message preview</string>
     <string name="theme_conversation_date">Date &amp; time</string>

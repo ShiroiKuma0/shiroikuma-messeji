@@ -72,6 +72,7 @@ class ConversationDetailsActivity : SimpleActivity() {
     override fun onResume() {
         super.onResume()
         setupTopAppBar(binding.conversationDetailsAppbar, NavigationIcon.Arrow)
+        applyThemeChrome(binding.conversationDetailsToolbar)
         updateTextColors(binding.conversationDetailsHolder)
 
         val primaryColor = getProperPrimaryColor()

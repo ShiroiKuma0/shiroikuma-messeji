@@ -29,6 +29,7 @@ enum class ThemeSection(@StringRes val labelRes: Int) {
     CONVERSATIONS(R.string.theme_section_conversations),
     THREAD(R.string.theme_section_thread),
     SEARCH(R.string.theme_section_search),
+    SETTINGS(R.string.theme_section_settings),
 }
 
 // Subgroups within a section. A subgroup header is only drawn when its section has more than one
@@ -40,6 +41,7 @@ enum class ThemeGroup(val section: ThemeSection, @StringRes val labelRes: Int) {
     THREAD_SENT(ThemeSection.THREAD, R.string.theme_group_thread_sent),
     THREAD_META(ThemeSection.THREAD, R.string.theme_group_thread_meta),
     SEARCH(ThemeSection.SEARCH, R.string.theme_section_search),
+    SETTINGS(ThemeSection.SETTINGS, R.string.theme_section_settings),
 }
 
 enum class ThemeSlot(
@@ -96,6 +98,13 @@ enum class ThemeSlot(
     SEARCH_HINT("theme_search_hint", ThemeGroup.SEARCH, R.string.theme_search_hint),
     SEARCH_ICON("theme_search_icon", ThemeGroup.SEARCH, R.string.theme_search_icon),
     SEARCH_BORDER("theme_search_border", ThemeGroup.SEARCH, R.string.theme_search_border),
+    SEARCH_MENU_ICON("theme_search_menu", ThemeGroup.SEARCH, R.string.theme_search_menu),
+    MENU_BACKGROUND("theme_menu_background", ThemeGroup.SEARCH, R.string.theme_menu_background),
+    MENU_TEXT("theme_menu_text", ThemeGroup.SEARCH, R.string.theme_menu_text),
+
+    // Settings screen chrome
+    SETTINGS_TITLE("theme_settings_title", ThemeGroup.SETTINGS, R.string.theme_settings_title),
+    SETTINGS_BACK("theme_settings_back", ThemeGroup.SETTINGS, R.string.theme_settings_back),
 }
 
 /** The effective color for a slot: the user's override if set, otherwise its inherited default. */
@@ -119,6 +128,14 @@ private fun Context.themeDefault(slot: ThemeSlot): Int = when (slot) {
     ThemeSlot.SEARCH_HINT -> themeColor(ThemeSlot.PRIMARY).adjustAlpha(SEARCH_HINT_ALPHA)
     ThemeSlot.SEARCH_ICON -> themeColor(ThemeSlot.PRIMARY)
     ThemeSlot.SEARCH_BORDER -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.SEARCH_MENU_ICON -> themeColor(ThemeSlot.PRIMARY)
+    // Overflow menu popup: background follows the app background, text follows the app text colour
+    ThemeSlot.MENU_BACKGROUND -> themeColor(ThemeSlot.BACKGROUND)
+    ThemeSlot.MENU_TEXT -> themeColor(ThemeSlot.TEXT)
+
+    // Settings screen: the toolbar sits on the primary colour, so title/arrow contrast it by default
+    ThemeSlot.SETTINGS_TITLE -> themeColor(ThemeSlot.PRIMARY).getContrastColor()
+    ThemeSlot.SETTINGS_BACK -> themeColor(ThemeSlot.PRIMARY).getContrastColor()
 
     // Conversation list
     ThemeSlot.CONVERSATION_NAME -> themeColor(ThemeSlot.TEXT)

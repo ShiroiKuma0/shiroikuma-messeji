@@ -49,6 +49,7 @@ class ArchivedConversationsActivity : SimpleActivity() {
     override fun onResume() {
         super.onResume()
         setupTopAppBar(binding.archiveAppbar, NavigationIcon.Arrow)
+        applyThemeChrome(binding.archiveToolbar)
         loadArchivedConversations()
     }
 

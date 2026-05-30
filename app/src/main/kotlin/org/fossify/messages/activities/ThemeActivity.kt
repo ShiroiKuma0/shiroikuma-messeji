@@ -58,6 +58,7 @@ class ThemeActivity : SimpleActivity() {
     override fun onResume() {
         super.onResume()
         setupTopAppBar(binding.themeAppbar, NavigationIcon.Arrow)
+        applyThemeChrome(binding.themeToolbar)
         buildRows()
     }
 

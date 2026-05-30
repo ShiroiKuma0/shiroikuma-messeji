@@ -12,8 +12,11 @@ import android.os.Bundle
 import android.provider.Telephony
 import android.text.TextUtils
 import android.view.View
+import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.PopupWindow
 import androidx.appcompat.content.res.AppCompatResources
 import org.fossify.commons.dialogs.PermissionRequiredDialog
 import org.fossify.commons.extensions.adjustAlpha
@@ -57,6 +60,7 @@ import org.fossify.messages.R
 import org.fossify.messages.adapters.ConversationsAdapter
 import org.fossify.messages.adapters.SearchResultsAdapter
 import org.fossify.messages.databinding.ActivityMainBinding
+import org.fossify.messages.databinding.ItemOverflowMenuBinding
 import org.fossify.messages.extensions.checkAndDeleteOldRecycleBinMessages
 import org.fossify.messages.extensions.clearAllMessagesIfNeeded
 import org.fossify.messages.extensions.clearExpiredScheduledMessages
@@ -81,6 +85,8 @@ import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 
 private const val SEARCH_BAR_CORNER_RADIUS_DP = 16f
+private const val OVERFLOW_MENU_CORNER_DP = 8f
+private const val OVERFLOW_MENU_ELEVATION_DP = 8f
 
 class MainActivity : SimpleActivity() {
     override var isSearchBarEnabled = true
@@ -100,7 +106,6 @@ class MainActivity : SimpleActivity() {
         setContentView(binding.root)
         appLaunched(BuildConfig.APPLICATION_ID)
         setupOptionsMenu()
-        refreshMenuItems()
 
         setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.conversationsList))
 
@@ -113,7 +118,6 @@ class MainActivity : SimpleActivity() {
     override fun onResume() {
         super.onResume()
         updateMenuColors()
-        refreshMenuItems()
 
         getOrCreateConversationsAdapter().apply {
             if (storedTextColor != getProperTextColor()) {
@@ -187,22 +191,58 @@ class MainActivity : SimpleActivity() {
         }
 
         binding.mainMenu.requireToolbar().setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.show_recycle_bin -> launchRecycleBin()
-                R.id.show_archived -> launchArchivedConversations()
-                R.id.settings -> launchSettings()
-                R.id.about -> launchAbout()
-                else -> return@setOnMenuItemClickListener false
+            if (menuItem.itemId == R.id.more) {
+                showOverflowMenu()
+                true
+            } else {
+                false
             }
-            return@setOnMenuItemClickListener true
         }
     }
 
-    private fun refreshMenuItems() {
-        binding.mainMenu.requireToolbar().menu.apply {
-            findItem(R.id.show_recycle_bin).isVisible = config.useRecycleBin
-            findItem(R.id.show_archived).isVisible = config.isArchiveAvailable
+    // A custom, fully themed replacement for the system overflow popup (its background can't be set
+    // to an arbitrary runtime colour via a supported API).
+    private fun showOverflowMenu() {
+        val toolbar = binding.mainMenu.requireToolbar()
+        val anchor = toolbar.findViewById<View>(R.id.more) ?: toolbar
+        val entries = buildList<Pair<String, () -> Unit>> {
+            if (config.useRecycleBin) {
+                add(getString(org.fossify.commons.R.string.show_the_recycle_bin) to ::launchRecycleBin)
+            }
+            if (config.isArchiveAvailable) {
+                add(getString(R.string.show_archived_conversations) to ::launchArchivedConversations)
+            }
+            add(getString(org.fossify.commons.R.string.settings) to ::launchSettings)
+            add(getString(org.fossify.commons.R.string.about) to ::launchAbout)
         }
+
+        val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val popup = PopupWindow(
+            content,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            true
+        )
+        val menuTextColor = themeColor(ThemeSlot.MENU_TEXT)
+        entries.forEach { (title, action) ->
+            val item = ItemOverflowMenuBinding.inflate(layoutInflater, content, false)
+            item.overflowMenuItem.text = title
+            item.overflowMenuItem.setTextColor(menuTextColor)
+            item.overflowMenuItem.setOnClickListener {
+                popup.dismiss()
+                action()
+            }
+            content.addView(item.root)
+        }
+
+        popup.setBackgroundDrawable(
+            GradientDrawable().apply {
+                cornerRadius = OVERFLOW_MENU_CORNER_DP * resources.displayMetrics.density
+                setColor(themeColor(ThemeSlot.MENU_BACKGROUND))
+            }
+        )
+        popup.elevation = OVERFLOW_MENU_ELEVATION_DP * resources.displayMetrics.density
+        popup.showAsDropDown(anchor)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
@@ -248,6 +288,9 @@ class MainActivity : SimpleActivity() {
 
         menu.findViewById<ImageView>(org.fossify.commons.R.id.top_toolbar_search_icon)
             ?.applyColorFilter(themeColor(ThemeSlot.SEARCH_ICON))
+
+        menu.requireToolbar().menu.findItem(R.id.more)?.icon
+            ?.applyColorFilter(themeColor(ThemeSlot.SEARCH_MENU_ICON))
     }
 
     private fun loadMessages() {
