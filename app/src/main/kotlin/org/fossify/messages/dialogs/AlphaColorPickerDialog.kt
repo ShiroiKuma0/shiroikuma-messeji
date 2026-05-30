@@ -4,14 +4,23 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.graphics.Color
 import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.SeekBar
 import androidx.appcompat.app.AlertDialog
+import java.util.LinkedList
 import java.util.Locale
+import org.fossify.commons.extensions.beGone
+import org.fossify.commons.extensions.beVisible
 import org.fossify.commons.extensions.getAlertDialogBuilder
+import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.onGlobalLayout
 import org.fossify.commons.extensions.onTextChangeListener
+import org.fossify.commons.extensions.setFillWithStroke
 import org.fossify.commons.extensions.setupDialogStuff
 import org.fossify.messages.databinding.DialogColorPickerAlphaBinding
+import org.fossify.messages.extensions.config
 
 private const val ALPHA_MAX = 255
 private const val HEX_LENGTH = 6
@@ -20,6 +29,7 @@ private const val HUE_EPSILON = 0.001f
 private const val RGB_MASK = 0xFFFFFF
 private const val ALPHA_SHIFT = 24
 private const val HSV_SIZE = 3
+private const val RECENT_COLORS_NUMBER = 5
 
 // A commons-style HSV colour picker with an added alpha/transparency slider; returns an ARGB int.
 @SuppressLint("ClickableViewAccessibility")
@@ -77,10 +87,15 @@ class AlphaColorPickerDialog(
                 }
             }
             updateNewColor()
+            setupRecentColors()
         }
 
         val builder = activity.getAlertDialogBuilder()
-            .setPositiveButton(org.fossify.commons.R.string.ok) { _, _ -> callback(true, currentColor()) }
+            .setPositiveButton(org.fossify.commons.R.string.ok) { _, _ ->
+                val picked = currentColor()
+                addRecentColor(picked)
+                callback(true, picked)
+            }
             .setNegativeButton(org.fossify.commons.R.string.cancel, null)
         if (addDefaultColorButton) {
             builder.setNeutralButton(org.fossify.commons.R.string.default_color) { _, _ -> callback(false, color) }
@@ -180,5 +195,51 @@ class AlphaColorPickerDialog(
         ignoreHexChanges = true
         binding.colorPickerNewHex.setText(hex)
         ignoreHexChanges = false
+    }
+
+    // Show recently used colours as clickable dots above the canvas (shared across all colour dialogs).
+    private fun setupRecentColors() {
+        val recentColors = activity.config.colorPickerRecentColors
+        if (recentColors.isEmpty()) {
+            binding.recentColors.beGone()
+            return
+        }
+
+        binding.recentColors.beVisible()
+        val backgroundColor = activity.getProperBackgroundColor()
+        val size = activity.resources.getDimensionPixelSize(org.fossify.commons.R.dimen.colorpicker_hue_width)
+        recentColors.take(RECENT_COLORS_NUMBER).forEach { recentColor ->
+            val dot = ImageView(activity)
+            dot.id = View.generateViewId()
+            dot.layoutParams = ViewGroup.LayoutParams(size, size)
+            dot.setFillWithStroke(recentColor, backgroundColor)
+            dot.setOnClickListener { applyColor(recentColor) }
+            binding.recentColors.addView(dot)
+            binding.recentColorsFlow.addView(dot)
+        }
+    }
+
+    // Adopt a recent colour: restore its hue/saturation/value and its alpha.
+    private fun applyColor(color: Int) {
+        Color.colorToHSV(color, currentColorHsv)
+        currentAlpha = Color.alpha(color)
+        binding.colorPickerSquare.setHue(currentColorHsv[0])
+        binding.colorPickerAlphaSeekbar.progress = currentAlpha
+        binding.colorPickerAlphaValue.text = currentAlpha.toString()
+        setHexField(currentHex())
+        moveHueCursor()
+        moveColorCursor()
+        updateNewColor()
+    }
+
+    private fun addRecentColor(color: Int) {
+        val recentColors = LinkedList<Int>()
+        recentColors.add(color)
+        activity.config.colorPickerRecentColors.forEach { existing ->
+            if (existing != color && recentColors.size < RECENT_COLORS_NUMBER) {
+                recentColors.add(existing)
+            }
+        }
+        activity.config.colorPickerRecentColors = recentColors
     }
 }
