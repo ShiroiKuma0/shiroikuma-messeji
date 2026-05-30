@@ -4,6 +4,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="AppCompatResource,AlwaysShowAction">
     <item
+        android:id="@+id/settings_button"
+        android:title="@string/theme_section_settings_button"
+        android:showAsAction="always"
+        app:actionLayout="@layout/toolbar_settings_button"
+        app:showAsAction="always" />
+    <item
         android:id="@+id/more"
         android:icon="@drawable/ic_overflow_vertical_vector"
         android:showAsAction="always"
