@@ -34,7 +34,7 @@ import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.copyToClipboard
-import org.fossify.commons.extensions.formatDateOrTime
+import org.fossify.messages.extensions.formatMessageDateOrTime
 import org.fossify.commons.extensions.getContrastColor
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getTextSize
@@ -594,7 +594,7 @@ class ThreadAdapter(
     private fun setupDateTime(view: View, dateTime: ThreadDateTime) {
         ItemThreadDateTimeBinding.bind(view).apply {
             threadDateTime.apply {
-                text = (dateTime.date * 1000L).formatDateOrTime(
+                text = (dateTime.date * 1000L).formatMessageDateOrTime(
                     context = context,
                     hideTimeOnOtherDays = false,
                     showCurrentYear = false
