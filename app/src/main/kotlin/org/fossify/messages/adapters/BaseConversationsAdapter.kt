@@ -18,13 +18,13 @@ import org.fossify.commons.extensions.formatDateOrTime
 import org.fossify.commons.extensions.getContrastColor
 import org.fossify.commons.extensions.getTextSize
 import org.fossify.commons.extensions.setupViewBackground
-import org.fossify.commons.helpers.FontHelper
 import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.views.MyRecyclerView
 import org.fossify.messages.activities.SimpleActivity
 import org.fossify.messages.databinding.ItemConversationBinding
 import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.applyThemeFont
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.getAllDrafts
 import org.fossify.messages.extensions.loadContactPhotoOrUnknown
@@ -68,6 +68,12 @@ abstract class BaseConversationsAdapter(
     @SuppressLint("NotifyDataSetChanged")
     fun updateFontSize() {
         fontSize = activity.getTextSize()
+        notifyDataSetChanged()
+    }
+
+    // Re-bind every row so per-element theme/font changes from Settings take effect immediately.
+    @SuppressLint("NotifyDataSetChanged")
+    fun refreshTheme() {
         notifyDataSetChanged()
     }
 
@@ -149,6 +155,7 @@ abstract class BaseConversationsAdapter(
             val smsDraft = drafts[conversation.threadId]
             draftIndicator.beVisibleIf(!smsDraft.isNullOrEmpty())
             draftIndicator.setTextColor(activity.themeColor(ThemeSlot.CONVERSATION_DRAFT))
+            draftIndicator.applyThemeFont(ThemeSlot.CONVERSATION_DRAFT)
 
             pinIndicator.beVisibleIf(
                 activity.config.pinnedConversations.contains(conversation.threadId.toString())
@@ -185,10 +192,9 @@ abstract class BaseConversationsAdapter(
                 conversationBodyShort.alpha = 0.7f
                 if (conversation.isScheduled) Typeface.ITALIC else Typeface.NORMAL
             }
-            val customTypeface = FontHelper.getTypeface(activity)
-            conversationAddress.setTypeface(customTypeface, style)
-            conversationBodyShort.setTypeface(customTypeface, style)
-            conversationDate.setTypeface(customTypeface, style)
+            conversationAddress.applyThemeFont(ThemeSlot.CONVERSATION_NAME, style)
+            conversationBodyShort.applyThemeFont(ThemeSlot.CONVERSATION_SNIPPET, style)
+            conversationDate.applyThemeFont(ThemeSlot.CONVERSATION_DATE, style)
 
             conversationAddress.setTextColor(activity.themeColor(ThemeSlot.CONVERSATION_NAME))
             conversationBodyShort.setTextColor(activity.themeColor(ThemeSlot.CONVERSATION_SNIPPET))

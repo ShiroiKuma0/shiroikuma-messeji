@@ -11,6 +11,24 @@
     <string name="theme_group_thread_received">Received messages</string>
     <string name="theme_group_thread_sent">Sent messages</string>
     <string name="theme_group_thread_meta">Status &amp; time</string>
+    <!-- Per-element fonts -->
+    <string name="theme_font">Font</string>
+    <string name="theme_weight">Weight</string>
+    <string name="theme_size">Size</string>
+    <string name="theme_size_default">Default</string>
+    <string name="theme_add_font">Add font…</string>
+    <string name="font_system_default">System default</string>
+    <string name="font_monospace">Monospace</string>
+    <string name="font_invalid">Please pick a .ttf or .otf font file</string>
+    <string name="font_sample_text">AaIiMmOoQqWw 012 白い熊相撲道 áÁčČďĎéÉěĚíÍňŇóÓřŘšŠťŤúÚůŮýÝžŽ</string>
+    <string name="font_weight_default">Default</string>
+    <string name="font_weight_thin">Thin (100)</string>
+    <string name="font_weight_light">Light (300)</string>
+    <string name="font_weight_regular">Regular (400)</string>
+    <string name="font_weight_medium">Medium (500)</string>
+    <string name="font_weight_semibold">SemiBold (600)</string>
+    <string name="font_weight_bold">Bold (700)</string>
+    <string name="font_weight_black">Black (900)</string>
     <string name="theme_background">Background</string>
     <string name="theme_primary">Primary / accent</string>
     <string name="theme_text">Text</string>
