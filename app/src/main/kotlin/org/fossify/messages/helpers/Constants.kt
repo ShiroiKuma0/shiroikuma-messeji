@@ -49,6 +49,7 @@ const val CUSTOM_NOTIFICATIONS = "custom_notifications"
 const val IS_LAUNCHED_FROM_SHORTCUT = "is_launched_from_shortcut"
 const val KEEP_CONVERSATIONS_ARCHIVED = "keep_conversations_archived"
 const val THEME_V1_SEEDED = "theme_v1_seeded"
+const val PURE_YELLOW_MIGRATED = "pure_yellow_migrated"
 
 // Date & time display formats (白い熊 メッセージ UI page)
 const val MESSAGE_TIME_FORMAT = "message_time_format" // Int, ordinal into MessageTimeFormat; 0 = Japanese kanji
@@ -57,7 +58,8 @@ const val USE_IMPERIAL_DATE = "use_imperial_date"     // Boolean, true = 和暦 
 // Granular theming
 const val THEME_UNSET = Int.MIN_VALUE // a slot with this stored value follows its inherited default
 const val PALETTE_BLACK = 0xFF000000.toInt()
-const val PALETTE_YELLOW = 0xFFFFEB3B.toInt()
+const val PALETTE_YELLOW = 0xFFFFFF00.toInt()
+const val PALETTE_YELLOW_LEGACY = 0xFFFFEB3B.toInt() // old material yellow, migrated once to PALETTE_YELLOW
 
 // Per-element fonts: one entry per text slot, keyed by the slot key.
 const val FONT_FAMILY_PREFIX = "font_family_" // String, "" = system/global default

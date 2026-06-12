@@ -31,6 +31,7 @@ customizations on top of upstream and rebuild as upstream releases new versions.
 | Code namespace | `org.fossify.messages` (unchanged from upstream) | `gradle.properties` → `APP_NAMESPACE` |
 | App launcher label | `白い熊 メッセージ` | `app_launcher_name` in `values/strings.xml` + `values-ja/strings.xml` |
 | Signing | per-app keystore | `keystore.properties` (gitignored) → `~/.android-keystores/shiroikuma-messages.jks` |
+| UI default palette | black `#000000` + **pure yellow `#FFFF00`** (never material `#FFEB3B`) | `PALETTE_BLACK` / `PALETTE_YELLOW` in `helpers/Constants.kt` |
 
 The app ID is deliberately changed so this fork installs **alongside** upstream / other apps without
 conflict. The namespace is intentionally kept as `org.fossify.messages` so `R`/`BuildConfig` and all
