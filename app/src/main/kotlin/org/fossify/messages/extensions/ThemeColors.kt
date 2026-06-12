@@ -10,6 +10,7 @@ import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.messages.R
 import org.fossify.messages.helpers.PALETTE_BLACK
 import org.fossify.messages.helpers.PALETTE_YELLOW
+import org.fossify.messages.helpers.PALETTE_YELLOW_LEGACY
 import org.fossify.messages.helpers.THEME_UNSET
 
 private const val SECONDARY_TEXT_ALPHA = 0.6f
@@ -213,4 +214,30 @@ fun Context.seedBlackYellowThemeIfNeeded() {
     config.primaryColor = PALETTE_YELLOW
     config.accentColor = PALETTE_YELLOW
     config.themeV1Seeded = true
+}
+
+/** [PALETTE_YELLOW] with [color]'s alpha if its RGB is the legacy material yellow, else null. */
+private fun toPureYellowOrNull(color: Int): Int? = if (color and 0xFFFFFF == PALETTE_YELLOW_LEGACY and 0xFFFFFF) {
+    (color and 0xFF000000.toInt()) or (PALETTE_YELLOW and 0xFFFFFF)
+} else {
+    null
+}
+
+/** One-time rewrite of every persisted legacy material yellow to the pure [PALETTE_YELLOW]. */
+fun Context.migratePureYellowIfNeeded() {
+    if (config.pureYellowMigrated) {
+        return
+    }
+
+    toPureYellowOrNull(config.backgroundColor)?.let { config.backgroundColor = it }
+    toPureYellowOrNull(config.textColor)?.let { config.textColor = it }
+    toPureYellowOrNull(config.primaryColor)?.let { config.primaryColor = it }
+    toPureYellowOrNull(config.accentColor)?.let { config.accentColor = it }
+    ThemeSlot.entries.forEach { slot ->
+        val override = config.getThemeOverride(slot.key)
+        if (override != THEME_UNSET) {
+            toPureYellowOrNull(override)?.let { config.setThemeOverride(slot.key, it) }
+        }
+    }
+    config.pureYellowMigrated = true
 }

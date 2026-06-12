@@ -9,6 +9,7 @@ import org.fossify.commons.FossifyApp
 import org.fossify.commons.extensions.hasPermission
 import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
 import org.fossify.commons.helpers.ensureBackgroundThread
+import org.fossify.messages.extensions.migratePureYellowIfNeeded
 import org.fossify.messages.extensions.rescheduleAllScheduledMessages
 import org.fossify.messages.extensions.seedBlackYellowThemeIfNeeded
 import org.fossify.messages.helpers.MessagingCache
@@ -20,6 +21,8 @@ class App : FossifyApp() {
         super.onCreate()
         // Apply the default black/yellow look once, before any activity themes itself.
         seedBlackYellowThemeIfNeeded()
+        // Rewrite any persisted legacy material yellow to the pure yellow palette, once.
+        migratePureYellowIfNeeded()
         if (hasPermission(PERMISSION_READ_CONTACTS)) {
             listOf(
                 ContactsContract.Contacts.CONTENT_URI,
