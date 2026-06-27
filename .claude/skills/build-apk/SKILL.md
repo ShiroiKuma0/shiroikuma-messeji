@@ -1,6 +1,6 @@
 ---
 name: build-apk
-description: Build the signed foss release APK with the buildFoss Gradle task, then always ask whether to scp it to skhw (first choice) or adb push it to the connected phone. Use whenever the user asks to build the app, build the APK, make a release build, or build and send to the phone.
+description: Build the signed foss release APK with the buildFoss Gradle task, then deliver it automatically via the global /after-build skill (adb push if a phone is connected, else scp to skhw — no transfer prompt). Use whenever the user asks to build the app, build the APK, make a release build, or build and send to the phone.
 ---
 
 # Build the foss release APK and optionally send to phone
@@ -18,22 +18,13 @@ description: Build the signed foss release APK with the buildFoss Gradle task, t
    - This runs `assembleFossRelease`, copies the signed APK to `~/tmp/<apk name>`, and auto-increments `BUILD_NUMBER` in `gradle.properties`.
    - The task prints `>>> <path>` and `>>> versionCode <n>`; use those to confirm the exact filename and code, and confirm `BUILD SUCCESSFUL`.
 
-3. **Always ask** (via AskUserQuestion) how to transfer the APK to the phone — every build, no assuming. Options, in this order: "Scp to skhw" (FIRST choice) / "adb push" / "No, just build".
+3. **Deliver automatically via the global /after-build skill** — every build, no asking. After the signed APK is in `~/tmp/`, invoke **/after-build**: it runs `/adb-check` UNSANDBOXED (a sandboxed check falsely reports no device), then `/adb-push` to `/sdcard/tmp/` if a phone is connected, otherwise `/scp` to `skhw:~/tmp/`, and announces the filename. Never `adb install` — the user installs manually from `/sdcard/tmp/`.
 
-4. **Transfer per the answer:**
-   - **Scp to skhw** — invoke the global **scp** skill (copies the newest APK in `~/tmp/` to `skhw:~/tmp/`). If skhw is unreachable (its tunnel is served by the phone's sshd and may be down), report that and offer the adb push instead.
-   - **adb push:**
-     - `adb devices` — confirm a device is connected.
-     - `adb shell mkdir -p /sdcard/tmp`
-     - `adb push ~/tmp/<apk name> /sdcard/tmp/<apk name>`
-     - Verify: `adb shell ls -l /sdcard/tmp/<apk name>` (size should match the local file in `~/tmp`).
-     - Never `adb install` — the user installs manually from `/sdcard/tmp/`.
-
-## Note — transfer directly, do not rely on a task prompt
+## Note — deliver directly, do not rely on a task prompt
 
 Unlike some sibling forks, this repo's `buildFoss` task (`app/build.gradle.kts`) intentionally has **no**
 interactive `read` / adb-push prompt — it only builds, copies to `~/tmp`, and bumps `BUILD_NUMBER`.
-Asking the user and running the `scp` / `adb push` is Claude's job (steps 3–4), done conversationally.
+Delivering the APK via **/after-build** is Claude's job (step 3), done automatically after the build.
 
 ## Signing
 
