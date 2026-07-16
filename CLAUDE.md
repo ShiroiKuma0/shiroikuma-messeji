@@ -154,7 +154,7 @@ colors") whenever the installed app id is not `org.fossify.*` — always the cas
 - **Source:** the `shiroikuma-commons` fork (`~/git/shiroikuma-commons`, branch `custom`), which strips
   Commons' anti-tamper "fake version" / sideloading checks out entirely **and** carries fork-package
   fixes for spots where Commons hard-codes `org.fossify.*` (documented in that repo's CLAUDE.md).
-- **Delivery:** published to the local Maven repo, consumed as `commons = "6.1.6-sk2"` in
+- **Delivery:** published to the local Maven repo, consumed as `commons = "6.1.6-sk6"` in
   `gradle/libs.versions.toml` (`mavenLocal()` is already a repository in `settings.gradle.kts`).
 - Because Commons itself no longer nags, this app carries **no** in-app workaround — no `getPackageName`
   spoof, no `SIDELOADING_FALSE`, no `res/raw/keep.xml`.
@@ -171,7 +171,7 @@ git checkout <new-commons-tag>     # then re-apply all patches (anti-tamper stri
 JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :commons:publishToMavenLocal -PVERSION=<ver>-skN
 ```
 
-Then set this app's `commons` pin to the same `<ver>-skN` (currently `6.1.6-sk2`; `-skN` is our patch
+Then set this app's `commons` pin to the same `<ver>-skN` (currently `6.1.6-sk6`; `-skN` is our patch
 revision — see the commons fork's CLAUDE.md). The patched AAR lives only in `~/.m2`, not in the repo.
 
 ## Commit convention — no Claude attribution
