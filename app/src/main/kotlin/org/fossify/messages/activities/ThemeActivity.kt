@@ -1,5 +1,6 @@
 package org.fossify.messages.activities
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.ImageView
@@ -8,6 +9,7 @@ import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import org.fossify.commons.dialogs.RadioGroupDialog
+import org.fossify.commons.extensions.beGoneIf
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.toast
@@ -22,7 +24,9 @@ import org.fossify.messages.databinding.ItemThemeSubgroupBinding
 import org.fossify.messages.databinding.ItemThemeSwitchBinding
 import org.fossify.messages.databinding.ItemThemeTextBinding
 import org.fossify.messages.databinding.ItemThemeValueBinding
+import org.fossify.messages.BuildConfig
 import org.fossify.messages.dialogs.AlphaColorPickerDialog
+import org.fossify.messages.dialogs.ExportImportDialog
 import org.fossify.messages.dialogs.FontPickerDialog
 import org.fossify.messages.extensions.FontWeightOption
 import org.fossify.messages.extensions.MessageTimeFormat
@@ -37,10 +41,14 @@ import org.fossify.messages.extensions.resetThemeColor
 import org.fossify.messages.extensions.setThemeColor
 import org.fossify.messages.extensions.showFontSample
 import org.fossify.messages.extensions.themeColor
+import org.fossify.messages.helpers.EXIM_WARN_COLOR
 import org.fossify.messages.helpers.MAX_FONT_SIZE_SP
+import org.fossify.messages.helpers.SettingsEximport
 
-// Multiplier on activity_margin for one level of category/subcategory indentation.
-private const val INDENT_STEP_MULTIPLIER = 3
+// kxkb indent ladder: section headings at 36dp (in XML), their rows one step in at 72dp,
+// sub-headings at 54dp (in XML), their rows at 90dp — so rows sit at (base + level * step).
+private const val ROW_INDENT_BASE_DP = 54
+private const val ROW_INDENT_STEP_DP = 18
 
 @Suppress("TooManyFunctions")
 class ThemeActivity : SimpleActivity() {
@@ -52,6 +60,35 @@ class ThemeActivity : SimpleActivity() {
 
     private val fontImportLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         onFontImported(uri)
+    }
+
+    // Export/Import panel plumbing: the SAF pickers live on the activity, the panel drives them.
+    private var eximDialog: ExportImportDialog? = null
+
+    private val eximDirPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            runCatching {
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            }
+            SettingsEximport.setDirUri(this, uri)
+            eximDialog?.refreshStatus()
+        }
+    }
+
+    private val eximSaveAsLauncher =
+        registerForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+            if (uri != null) {
+                eximDialog?.exportToUri(uri)
+            }
+        }
+
+    private val eximImportLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            eximDialog?.importFrom(uri)
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,6 +111,7 @@ class ThemeActivity : SimpleActivity() {
 
         val primaryColor = getProperPrimaryColor()
 
+        addEximportSection(primaryColor)
         addFormatSection(primaryColor)
 
         ThemeSection.entries.forEach { section ->
@@ -99,12 +137,41 @@ class ThemeActivity : SimpleActivity() {
         }
     }
 
-    private fun addSectionHeader(label: String, primaryColor: Int) {
+    private fun addSectionHeader(label: String, primaryColor: Int, isFirst: Boolean = false) {
         val item = ItemThemeSectionBinding.inflate(layoutInflater, binding.themeHolder, false)
         item.themeSectionLabel.text = label
         item.themeSectionLabel.setTextColor(primaryColor)
         item.themeSectionDivider.setBackgroundColor(primaryColor)
+        // the 1px hairline separates this section from the previous one; the first section has none
+        item.themeSectionSeparator.setBackgroundColor(primaryColor)
+        item.themeSectionSeparator.beGoneIf(isFirst)
         binding.themeHolder.addView(item.root)
+    }
+
+    // Export/Import of every settable item, the first section of the page. The row beneath the
+    // heading shows the newest export in the configured directory (queried on page open) and
+    // opens the category panel.
+    private fun addEximportSection(primaryColor: Int) {
+        addSectionHeader(getString(R.string.eim_section), primaryColor, isFirst = true)
+        val (status, isWarning) = SettingsEximport.lastExportStatus(this)
+        addValueRow(
+            labelRes = R.string.eim_row_label,
+            value = status,
+            valueColor = if (isWarning) EXIM_WARN_COLOR else null,
+        ) { openExportImport() }
+    }
+
+    private fun openExportImport() {
+        eximDialog = ExportImportDialog(
+            activity = this,
+            versionName = BuildConfig.VERSION_NAME,
+            onPickDirectory = { eximDirPicker.launch(SettingsEximport.getDirUri(this)) },
+            onSaveAs = { suggestedName -> eximSaveAsLauncher.launch(suggestedName) },
+            onPickImportFile = {
+                eximImportLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
+            },
+            onChainClosed = { finish() },
+        )
     }
 
     // Date & time display formats, shown above the colour sections. Time-of-day (today's messages)
@@ -124,11 +191,16 @@ class ThemeActivity : SimpleActivity() {
         addSwitchRow(R.string.use_imperial_date, config.useImperialDate) { config.useImperialDate = it }
     }
 
-    private fun addValueRow(@StringRes labelRes: Int, value: String, onClick: (TextView) -> Unit) {
+    private fun addValueRow(
+        @StringRes labelRes: Int,
+        value: String,
+        valueColor: Int? = null,
+        onClick: (TextView) -> Unit,
+    ) {
         val row = ItemThemeValueBinding.inflate(layoutInflater, binding.themeHolder, false)
         row.themeValueLabel.text = getString(labelRes)
         row.themeValueLabel.setTextColor(getProperTextColor())
-        row.themeValue.setTextColor(getProperTextColor())
+        row.themeValue.setTextColor(valueColor ?: getProperTextColor())
         row.themeValue.text = value
         row.root.setOnClickListener { onClick(row.themeValue) }
         indentRow(row.root, level = 1)
@@ -153,7 +225,6 @@ class ThemeActivity : SimpleActivity() {
         item.themeSubgroupLabel.text = label
         item.themeSubgroupLabel.setTextColor(primaryColor)
         item.themeSubgroupUnderline.setBackgroundColor(primaryColor)
-        indentRow(item.root, level = 1)
         binding.themeHolder.addView(item.root)
     }
 
@@ -205,15 +276,15 @@ class ThemeActivity : SimpleActivity() {
         binding.themeHolder.addView(b.root)
     }
 
-    private fun indentStepPx() =
-        resources.getDimensionPixelSize(org.fossify.commons.R.dimen.activity_margin) * INDENT_STEP_MULTIPLIER
+    private fun indentStepPx() = (ROW_INDENT_STEP_DP * resources.displayMetrics.density).toInt()
 
-    // Place a row's content at an absolute (baseInset + level*step) so every level nests in equal,
-    // prominent steps regardless of the item's own base padding. contentHasInset = true for the text
-    // block whose inner header already carries the base label inset.
+    // Place a row's content on the kxkb ladder (base + level*step: 72dp under a section, 90dp under
+    // a subgroup). contentHasInset = true for the text block whose inner header already carries the
+    // base label inset.
     private fun indentRow(view: android.view.View, level: Int, contentHasInset: Boolean = false) {
         val baseInset = resources.getDimensionPixelSize(org.fossify.commons.R.dimen.settings_label_start_margin)
-        val start = level * indentStepPx() + (if (contentHasInset) 0 else baseInset)
+        val base = (ROW_INDENT_BASE_DP * resources.displayMetrics.density).toInt()
+        val start = base + level * indentStepPx() - (if (contentHasInset) baseInset else 0)
         view.setPaddingRelative(start, view.paddingTop, view.paddingEnd, view.paddingBottom)
     }
 

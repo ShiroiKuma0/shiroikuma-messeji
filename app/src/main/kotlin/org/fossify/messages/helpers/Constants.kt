@@ -55,6 +55,9 @@ const val PURE_YELLOW_MIGRATED = "pure_yellow_migrated"
 const val MESSAGE_TIME_FORMAT = "message_time_format" // Int, ordinal into MessageTimeFormat; 0 = Japanese kanji
 const val USE_IMPERIAL_DATE = "use_imperial_date"     // Boolean, true = 和暦 (令和…（土曜日）) for earlier dates
 
+// Export/Import: warning red for "no directory / no export yet" states
+const val EXIM_WARN_COLOR = 0xFFFF5252.toInt()
+
 // Granular theming
 const val THEME_UNSET = Int.MIN_VALUE // a slot with this stored value follows its inherited default
 const val PALETTE_BLACK = 0xFF000000.toInt()

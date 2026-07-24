@@ -2,6 +2,35 @@
 <resources>
     <string name="app_launcher_name">白い熊 メッセージ</string>
     <string name="shiroikuma_ui_category">白い熊 メッセージ UI</string>
+    <!-- 白い熊 メッセージ UI page: Export / Import -->
+    <string name="eim_section">Export / Import</string>
+    <string name="eim_row_label">Export or import every setting by category</string>
+    <string name="eim_title">Export / Import</string>
+    <string name="eim_desc">Export or import everything — messages, colours, fonts, formats, settings — by category.</string>
+    <string name="eim_dir">Export directory</string>
+    <string name="eim_dir_unset">No directory set yet — tap to pick one.</string>
+    <string name="eim_warn_nodir">No directory set yet.</string>
+    <string name="eim_warn_none">No export in this directory yet.</string>
+    <string name="eim_last">Last export: %1$s</string>
+    <string name="eim_select_all">Select all</string>
+    <string name="eim_cat_messages">Messages (SMS · MMS)</string>
+    <string name="eim_cat_theme">Theme &amp; colours</string>
+    <string name="eim_cat_fonts">Fonts (per-element · imported files)</string>
+    <string name="eim_cat_formats">Date &amp; time formats</string>
+    <string name="eim_cat_app_settings">App settings</string>
+    <string name="eim_cat_conversations">Conversations (pinned · notifications · SIM)</string>
+    <string name="eim_cat_blocked">Blocked keywords</string>
+    <string name="eim_export">Export</string>
+    <string name="eim_import">Import</string>
+    <string name="eim_none_selected">No categories selected.</string>
+    <string name="eim_export_ok">Exported: %1$s</string>
+    <string name="eim_export_fail">Export failed: %1$s</string>
+    <string name="eim_import_fail">Import failed: %1$s</string>
+    <string name="eim_import_none">No 白い熊 メッセージ export found in that file.</string>
+    <string name="eim_import_done_title">✓ Import finished</string>
+    <string name="eim_import_done_body">Restored:\n\n%1$s\n\nRestart to apply everything.</string>
+    <string name="eim_restart_now">Restart now</string>
+    <string name="eim_restart_later">Later</string>
     <!-- 白い熊 メッセージ UI page: top-level sections -->
     <string name="theme_section_foundation">Foundation</string>
     <string name="theme_section_conversations">Conversation list</string>

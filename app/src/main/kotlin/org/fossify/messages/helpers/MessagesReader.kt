@@ -3,6 +3,7 @@ package org.fossify.messages.helpers
 import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
+import android.provider.BaseColumns
 import android.provider.Telephony.Mms
 import android.provider.Telephony.Sms
 import android.util.Base64
@@ -25,22 +26,59 @@ import java.io.InputStream
 class MessagesReader(private val context: Context) {
 
     fun getMessagesToExport(
-        getSms: Boolean, getMms: Boolean, callback: (messages: List<MessagesBackup>) -> Unit
+        getSms: Boolean,
+        getMms: Boolean,
+        onProgress: (done: Int, total: Int) -> Unit = { _, _ -> },
+        callback: (messages: List<MessagesBackup>) -> Unit,
     ) {
         val conversationIds = context.getConversationIds()
         var smsMessages = listOf<SmsBackup>()
         var mmsMessages = listOf<MmsBackup>()
 
+        // report the growing total while counting, so the caller's progress moves immediately
+        val total = countMessages(getSms, getMms, conversationIds) { counted ->
+            onProgress(0, counted)
+        }
+        var done = 0
+        val step = {
+            done++
+            onProgress(done, total)
+        }
+
         if (getSms) {
-            smsMessages = getSmsMessages(conversationIds)
+            smsMessages = getSmsMessages(conversationIds, onEach = step)
         }
         if (getMms) {
-            mmsMessages = getMmsMessages(conversationIds)
+            mmsMessages = getMmsMessages(conversationIds, onEach = step)
         }
         callback(smsMessages + mmsMessages)
     }
 
-    private fun getSmsMessages(threadIds: List<Long>): List<SmsBackup> {
+    private fun countMessages(
+        getSms: Boolean,
+        getMms: Boolean,
+        threadIds: List<Long>,
+        onCount: (countedSoFar: Int) -> Unit = {},
+    ): Int {
+        var total = 0
+        threadIds.map { it.toString() }.forEach { threadId ->
+            if (getSms) {
+                total += countRows(Sms.CONTENT_URI, Sms.THREAD_ID, threadId)
+            }
+            if (getMms) {
+                total += countRows(Mms.CONTENT_URI, Mms.THREAD_ID, threadId)
+            }
+            onCount(total)
+        }
+        return total
+    }
+
+    private fun countRows(uri: Uri, threadIdColumn: String, threadId: String): Int =
+        context.contentResolver.query(
+            uri, arrayOf(BaseColumns._ID), "$threadIdColumn = ?", arrayOf(threadId), null
+        )?.use { it.count } ?: 0
+
+    private fun getSmsMessages(threadIds: List<Long>, onEach: () -> Unit = {}): List<SmsBackup> {
         val projection = arrayOf(
             Sms.SUBSCRIPTION_ID,
             Sms.ADDRESS,
@@ -91,6 +129,7 @@ class MessagesReader(private val context: Context) {
                         serviceCenter = serviceCenter
                     )
                 )
+                onEach()
             }
         }
         return smsList
@@ -98,7 +137,8 @@ class MessagesReader(private val context: Context) {
 
     private fun getMmsMessages(
         threadIds: List<Long>,
-        includeTextOnlyAttachment: Boolean = false
+        includeTextOnlyAttachment: Boolean = false,
+        onEach: () -> Unit = {},
     ): List<MmsBackup> {
         val projection = arrayOf(
             Mms._ID,
@@ -178,6 +218,7 @@ class MessagesReader(private val context: Context) {
                         parts = parts
                     )
                 )
+                onEach()
             }
         }
         return mmsList
