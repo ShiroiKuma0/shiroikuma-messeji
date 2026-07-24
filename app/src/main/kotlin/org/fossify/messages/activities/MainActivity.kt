@@ -200,6 +200,14 @@ class MainActivity : SimpleActivity() {
                 false
             }
         }
+
+        // Long-pressing the overflow icon jumps straight to the 白い熊 メッセージ UI page.
+        binding.mainMenu.requireToolbar().post {
+            binding.mainMenu.requireToolbar().findViewById<View>(R.id.more)?.setOnLongClickListener {
+                launchUiPage()
+                true
+            }
+        }
     }
 
     // A custom, fully themed replacement for the system overflow popup (its background can't be set
