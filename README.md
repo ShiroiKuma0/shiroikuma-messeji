@@ -6,11 +6,11 @@
 
 **A black-and-pure-yellow SMS/MMS app with per-element theming, per-element fonts, and Sino-Japanese time & imperial-era dates.**
 
-A fork of [Fossify Messages](https://github.com/FossifyOrg/Messages) with **major additions**: a granular per-element Theme & Colors system (black `#000000` / pure yellow `#FFFF00` by default), per-element font family/weight/size, an alpha-capable color picker, Japanese kanji clock readings and 令和 imperial-era dates, a 設定 toolbar launcher, and a fully black/yellow chrome — menus, action bar, dialogs, and toasts included.
+A fork of [Fossify Messages](https://github.com/FossifyOrg/Messages) with **major additions**: a granular per-element Theme & Colors system (black `#000000` / pure yellow `#FFFF00` by default), per-element font family/weight/size, full category export/import (messages included), an alpha-capable color picker, Japanese kanji clock readings and 令和 imperial-era dates, a 設定 toolbar launcher, and a fully black/yellow chrome — menus, action bar, dialogs, and toasts included.
 
 Installs **side-by-side** with Fossify Messages (app id `shiroikuma.messeji`).
 
-**📥 Latest release: [`1.9.0+1`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
+**📥 Latest release: [`1.9.1+5`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
 
 </div>
 
@@ -28,6 +28,12 @@ Every themed text element can also pick its own **font family, weight, and size*
 
 ---
 
+## 📦 Full export/import — messages included
+
+The UI page opens with an **Export / Import** section: pick an export directory once and the page shows your newest export at a glance. The panel exports **everything, by category** — the messages themselves (SMS · MMS, stock-backup-compatible JSON), theme & colours, fonts (including your imported font files), date & time formats, app settings, conversations, and blocked keywords — into a single ZIP, with a live done/total counter while thousands of messages stream through. Import merges back selectively and offers a one-tap restart.
+
+---
+
 ## 🕐 Japanese time & imperial-era dates
 
 Today’s messages show a Sino-Japanese clock reading (午前八時); older ones an imperial-era date (令和八年五月十四日（木曜日）) — in the conversation list, in-thread date separators, and search results. Both are configurable under 日時の表示形式: kanji / system / 24-hour / 12-hour time, and an imperial-dates toggle.
@@ -36,7 +42,7 @@ Today’s messages show a Sino-Japanese clock reading (午前八時); older ones
 
 ## 設定 One-tap settings from the toolbar
 
-A tightly-set 設定 pair lives in the main toolbar: tap 設 to open the 白い熊 メッセージ UI page, 定 for the regular Settings screen. Each glyph is its own themeable text element.
+A tightly-set 設定 pair lives in the main toolbar: tap 設 to open the 白い熊 メッセージ UI page, 定 for the regular Settings screen. Each glyph is its own themeable text element. Long-pressing the ⋮ overflow icon jumps straight to the UI page too.
 
 ---
 
