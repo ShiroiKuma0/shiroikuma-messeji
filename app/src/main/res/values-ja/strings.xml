@@ -86,6 +86,35 @@
     <string name="message_details_sender">送信者</string>
     <string name="app_launcher_name">白い熊 メッセージ</string>
     <string name="shiroikuma_ui_category">白い熊 メッセージ UI</string>
+    <!-- 白い熊 メッセージ UI page: Export / Import -->
+    <string name="eim_section">書き出し／読み込み</string>
+    <string name="eim_row_label">全設定をカテゴリー別に書き出し・読み込み</string>
+    <string name="eim_title">書き出し／読み込み</string>
+    <string name="eim_desc">すべて — メッセージ・色・フォント・表示形式・設定 — をカテゴリー別に書き出し・読み込みします。</string>
+    <string name="eim_dir">書き出し先ディレクトリ</string>
+    <string name="eim_dir_unset">未設定 — タップして選択してください。</string>
+    <string name="eim_warn_nodir">ディレクトリが未設定です。</string>
+    <string name="eim_warn_none">このディレクトリにはまだ書き出しがありません。</string>
+    <string name="eim_last">最終書き出し：%1$s</string>
+    <string name="eim_select_all">すべて選択</string>
+    <string name="eim_cat_messages">メッセージ（SMS・MMS）</string>
+    <string name="eim_cat_theme">テーマと色</string>
+    <string name="eim_cat_fonts">フォント（要素別・取り込みファイル）</string>
+    <string name="eim_cat_formats">日時の表示形式</string>
+    <string name="eim_cat_app_settings">アプリ設定</string>
+    <string name="eim_cat_conversations">会話（ピン留め・通知・SIM）</string>
+    <string name="eim_cat_blocked">ブロックキーワード</string>
+    <string name="eim_export">書き出し</string>
+    <string name="eim_import">読み込み</string>
+    <string name="eim_none_selected">カテゴリーが選択されていません。</string>
+    <string name="eim_export_ok">書き出しました：%1$s</string>
+    <string name="eim_export_fail">書き出しに失敗しました：%1$s</string>
+    <string name="eim_import_fail">読み込みに失敗しました：%1$s</string>
+    <string name="eim_import_none">そのファイルに白い熊 メッセージの書き出しが見つかりません。</string>
+    <string name="eim_import_done_title">✓ 読み込み完了</string>
+    <string name="eim_import_done_body">復元済み：\n\n%1$s\n\nすべて適用するには再起動してください。</string>
+    <string name="eim_restart_now">今すぐ再起動</string>
+    <string name="eim_restart_later">後で</string>
     <!-- 白い熊 メッセージ UI page: top-level sections -->
     <string name="theme_section_foundation">基本</string>
     <string name="theme_section_conversations">会話一覧</string>
