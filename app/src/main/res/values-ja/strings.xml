@@ -115,6 +115,27 @@
     <string name="eim_import_done_body">復元済み：\n\n%1$s\n\nすべて適用するには再起動してください。</string>
     <string name="eim_restart_now">今すぐ再起動</string>
     <string name="eim_restart_later">後で</string>
+    <!-- 進捗表示に使う区分名（「区分 3/7 — 設定」） -->
+    <string name="eim_cat_messages_short">メッセージ</string>
+    <string name="eim_cat_theme_short">テーマ</string>
+    <string name="eim_cat_fonts_short">フォント</string>
+    <string name="eim_cat_formats_short">表示形式</string>
+    <string name="eim_cat_app_settings_short">設定</string>
+    <string name="eim_cat_conversations_short">会話</string>
+    <string name="eim_cat_blocked_short">キーワード</string>
+    <string name="state_progress_unit_category">区分</string>
+    <!-- 白い熊 メッセージ UI ページ：自動化（書き出し／読み込みの中） -->
+    <string name="automation">自動化</string>
+    <string name="enable_automation">自動化エクスポート</string>
+    <string name="enable_automation_desc">姉妹アプリのタスクが、トークンで保護されたインテント経由でこのアプリのエクスポートを実行できます。</string>
+    <string name="automation_token">自動化トークン — タップでコピー</string>
+    <string name="automation_token_copied">トークンをクリップボードにコピーしました</string>
+    <string name="automation_token_regenerate">再生成</string>
+    <string name="automation_token_regenerate_warning">新しいトークンを生成しますか？ 白い熊 自由作業盤（や他のタスク）に貼り付け済みのコピーは、新しいトークンを貼り直すまで動作しなくなります。</string>
+    <string name="automation_token_regenerated">トークンを再生成しました</string>
+    <string name="all_files_access">全ファイルアクセス — Download/Documents 以外へのバックアップ用</string>
+    <string name="all_files_access_granted">許可済み</string>
+    <string name="all_files_access_needed">未許可 — タップして許可</string>
     <!-- 白い熊 メッセージ UI page: top-level sections -->
     <string name="theme_section_foundation">基本</string>
     <string name="theme_section_conversations">会話一覧</string>

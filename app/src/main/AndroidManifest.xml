@@ -18,6 +18,11 @@
     <uses-permission android:name="android.permission.CALL_PHONE" />
 
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+
+    <!-- Fork: the token-gated EXPORT_STATE broadcast can target ANY absolute path (e.g. 白い熊's
+         archive folder, outside Download/Documents). On API 30+ that needs All-files access, granted
+         once per device via the UI page → Export / Import → 自動化. -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <uses-permission
         android:name="android.permission.USE_BIOMETRIC"
         tools:node="remove" />
@@ -249,6 +254,19 @@
         <receiver
             android:name=".receivers.ScheduledMessageReceiver"
             android:exported="false" />
+
+        <!-- Fork: the 保存復元 state-export contract for 自由作業盤 — a headless category-ZIP export
+             plus the category list it builds its picker from. No android:permission: the caller cannot
+             hold one, so the automation token is the gate. See receivers/StateExportReceiver. -->
+        <receiver
+            android:name=".receivers.StateExportReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="shiroikuma.messeji.action.EXPORT_STATE" />
+                <action android:name="shiroikuma.messeji.action.LIST_CATEGORIES" />
+            </intent-filter>
+        </receiver>
 
         <receiver
             android:name=".receivers.RescheduleAlarmsReceiver"

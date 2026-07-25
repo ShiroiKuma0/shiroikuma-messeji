@@ -31,6 +31,27 @@
     <string name="eim_import_done_body">Restored:\n\n%1$s\n\nRestart to apply everything.</string>
     <string name="eim_restart_now">Restart now</string>
     <string name="eim_restart_later">Later</string>
+    <!-- Bare category nouns, used in the progress lines ("Categories 3/7 — Settings") -->
+    <string name="eim_cat_messages_short">Messages</string>
+    <string name="eim_cat_theme_short">Theme</string>
+    <string name="eim_cat_fonts_short">Fonts</string>
+    <string name="eim_cat_formats_short">Formats</string>
+    <string name="eim_cat_app_settings_short">Settings</string>
+    <string name="eim_cat_conversations_short">Conversations</string>
+    <string name="eim_cat_blocked_short">Keywords</string>
+    <string name="state_progress_unit_category">Categories</string>
+    <!-- 白い熊 メッセージ UI page: automation (inside Export / Import) -->
+    <string name="automation">Automation</string>
+    <string name="enable_automation">Automation export</string>
+    <string name="enable_automation_desc">Sister-app tasks may trigger this app\'s export through the token-gated intent.</string>
+    <string name="automation_token">Automation token — tap to copy</string>
+    <string name="automation_token_copied">Token copied to the clipboard</string>
+    <string name="automation_token_regenerate">Regenerate</string>
+    <string name="automation_token_regenerate_warning">Generate a new token? Copies already pasted into 白い熊 自由作業盤 — or any other task — stop working until the new token is pasted there.</string>
+    <string name="automation_token_regenerated">Token regenerated</string>
+    <string name="all_files_access">All files access — for backups outside Download/Documents</string>
+    <string name="all_files_access_granted">Granted</string>
+    <string name="all_files_access_needed">Not granted — tap to allow</string>
     <!-- 白い熊 メッセージ UI page: top-level sections -->
     <string name="theme_section_foundation">Foundation</string>
     <string name="theme_section_conversations">Conversation list</string>
