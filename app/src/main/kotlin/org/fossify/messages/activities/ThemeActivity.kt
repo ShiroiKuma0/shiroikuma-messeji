@@ -1,20 +1,32 @@
 package org.fossify.messages.activities
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
+import android.provider.Settings
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.RelativeSizeSpan
 import android.widget.ImageView
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
+import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
+import org.fossify.commons.extensions.adjustAlpha
 import org.fossify.commons.extensions.beGoneIf
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
+import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.extensions.viewBinding
 import org.fossify.commons.helpers.NavigationIcon
+import org.fossify.commons.helpers.isRPlus
 import org.fossify.commons.models.RadioItem
 import org.fossify.messages.R
 import org.fossify.messages.databinding.ActivityThemeBinding
@@ -23,8 +35,8 @@ import org.fossify.messages.databinding.ItemThemeSectionBinding
 import org.fossify.messages.databinding.ItemThemeSubgroupBinding
 import org.fossify.messages.databinding.ItemThemeSwitchBinding
 import org.fossify.messages.databinding.ItemThemeTextBinding
+import org.fossify.messages.databinding.ItemThemeTokenBinding
 import org.fossify.messages.databinding.ItemThemeValueBinding
-import org.fossify.messages.BuildConfig
 import org.fossify.messages.dialogs.AlphaColorPickerDialog
 import org.fossify.messages.dialogs.ExportImportDialog
 import org.fossify.messages.dialogs.FontPickerDialog
@@ -49,6 +61,13 @@ import org.fossify.messages.helpers.SettingsEximport
 // sub-headings at 54dp (in XML), their rows at 90dp — so rows sit at (base + level * step).
 private const val ROW_INDENT_BASE_DP = 54
 private const val ROW_INDENT_STEP_DP = 18
+
+// A row description: 85 % size, 60 % opacity — the same dimmed second line the sister apps use.
+private const val DESCRIPTION_TEXT_SCALE = 0.85f
+private const val DESCRIPTION_ALPHA = 0.6f
+
+// How many hex characters of the automation token stay visible at each end.
+private const val TOKEN_ABBREVIATION_EDGE = 8
 
 @Suppress("TooManyFunctions")
 class ThemeActivity : SimpleActivity() {
@@ -159,12 +178,15 @@ class ThemeActivity : SimpleActivity() {
             value = status,
             valueColor = if (isWarning) EXIM_WARN_COLOR else null,
         ) { openExportImport() }
+
+        // Automation sits directly below the export row it drives — the placement every sister app
+        // shares, so 白い熊 finds it where backup lives.
+        addAutomationSubgroup(primaryColor)
     }
 
     private fun openExportImport() {
         eximDialog = ExportImportDialog(
             activity = this,
-            versionName = BuildConfig.VERSION_NAME,
             onPickDirectory = { eximDirPicker.launch(SettingsEximport.getDirUri(this)) },
             onSaveAs = { suggestedName -> eximSaveAsLauncher.launch(suggestedName) },
             onPickImportFile = {
@@ -172,6 +194,91 @@ class ThemeActivity : SimpleActivity() {
             },
             onChainClosed = { finish() },
         )
+    }
+
+    // ---- Automation: a subgroup of Export / Import, since the automation intent drives that very
+    // export headlessly (see receivers/StateExportReceiver) ----
+
+    private fun addAutomationSubgroup(primaryColor: Int) {
+        addSubgroupHeader(getString(R.string.automation), primaryColor)
+
+        // Two rows, in the order every sister app uses: the master switch (default OFF), then the token.
+        addSwitchRow(
+            labelRes = R.string.enable_automation,
+            checked = config.automationEnabled,
+            indentLevel = 2,
+            description = getString(R.string.enable_automation_desc),
+        ) {
+            config.automationEnabled = it
+        }
+
+        addTokenRow()
+
+        // All-files access: needed so an automation broadcast can write to an arbitrary absolute path
+        // (e.g. 白い熊's archive folder) outside Download/Documents. API 30+ only.
+        if (isRPlus()) {
+            val granted = Environment.isExternalStorageManager()
+            val state = getString(if (granted) R.string.all_files_access_granted else R.string.all_files_access_needed)
+            addValueRow(R.string.all_files_access, state, indentLevel = 2) { openAllFilesAccessSettings() }
+        }
+    }
+
+    /**
+     * The automation-token row: label plus the abbreviated token, tapping anywhere copies the full
+     * token, and a Regenerate action on the right warns before invalidating pasted copies.
+     */
+    private fun addTokenRow() {
+        val row = ItemThemeTokenBinding.inflate(layoutInflater, binding.themeHolder, false)
+        row.themeTokenLabel.text = getString(R.string.automation_token)
+        row.themeTokenLabel.setTextColor(getProperTextColor())
+        row.themeTokenValue.text = abbreviateToken(config.automationToken)
+        row.themeTokenValue.setTextColor(getProperTextColor())
+        row.themeTokenRegenerate.text = getString(R.string.automation_token_regenerate)
+        row.themeTokenRegenerate.setTextColor(getProperPrimaryColor())
+        row.root.setOnClickListener {
+            // Not commons' copyToClipboard: that one toasts the value itself, which would put the
+            // full secret back on screen right after we deliberately abbreviated it.
+            getSystemService(ClipboardManager::class.java)
+                .setPrimaryClip(ClipData.newPlainText(getString(R.string.automation_token), config.automationToken))
+            toast(R.string.automation_token_copied)
+        }
+        row.themeTokenRegenerate.setOnClickListener {
+            ConfirmationDialog(
+                activity = this,
+                message = getString(R.string.automation_token_regenerate_warning),
+                positive = R.string.automation_token_regenerate,
+                negative = org.fossify.commons.R.string.cancel,
+            ) {
+                row.themeTokenValue.text = abbreviateToken(config.regenerateAutomationToken())
+                toast(R.string.automation_token_regenerated)
+            }
+        }
+        indentRow(row.root, level = 2)
+        binding.themeHolder.addView(row.root)
+    }
+
+    private fun abbreviateToken(token: String): String =
+        if (token.length <= TOKEN_ABBREVIATION_EDGE * 2) {
+            token
+        } else {
+            token.take(TOKEN_ABBREVIATION_EDGE) + "…" + token.takeLast(TOKEN_ABBREVIATION_EDGE)
+        }
+
+    // Two OEM-dependent Settings screens, tried in order: the per-app one, then the system-wide list.
+    // The first failure is expected on ROMs that lack the per-app screen, so it is deliberately silent.
+    @Suppress("TooGenericExceptionCaught", "SwallowedException")
+    private fun openAllFilesAccessSettings() {
+        try {
+            startActivity(
+                Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:$packageName"))
+            )
+        } catch (e: Exception) {
+            try {
+                startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+            } catch (e2: Exception) {
+                showErrorToast(e2)
+            }
+        }
     }
 
     // Date & time display formats, shown above the colour sections. Time-of-day (today's messages)
@@ -195,6 +302,7 @@ class ThemeActivity : SimpleActivity() {
         @StringRes labelRes: Int,
         value: String,
         valueColor: Int? = null,
+        indentLevel: Int = 1,
         onClick: (TextView) -> Unit,
     ) {
         val row = ItemThemeValueBinding.inflate(layoutInflater, binding.themeHolder, false)
@@ -203,22 +311,41 @@ class ThemeActivity : SimpleActivity() {
         row.themeValue.setTextColor(valueColor ?: getProperTextColor())
         row.themeValue.text = value
         row.root.setOnClickListener { onClick(row.themeValue) }
-        indentRow(row.root, level = 1)
+        indentRow(row.root, indentLevel)
         binding.themeHolder.addView(row.root)
     }
 
-    private fun addSwitchRow(@StringRes labelRes: Int, checked: Boolean, onToggle: (Boolean) -> Unit) {
+    private fun addSwitchRow(
+        @StringRes labelRes: Int,
+        checked: Boolean,
+        indentLevel: Int = 1,
+        description: String? = null,
+        onToggle: (Boolean) -> Unit,
+    ) {
         val row = ItemThemeSwitchBinding.inflate(layoutInflater, binding.themeHolder, false)
-        row.themeSwitchLabel.text = getString(labelRes)
+        val title = getString(labelRes)
+        row.themeSwitchLabel.text = if (description == null) title else titleWithDescription(title, description)
         row.themeSwitchLabel.setTextColor(getProperTextColor())
         row.themeSwitch.isChecked = checked
         row.root.setOnClickListener {
             row.themeSwitch.toggle()
             onToggle(row.themeSwitch.isChecked)
         }
-        indentRow(row.root, level = 1)
+        indentRow(row.root, indentLevel)
         binding.themeHolder.addView(row.root)
     }
+
+    // A row's explanation, as a smaller dimmed line below its title — the value rows' styling, without
+    // needing a second view in the switch layout.
+    private fun titleWithDescription(title: String, description: String): CharSequence =
+        SpannableStringBuilder(title).apply {
+            append("\n")
+            val start = length
+            append(description)
+            val dimmed = ForegroundColorSpan(getProperTextColor().adjustAlpha(DESCRIPTION_ALPHA))
+            setSpan(RelativeSizeSpan(DESCRIPTION_TEXT_SCALE), start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(dimmed, start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
 
     private fun addSubgroupHeader(label: String, primaryColor: Int) {
         val item = ItemThemeSubgroupBinding.inflate(layoutInflater, binding.themeHolder, false)

@@ -47,7 +47,6 @@ private const val PILL_STROKE_DP = 1.5f
 @Suppress("TooManyFunctions", "MagicNumber") // the magic numbers are self-evident layout dp/sp
 class ExportImportDialog(
     private val activity: Activity,
-    private val versionName: String,
     private val onPickDirectory: () -> Unit,
     private val onSaveAs: (suggestedName: String) -> Unit,
     private val onPickImportFile: () -> Unit,
@@ -241,13 +240,14 @@ class ExportImportDialog(
     }
 
     // Called from the background thread for every message; only every 20th (and the last) posts
-    // to the UI thread so thousands of messages don't flood it.
-    private fun postProgress(labelRes: Int, done: Int, total: Int) {
-        if (done % PROGRESS_STEP != 0 && done != total) {
+    // to the UI thread so thousands of messages don't flood it. [text] is the export core's ready-made
+    // counted line ("メッセージ 1234/8942").
+    private fun postProgress(labelRes: Int, current: Long, total: Long, text: String) {
+        if (current % PROGRESS_STEP != 0L && current != total) {
             return
         }
         activity.runOnUiThread {
-            progressLine?.text = activity.getString(labelRes) + "… $done/$total"
+            progressLine?.text = activity.getString(labelRes) + "… " + text
         }
     }
 
@@ -261,7 +261,7 @@ class ExportImportDialog(
         }
         val dir = SettingsEximport.exportDir(activity)
         if (dir == null) {
-            onSaveAs(SettingsEximport.exportFileName(versionName)) // no folder set → save-as picker
+            onSaveAs(SettingsEximport.exportFileName()) // no folder set → save-as picker
         } else {
             exportToFolder(dir)
         }
@@ -283,12 +283,12 @@ class ExportImportDialog(
         setRunning(R.string.eim_export)
         ensureBackgroundThread {
             val result = runCatching {
-                val name = SettingsEximport.exportFileName(versionName)
+                val name = SettingsEximport.exportFileName()
                 val file = dir.createFile("application/zip", name)
                     ?: error("could not create file in folder")
                 activity.contentResolver.openOutputStream(file.uri)?.use { stream ->
-                    SettingsEximport.export(activity, categories, stream) { done, total ->
-                        postProgress(R.string.eim_export, done, total)
+                    SettingsEximport.export(activity, categories, stream) { current, total, _, text ->
+                        postProgress(R.string.eim_export, current, total, text)
                     }
                 } ?: error("no output stream")
                 name
@@ -303,8 +303,8 @@ class ExportImportDialog(
         ensureBackgroundThread {
             val result = runCatching {
                 activity.contentResolver.openOutputStream(uri)?.use { stream ->
-                    SettingsEximport.export(activity, categories, stream) { done, total ->
-                        postProgress(R.string.eim_export, done, total)
+                    SettingsEximport.export(activity, categories, stream) { current, total, _, text ->
+                        postProgress(R.string.eim_export, current, total, text)
                     }
                 } ?: error("no output stream")
                 DocumentFile.fromSingleUri(activity, uri)?.name ?: uri.lastPathSegment.orEmpty()
@@ -337,8 +337,8 @@ class ExportImportDialog(
                 return@ensureBackgroundThread
             }
             val result = runCatching {
-                SettingsEximport.import(activity, bytes, categories) { done, total ->
-                    postProgress(R.string.eim_import, done, total)
+                SettingsEximport.import(activity, bytes, categories) { current, total, _, text ->
+                    postProgress(R.string.eim_import, current, total, text)
                 }
             }
             activity.runOnUiThread {

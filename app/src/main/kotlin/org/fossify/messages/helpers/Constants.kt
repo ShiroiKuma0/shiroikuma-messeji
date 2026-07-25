@@ -58,6 +58,38 @@ const val USE_IMPERIAL_DATE = "use_imperial_date"     // Boolean, true = 和暦 
 // Export/Import: warning red for "no directory / no export yet" states
 const val EXIM_WARN_COLOR = 0xFFFF5252.toInt()
 
+// The 保存復元 state-export contract, for 白い熊 自由作業盤's one-run backup of every sister app
+// (see receivers/StateExportReceiver). Two exported, token-gated actions: a headless run of the very
+// same category ZIP export the Export/Import page writes, and the category list the caller builds its
+// picker from. The actions are spelled out rather than built from ${applicationId} so they stay the
+// contract's literals in every build variant, matching the manifest's intent filters.
+const val ACTION_EXPORT_STATE = "shiroikuma.messeji.action.EXPORT_STATE"
+const val ACTION_LIST_CATEGORIES = "shiroikuma.messeji.action.LIST_CATEGORIES"
+
+// Request extras (all String): the gate, the optional directory override and category subset, the
+// optional progress channel, and where the one terminal reply goes.
+const val EXTRA_AUTOMATION_TOKEN = "token"
+const val EXTRA_BACKUP_PATH = "path"
+const val EXTRA_EXPORT_ITEMS = "items"
+const val EXTRA_PROGRESS_ACTION = "progress_action"
+const val EXTRA_REPLY_ACTION = "reply_action"
+const val EXTRA_REPLY_PACKAGE = "reply_package"
+const val EXTRA_REPLY_ID = "reply_id"
+const val EXTRA_REPLY_RESULT = "result"
+
+// Progress-broadcast extras: real counts, never a percentage.
+const val EXTRA_PROGRESS_APP = "app"
+const val EXTRA_PROGRESS_TEXT = "text"
+const val EXTRA_PROGRESS_CURRENT = "current"
+const val EXTRA_PROGRESS_TOTAL = "total"
+const val EXTRA_PROGRESS_UNIT = "unit"
+const val PROGRESS_THROTTLE_MS = 500L
+
+// The automation gate: a master switch (default off) plus the shared secret every request must carry.
+// Both are kept out of the export (EXCLUDED_KEYS in SettingsEximport) — the token never travels.
+const val AUTOMATION_ENABLED = "automation_enabled"
+const val AUTOMATION_TOKEN = "automation_token"
+
 // Granular theming
 const val THEME_UNSET = Int.MIN_VALUE // a slot with this stored value follows its inherited default
 const val PALETTE_BLACK = 0xFF000000.toInt()
