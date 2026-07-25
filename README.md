@@ -6,11 +6,11 @@
 
 **A black-and-pure-yellow SMS/MMS app with per-element theming, per-element fonts, and Sino-Japanese time & imperial-era dates.**
 
-A fork of [Fossify Messages](https://github.com/FossifyOrg/Messages) with **major additions**: a granular per-element Theme & Colors system (black `#000000` / pure yellow `#FFFF00` by default), per-element font family/weight/size, full category export/import (messages included), an alpha-capable color picker, Japanese kanji clock readings and 令和 imperial-era dates, a 設定 toolbar launcher, and a fully black/yellow chrome — menus, action bar, dialogs, and toasts included.
+A fork of [Fossify Messages](https://github.com/FossifyOrg/Messages) with **major additions**: a granular per-element Theme & Colors system (black `#000000` / pure yellow `#FFFF00` by default), per-element font family/weight/size, full category export/import (messages included), token-gated headless backup driven from 白い熊 自由作業盤, an alpha-capable color picker, Japanese kanji clock readings and 令和 imperial-era dates, a 設定 toolbar launcher, and a fully black/yellow chrome — menus, action bar, dialogs, and toasts included.
 
 Installs **side-by-side** with Fossify Messages (app id `shiroikuma.messeji`).
 
-**📥 Latest release: [`1.9.1+5`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
+**📥 Latest release: [`1.9.1+7`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
 
 </div>
 
@@ -31,6 +31,12 @@ Every themed text element can also pick its own **font family, weight, and size*
 ## 📦 Full export/import — messages included
 
 The UI page opens with an **Export / Import** section: pick an export directory once and the page shows your newest export at a glance. The panel exports **everything, by category** — the messages themselves (SMS · MMS, stock-backup-compatible JSON), theme & colours, fonts (including your imported font files), date & time formats, app settings, conversations, and blocked keywords — into a single ZIP, with a live done/total counter while thousands of messages stream through. Import merges back selectively and offers a one-tap restart.
+
+---
+
+## 🤖 Backed up in one run, from 自由作業盤
+
+The app answers a **token-gated intent** from 白い熊 自由作業盤's 保存復元 project: it runs that same category export headlessly — no screen, no tapping — writes one ZIP wherever it was told to, and replies with the path and the real byte size. While it works it reports **real counts, never a percentage**: 「区分 3/7 — 設定」 as it walks the categories, 「メッセージ 1234/8942」 while the messages stream through. The switch ships **off**; nothing is reachable until you turn it on and paste the app's token — copied straight from the settings row — into 自由作業盤.
 
 ---
 
