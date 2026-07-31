@@ -10,7 +10,7 @@ A fork of [Fossify Messages](https://github.com/FossifyOrg/Messages) with **majo
 
 Installs **side-by-side** with Fossify Messages (app id `shiroikuma.messeji`).
 
-**📥 Latest release: [`1.9.1+7`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
+**📥 Latest release: [`1.9.1+8`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
 
 </div>
 
@@ -36,7 +36,7 @@ The UI page opens with an **Export / Import** section: pick an export directory 
 
 ## 🤖 Backed up in one run, from 自由作業盤
 
-The app answers a **token-gated intent** from 白い熊 自由作業盤's 保存復元 project: it runs that same category export headlessly — no screen, no tapping — writes one ZIP wherever it was told to, and replies with the path and the real byte size. While it works it reports **real counts, never a percentage**: 「区分 3/7 — 設定」 as it walks the categories, 「メッセージ 1234/8942」 while the messages stream through. The switch ships **off**; nothing is reachable until you turn it on and paste the app's token — copied straight from the settings row — into 自由作業盤.
+The app answers a **token-gated intent** from 白い熊 自由作業盤's 保存復元 project: it runs that same category export headlessly — no screen, no tapping — writes one ZIP wherever it was told to, and replies with the path and the real byte size. While it works it reports **real counts, never a percentage**: 「区分 3/7 — 設定」 as it walks the categories, 「メッセージ 1234/8942」 while the messages stream through. It also **answers which items should start ticked**, so 自由作業盤's picker opens on the same selection as the app's own, and a running export can be **stopped from outside** — it unwinds at the next entry boundary and removes the half-written archive, leaving the backup directory exactly as it found it. The switch ships **off**; nothing is reachable until you turn it on and paste the app's token — copied straight from the settings row — into 自由作業盤.
 
 ---
 
