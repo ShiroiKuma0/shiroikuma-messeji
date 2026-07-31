@@ -12,6 +12,7 @@ import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.isRPlus
 import org.fossify.messages.R
 import org.fossify.messages.extensions.config
+import org.fossify.messages.helpers.ACTION_CANCEL_EXPORT
 import org.fossify.messages.helpers.ACTION_EXPORT_STATE
 import org.fossify.messages.helpers.ACTION_LIST_CATEGORIES
 import org.fossify.messages.helpers.EXTRA_AUTOMATION_TOKEN
@@ -34,15 +35,18 @@ import org.fossify.messages.helpers.SettingsEximport
 /**
  * The 保存復元 state-export contract, for 白い熊 自由作業盤's one-run backup of every sister app.
  *
- * Two exported, token-gated actions:
- *  - [ACTION_LIST_CATEGORIES] — instant; replies "OK:" plus one `id<TAB>label` line per selectable
- *    category, the ids being exactly the ones "items" accepts (and the ZIP's entry names). This app's
- *    list is flat, so no line carries the optional third `parent-id` field.
+ * Three exported, token-gated actions:
+ *  - [ACTION_LIST_CATEGORIES] — instant; replies "OK:" plus one `id<TAB>label<TAB>parent<TAB>on|off`
+ *    line per selectable category, the ids being exactly the ones "items" accepts (and the ZIP's entry
+ *    names). This app's list is flat, so the parent field is always empty; the last field is the app's
+ *    own answer to whether the item starts ticked in the caller's picker.
  *  - [ACTION_EXPORT_STATE] — runs the same category ZIP export as the Export/Import page, headlessly
  *    (no Activity, no interaction), and replies with the written path and its real size. Extras:
  *    "token", optional "path" (an absolute directory that OVERRIDES the configured export folder),
  *    optional "items" (comma-separated category ids; absent = everything), optional
  *    "progress_action", plus "reply_action"/"reply_package"/"reply_id".
+ *  - [ACTION_CANCEL_EXPORT] — stops a running export: fire-and-forget, no reply of its own, and a
+ *    silent no-op whenever there is nothing (of that "reply_id") to stop. See [cancel].
  *
  * Directory precedence: the "path" extra → the app's configured export folder → ERROR:no-directory.
  *
@@ -62,6 +66,20 @@ class StateExportReceiver : BroadcastReceiver() {
     companion object {
         const val TAG = "MessejiStateExport"
         private const val KILO = 1024.0
+
+        /**
+         * The one export in flight, if any. The contract forbids two at once, so a single slot is all
+         * [ACTION_CANCEL_EXPORT] needs to find the run it means — written on the receiver thread, read
+         * and flipped from another.
+         */
+        @Volatile
+        private var running: RunningExport? = null
+    }
+
+    /** An export in flight: the request it answers, and the flag its write loop polls. */
+    private class RunningExport(val replyId: String) {
+        @Volatile
+        var cancelled = false
     }
 
     /** What a parsed request turned out to be: already answerable, or an export to run. */
@@ -72,7 +90,13 @@ class StateExportReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
-        if (action != ACTION_EXPORT_STATE && action != ACTION_LIST_CATEGORIES) {
+        if (action != ACTION_EXPORT_STATE && action != ACTION_LIST_CATEGORIES && action != ACTION_CANCEL_EXPORT) {
+            return
+        }
+
+        val appContext = context.applicationContext
+        if (action == ACTION_CANCEL_EXPORT) {
+            cancel(appContext, intent)
             return
         }
 
@@ -81,7 +105,6 @@ class StateExportReceiver : BroadcastReceiver() {
         // path can't leave the caller waiting forever).
         val pending = goAsync()
         val finished = AtomicBoolean(false)
-        val appContext = context.applicationContext
         val replyAction = intent.getStringExtra(EXTRA_REPLY_ACTION)?.trim().orEmpty()
         val replyPackage = intent.getStringExtra(EXTRA_REPLY_PACKAGE)?.trim().orEmpty()
         val replyId = intent.getStringExtra(EXTRA_REPLY_ID)?.trim().orEmpty()
@@ -120,11 +143,45 @@ class StateExportReceiver : BroadcastReceiver() {
             is Request.Done -> finishWith(request.result)
             is Request.Export -> {
                 val progress = throttledProgress(appContext, progressAction, replyPackage, replyId)
+                val job = RunningExport(replyId)
+                running = job
                 ensureBackgroundThread {
-                    finishWith(export(appContext, request.cats, request.path, progress))
+                    try {
+                        finishWith(export(appContext, request.cats, request.path, progress, job))
+                    } finally {
+                        // only clear the slot while it is still ours — a later request owns it otherwise
+                        if (running === job) {
+                            running = null
+                        }
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * [ACTION_CANCEL_EXPORT]: the same token gate as the others, then flip the running export's flag
+     * and return. It sends no reply of its own — the export thread does the rest, deleting the partial
+     * file and sending "ERROR:cancelled" as the original request's one terminal reply. Safe to send at
+     * any time: with nothing running, or with a "reply_id" that is not the running one, it is a silent
+     * no-op — not an error, not a reply, not a crash.
+     */
+    private fun cancel(context: Context, intent: Intent) {
+        val config = context.config
+        val token = intent.getStringExtra(EXTRA_AUTOMATION_TOKEN)
+        if (!config.automationEnabled || !config.isAutomationTokenValid(token)) {
+            Log.i(TAG, "cancel refused: enabled=${config.automationEnabled}, tokenLen=${token?.length ?: 0}")
+            return
+        }
+
+        val wanted = intent.getStringExtra(EXTRA_REPLY_ID)?.trim().orEmpty()
+        val export = running
+        if (export == null || (wanted.isNotEmpty() && wanted != export.replyId)) {
+            Log.i(TAG, "cancel: nothing to stop (id=$wanted)")
+            return
+        }
+        export.cancelled = true
+        Log.i(TAG, "cancel: stopping export ${export.replyId}")
     }
 
     /**
@@ -157,12 +214,14 @@ class StateExportReceiver : BroadcastReceiver() {
     }
 
     /**
-     * "OK:" plus one `id<TAB>label` line per category — the ids are exactly the ones "items" accepts,
-     * and the names its data carries inside the ZIP.
+     * "OK:" plus one `id<TAB>label<TAB>parent<TAB>on|off` line per category — the ids are exactly the
+     * ones "items" accepts, and the names its data carries inside the ZIP. The parent field is empty
+     * on every line (the list is flat) and the last one states whether the item starts ticked, so the
+     * caller's picker opens on the same selection as this app's own.
      */
     private fun categoryList(context: Context): String =
         SettingsEximport.Category.entries.joinToString(separator = "\n", prefix = "OK:") {
-            "${it.id}\t${context.getString(it.labelRes)}"
+            "${it.id}\t${context.getString(it.labelRes)}\t\t${if (it.defaultOn) "on" else "off"}"
         }
 
     /**
@@ -184,6 +243,7 @@ class StateExportReceiver : BroadcastReceiver() {
         cats: Set<SettingsEximport.Category>,
         path: String,
         progress: ThrottledProgress,
+        job: RunningExport,
     ): String {
         val target = try {
             SettingsEximport.headlessTarget(context, path) ?: return "ERROR:no-directory"
@@ -195,11 +255,17 @@ class StateExportReceiver : BroadcastReceiver() {
             // The count is a fallback for a destination we cannot stat; it is final once export()
             // returns, which is after the ZIP's central directory has been flushed.
             val counting = CountingOutputStream(target.open())
-            counting.use { SettingsEximport.export(context, cats, it, progress.reporter) }
+            counting.use { SettingsEximport.export(context, cats, it, progress.reporter) { job.cancelled } }
             val bytes = target.size().takeIf { it > 0 } ?: counting.count
             progress.final(cats.size.toLong())
             "OK:${target.displayPath}|$bytes|${humanSize(bytes)}|${cats.size} categories"
+        } catch (e: SettingsEximport.ExportCancelledException) {
+            // the whole point of the cancel: leave the backup directory exactly as it was found
+            Log.i(TAG, "export cancelled — removing the partial ${target.displayPath} ($e)")
+            target.delete()
+            "ERROR:cancelled"
         } catch (e: Exception) {
+            target.delete()
             storageError(path, e)
         }
     }
