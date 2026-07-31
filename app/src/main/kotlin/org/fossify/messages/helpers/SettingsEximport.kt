@@ -82,8 +82,19 @@ object SettingsEximport {
      * stable, is also what the automation contract's "items" extra accepts. [labelRes] is the
      * descriptive label the pickers show (in-app and in 自由作業盤), [shortLabelRes] the bare noun
      * used in progress lines ("区分 3/7 — 設定"). The list is flat: no category has sub-options.
+     *
+     * [defaultOn] is this app's own answer to whether the item starts ticked — sent as the fourth
+     * field of every LIST_CATEGORIES line and used to seed the in-app picker, so both pickers open
+     * on the same selection. Everything here is `on`: nothing this app exports is large, derived
+     * *and* re-creatable (the case the flag exists for), so the app states the default rather than
+     * letting a picker assume one.
      */
-    enum class Category(val id: String, @StringRes val labelRes: Int, @StringRes val shortLabelRes: Int) {
+    enum class Category(
+        val id: String,
+        @StringRes val labelRes: Int,
+        @StringRes val shortLabelRes: Int,
+        val defaultOn: Boolean = true,
+    ) {
         MESSAGES("messages", R.string.eim_cat_messages, R.string.eim_cat_messages_short),
         THEME("theme_colors", R.string.eim_cat_theme, R.string.eim_cat_theme_short),
         FONTS("fonts", R.string.eim_cat_fonts, R.string.eim_cat_fonts_short),
@@ -166,18 +177,32 @@ object SettingsEximport {
         return context.getString(R.string.eim_last, timestamp) to false
     }
 
+    /** Thrown out of [export] when [isCancelled] turned true; the caller removes the partial file. */
+    class ExportCancelledException : Exception("cancelled")
+
+    private fun throwIfCancelled(isCancelled: () -> Boolean) {
+        if (isCancelled()) {
+            throw ExportCancelledException()
+        }
+    }
+
     /**
      * The export core, callable headlessly — no Activity, no user interaction. Writes exactly one ZIP
      * of the selected categories to [out] and reports real counts through [onProgress]: the category
      * being written ("区分 3/7 — 設定"), and inside the messages category (the only slow one — the
      * prefs slices are instant) the messages themselves ("メッセージ 1234/8942"). Unthrottled; a
      * caller that broadcasts progress throttles it.
+     *
+     * [isCancelled] is polled at every entry boundary (and while the messages are read): the write
+     * loop unwinds with an [ExportCancelledException] at the next boundary rather than being killed
+     * mid-`write()`.
      */
     fun export(
         context: Context,
         categories: Set<Category>,
         out: OutputStream,
         onProgress: ProgressReporter = { _, _, _, _ -> },
+        isCancelled: () -> Boolean = { false },
     ) {
         // Declaration order, not the caller's, so a ZIP's contents don't depend on how the set was built.
         val ordered = Category.entries.filter { it in categories }
@@ -196,11 +221,14 @@ object SettingsEximport {
             writeEntry(zip, "manifest.json", manifest.toString(2).toByteArray())
 
             ordered.forEachIndexed { index, category ->
+                throwIfCancelled(isCancelled)
                 val done = (index + 1).toLong()
                 val label = context.getString(category.shortLabelRes)
                 onProgress(done, total, unit, "$unit $done/$total — $label")
                 if (category == Category.MESSAGES) {
-                    writeEntry(zip, "${category.id}.json", messagesJson(context, onProgress))
+                    val json = messagesJson(context, onProgress, isCancelled)
+                    throwIfCancelled(isCancelled)
+                    writeEntry(zip, "${category.id}.json", json)
                     return@forEachIndexed
                 }
                 writeEntry(zip, "${category.id}.json", (slices[category] ?: JSONObject()).toString(2).toByteArray())
@@ -296,14 +324,25 @@ object SettingsEximport {
 
     // The messages themselves, serialized exactly like the stock backup (kotlinx JSON of
     // SmsBackup/MmsBackup with defaults), so archives stay interchangeable with stock exports.
-    private fun messagesJson(context: Context, onProgress: ProgressReporter): ByteArray {
+    private fun messagesJson(
+        context: Context,
+        onProgress: ProgressReporter,
+        isCancelled: () -> Boolean,
+    ): ByteArray {
         val unit = context.getString(Category.MESSAGES.shortLabelRes)
         var messages: List<MessagesBackup> = emptyList()
         MessagesReader(context).getMessagesToExport(
             getSms = true,
             getMms = true,
-            onProgress = { done, total -> onProgress(done.toLong(), total.toLong(), unit, "$unit $done/$total") },
+            // Best-effort early abort of the one slow phase: commons' queryCursor swallows what a row
+            // callback throws, so this ends the current conversation's cursor and the remaining ones
+            // unwind a row later. The check after the read is the one that decides.
+            onProgress = { done, total ->
+                throwIfCancelled(isCancelled)
+                onProgress(done.toLong(), total.toLong(), unit, "$unit $done/$total")
+            },
         ) { messages = it }
+        throwIfCancelled(isCancelled)
         return Json { encodeDefaults = true }.encodeToString(messages).toByteArray()
     }
 
@@ -368,8 +407,17 @@ object SettingsEximport {
     // HEADLESS DESTINATION (automation)
     // ---------------------------------------------------------------------------------------------
 
-    /** A resolved headless export destination: where to write, what to call it, and how big it ended up. */
-    class Target(val displayPath: String, val open: () -> OutputStream, val size: () -> Long)
+    /**
+     * A resolved headless export destination: where to write, what to call it, how big it ended up,
+     * and how to remove it again — [delete] is what a cancelled or failed export calls so the backup
+     * directory is left exactly as it was found, with no short archive in it.
+     */
+    class Target(
+        val displayPath: String,
+        val open: () -> OutputStream,
+        val size: () -> Long,
+        val delete: () -> Unit,
+    )
 
     /**
      * Resolve where a headless export writes. Directory precedence, per the automation contract:
@@ -383,10 +431,26 @@ object SettingsEximport {
             val primary = Environment.getExternalStorageDirectory().absolutePath
             val file = File(pathOverride.replaceFirst(Regex("^/sdcard"), primary), name)
             file.parentFile?.mkdirs()
+            // whichever backend ended up taking the file is also the one that has to remove it
+            var mediaUri: Uri? = null
             return Target(
                 displayPath = file.absolutePath,
-                open = { openAbsolute(context, file) },
+                open = {
+                    val uri = mediaStoreUri(context, file)
+                    mediaUri = uri
+                    if (uri == null) {
+                        openDirect(file)
+                    } else {
+                        context.contentResolver.openOutputStream(uri, "wt") ?: error("cannot open $uri")
+                    }
+                },
                 size = { file.length() },
+                delete = {
+                    val uri = mediaUri
+                    runCatching {
+                        if (uri == null) file.delete() else context.contentResolver.delete(uri, null, null)
+                    }
+                },
             )
         }
 
@@ -396,18 +460,16 @@ object SettingsEximport {
             displayPath = displayPathOf(file.uri),
             open = { context.contentResolver.openOutputStream(file.uri) ?: error("cannot open ${file.uri}") },
             size = { file.length() },
+            delete = { runCatching { file.delete() } },
         )
     }
 
     /**
-     * Writer for an absolute path, most-capable first: MediaStore (Download/ and Documents/ take
-     * non-media files from any app with no permission), then a plain file. The direct path is what
-     * lets an arbitrary location work — on API 30+ that needs All-files access, so name the remedy
-     * instead of letting the write fail silently.
+     * Plain-file writer for an absolute path — what lets an arbitrary location work once MediaStore
+     * has declined it. On API 30+ that needs All-files access, so name the remedy instead of letting
+     * the write fail silently.
      */
-    private fun openAbsolute(context: Context, file: File): OutputStream {
-        mediaStoreStream(context, file)?.let { return it }
-
+    private fun openDirect(file: File): OutputStream {
         val primary = Environment.getExternalStorageDirectory().absolutePath
         if (isRPlus() && file.absolutePath.startsWith("$primary/") && !Environment.isExternalStorageManager()) {
             error(
@@ -419,9 +481,14 @@ object SettingsEximport {
         return FileOutputStream(file)
     }
 
-    // Each early return is one reason MediaStore cannot take this file, answered as soon as it is known.
+    /**
+     * The MediaStore row to write this file to, created if needed — Download/ and Documents/ take
+     * non-media files from any app with no permission. null = not a location MediaStore can take, so
+     * the caller falls back to a plain file. Each early return is one reason it cannot, answered as
+     * soon as it is known.
+     */
     @Suppress("ReturnCount")
-    private fun mediaStoreStream(context: Context, file: File): OutputStream? {
+    private fun mediaStoreUri(context: Context, file: File): Uri? {
         val primary = Environment.getExternalStorageDirectory().absolutePath
         val parent = file.parentFile?.absolutePath ?: return null
         if (!parent.startsWith("$primary/")) {
@@ -444,8 +511,7 @@ object SettingsEximport {
                 .query(collection, arrayOf(MediaStore.MediaColumns._ID), selection, args, null)
                 ?.use { cursor ->
                     if (cursor.moveToFirst()) {
-                        val uri = ContentUris.withAppendedId(collection, cursor.getLong(0))
-                        return context.contentResolver.openOutputStream(uri, "wt")
+                        return ContentUris.withAppendedId(collection, cursor.getLong(0))
                     }
                 }
         }
@@ -455,8 +521,7 @@ object SettingsEximport {
             put(MediaStore.MediaColumns.MIME_TYPE, "application/zip")
             put(MediaStore.MediaColumns.RELATIVE_PATH, "$relativePath/")
         }
-        val uri = context.contentResolver.insert(collection, values) ?: return null
-        return context.contentResolver.openOutputStream(uri, "wt")
+        return context.contentResolver.insert(collection, values)
     }
 
     /**

@@ -59,12 +59,14 @@ const val USE_IMPERIAL_DATE = "use_imperial_date"     // Boolean, true = 和暦 
 const val EXIM_WARN_COLOR = 0xFFFF5252.toInt()
 
 // The 保存復元 state-export contract, for 白い熊 自由作業盤's one-run backup of every sister app
-// (see receivers/StateExportReceiver). Two exported, token-gated actions: a headless run of the very
-// same category ZIP export the Export/Import page writes, and the category list the caller builds its
-// picker from. The actions are spelled out rather than built from ${applicationId} so they stay the
-// contract's literals in every build variant, matching the manifest's intent filters.
+// (see receivers/StateExportReceiver). Three exported, token-gated actions: a headless run of the very
+// same category ZIP export the Export/Import page writes, the category list the caller builds its
+// picker from, and the cancel that stops a running export. The actions are spelled out rather than
+// built from ${applicationId} so they stay the contract's literals in every build variant, matching
+// the manifest's intent filters.
 const val ACTION_EXPORT_STATE = "shiroikuma.messeji.action.EXPORT_STATE"
 const val ACTION_LIST_CATEGORIES = "shiroikuma.messeji.action.LIST_CATEGORIES"
+const val ACTION_CANCEL_EXPORT = "shiroikuma.messeji.action.CANCEL_EXPORT"
 
 // Request extras (all String): the gate, the optional directory override and category subset, the
 // optional progress channel, and where the one terminal reply goes.

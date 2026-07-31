@@ -133,8 +133,10 @@ class ExportImportDialog(
         }
         content.addView(selectAll)
 
+        // Which items start ticked is the category's own answer (Category.defaultOn) — the same one
+        // LIST_CATEGORIES sends 自由作業盤, so both pickers open on the same selection.
         SettingsEximport.Category.entries.forEach { category ->
-            val box = checkbox(activity.getString(category.labelRes)).apply {
+            val box = checkbox(activity.getString(category.labelRes), checked = category.defaultOn).apply {
                 setOnCheckedChangeListener { _, _ ->
                     selectAll?.isChecked = checks.values.all { it.isChecked }
                 }
@@ -142,6 +144,7 @@ class ExportImportDialog(
             checks[category] = box
             content.addView(box)
         }
+        selectAll?.isChecked = checks.values.all { it.isChecked }
 
         // live done/total counter while an export or import runs (messages can be thousands)
         progressLine = text("", 15f, accent, bold = true).apply {
@@ -161,9 +164,9 @@ class ExportImportDialog(
             if (bold) setTypeface(typeface, Typeface.BOLD)
         }
 
-    private fun checkbox(label: String, bold: Boolean = false) = CheckBox(activity).apply {
+    private fun checkbox(label: String, bold: Boolean = false, checked: Boolean = true) = CheckBox(activity).apply {
         text = label
-        isChecked = true
+        isChecked = checked
         textSize = 15f
         setTextColor(textColor)
         buttonTintList = ColorStateList.valueOf(accent)
@@ -287,9 +290,14 @@ class ExportImportDialog(
                 val file = dir.createFile("application/zip", name)
                     ?: error("could not create file in folder")
                 activity.contentResolver.openOutputStream(file.uri)?.use { stream ->
-                    SettingsEximport.export(activity, categories, stream) { current, total, _, text ->
-                        postProgress(R.string.eim_export, current, total, text)
-                    }
+                    SettingsEximport.export(
+                        context = activity,
+                        categories = categories,
+                        out = stream,
+                        onProgress = { current, total, _, text ->
+                            postProgress(R.string.eim_export, current, total, text)
+                        },
+                    )
                 } ?: error("no output stream")
                 name
             }
@@ -303,9 +311,14 @@ class ExportImportDialog(
         ensureBackgroundThread {
             val result = runCatching {
                 activity.contentResolver.openOutputStream(uri)?.use { stream ->
-                    SettingsEximport.export(activity, categories, stream) { current, total, _, text ->
-                        postProgress(R.string.eim_export, current, total, text)
-                    }
+                    SettingsEximport.export(
+                        context = activity,
+                        categories = categories,
+                        out = stream,
+                        onProgress = { current, total, _, text ->
+                            postProgress(R.string.eim_export, current, total, text)
+                        },
+                    )
                 } ?: error("no output stream")
                 DocumentFile.fromSingleUri(activity, uri)?.name ?: uri.lastPathSegment.orEmpty()
             }

@@ -255,9 +255,11 @@
             android:name=".receivers.ScheduledMessageReceiver"
             android:exported="false" />
 
-        <!-- Fork: the 保存復元 state-export contract for 自由作業盤 — a headless category-ZIP export
-             plus the category list it builds its picker from. No android:permission: the caller cannot
-             hold one, so the automation token is the gate. See receivers/StateExportReceiver. -->
+        <!-- Fork: the 保存復元 state-export contract for 自由作業盤 — a headless category-ZIP export,
+             the category list it builds its picker from, and the cancel that stops a running export
+             (routed through this exported receiver, since a third-party app cannot reach anything
+             that is not). No android:permission: the caller cannot hold one, so the automation token
+             is the gate. See receivers/StateExportReceiver. -->
         <receiver
             android:name=".receivers.StateExportReceiver"
             android:exported="true"
@@ -265,6 +267,7 @@
             <intent-filter>
                 <action android:name="shiroikuma.messeji.action.EXPORT_STATE" />
                 <action android:name="shiroikuma.messeji.action.LIST_CATEGORIES" />
+                <action android:name="shiroikuma.messeji.action.CANCEL_EXPORT" />
             </intent-filter>
         </receiver>
 
