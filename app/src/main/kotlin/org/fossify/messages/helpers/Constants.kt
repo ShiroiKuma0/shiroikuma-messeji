@@ -79,6 +79,10 @@ const val EXTRA_REPLY_PACKAGE = "reply_package"
 const val EXTRA_REPLY_ID = "reply_id"
 const val EXTRA_REPLY_RESULT = "result"
 
+// The data door's correlation id (AutomationProvider). Sent ALONGSIDE "reply_id" — never instead of
+// it — on that door's progress and reply broadcasts, so one reader serves both doors.
+const val EXTRA_JOB_ID = "job_id"
+
 // Progress-broadcast extras: real counts, never a percentage.
 const val EXTRA_PROGRESS_APP = "app"
 const val EXTRA_PROGRESS_TEXT = "text"
@@ -87,10 +91,22 @@ const val EXTRA_PROGRESS_TOTAL = "total"
 const val EXTRA_PROGRESS_UNIT = "unit"
 const val PROGRESS_THROTTLE_MS = 500L
 
-// The automation gate: a master switch (default off) plus the shared secret every request must carry.
-// Both are kept out of the export (EXCLUDED_KEYS in SettingsEximport) — the token never travels.
+// The automation gate (contract v2): a master switch that ships ON, an opt-in token requirement that
+// ships OFF, and the secret itself. All three are kept out of the export (EXCLUDED_KEYS in
+// SettingsEximport) — the token never travels, and a restored archive never silently re-gates this app.
+//
+// The token became opt-in because a pasted secret cannot survive a wipe, and the case this surface now
+// serves is 白い熊 応用管理 restoring apps AND their data onto a clean phone, where nothing has been
+// configured and nobody has pasted anything. A gate that only works once the phone is already set up
+// is no gate for setting the phone up.
 const val AUTOMATION_ENABLED = "automation_enabled"
+const val AUTOMATION_REQUIRE_TOKEN = "automation_require_token"
 const val AUTOMATION_TOKEN = "automation_token"
+
+// The two refusals, spelled once. They stay distinct because they debug differently: one is a switch
+// 白い熊 turned off, the other a caller carrying the wrong secret.
+const val AUTOMATION_REFUSAL_DISABLED = "ERROR:automation disabled"
+const val AUTOMATION_REFUSAL_BAD_TOKEN = "ERROR:bad token"
 
 // Granular theming
 const val THEME_UNSET = Int.MIN_VALUE // a slot with this stored value follows its inherited default

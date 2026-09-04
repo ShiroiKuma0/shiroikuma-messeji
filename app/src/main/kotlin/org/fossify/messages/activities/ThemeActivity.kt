@@ -202,7 +202,12 @@ class ThemeActivity : SimpleActivity() {
     private fun addAutomationSubgroup(primaryColor: Int) {
         addSubgroupHeader(getString(R.string.automation), primaryColor)
 
-        // Two rows, in the order every sister app uses: the master switch (default OFF), then the token.
+        // Three rows, in the order every sister app uses (contract v2).
+        //
+        // The master switch ships ON, so this app answers the 保存復元 batch out of the box — there is
+        // nothing for 白い熊 to turn on and nothing to paste. It stays a switch rather than being
+        // removed because it is the only way to close this app off, and a feature that can be turned
+        // on but never off is one 白い熊 cannot retreat from.
         addSwitchRow(
             labelRes = R.string.enable_automation,
             checked = config.automationEnabled,
@@ -212,7 +217,25 @@ class ThemeActivity : SimpleActivity() {
             config.automationEnabled = it
         }
 
-        addTokenRow()
+        // The token requirement ships OFF: a pasted secret cannot survive the wipe this surface now
+        // exists to recover from, and a gate that only works once the phone is set up is no gate for
+        // setting the phone up.
+        addSwitchRow(
+            labelRes = R.string.automation_require_token,
+            checked = config.automationRequireToken,
+            indentLevel = 2,
+            description = getString(R.string.automation_require_token_desc),
+        ) {
+            config.automationRequireToken = it
+            // the token row below appears and disappears with this switch
+            buildRows()
+        }
+
+        // Hidden while the token is not being asked for: a 48-character secret sitting under an off
+        // switch only invites 白い熊 to paste it somewhere it will do nothing.
+        if (config.automationRequireToken) {
+            addTokenRow()
+        }
 
         // All-files access: needed so an automation broadcast can write to an arbitrary absolute path
         // (e.g. 白い熊's archive folder) outside Download/Documents. API 30+ only.

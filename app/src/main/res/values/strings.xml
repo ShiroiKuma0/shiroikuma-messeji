@@ -43,12 +43,17 @@
     <!-- 白い熊 メッセージ UI page: automation (inside Export / Import) -->
     <string name="automation">Automation</string>
     <string name="enable_automation">Automation export</string>
-    <string name="enable_automation_desc">Sister-app tasks may trigger this app\'s export through the token-gated intent.</string>
+    <string name="enable_automation_desc">Sister apps may trigger this app\'s export, and back its data up, without opening it.</string>
+    <string name="automation_require_token">Use authorization token?</string>
+    <string name="automation_require_token_desc">Off: any sister app may drive the automation. On: a caller must also present the token below. Either way the data door checks the caller\'s package, uid and signing certificate.</string>
     <string name="automation_token">Automation token — tap to copy</string>
     <string name="automation_token_copied">Token copied to the clipboard</string>
     <string name="automation_token_regenerate">Regenerate</string>
     <string name="automation_token_regenerate_warning">Generate a new token? Copies already pasted into 白い熊 自由作業盤 — or any other task — stop working until the new token is pasted there.</string>
     <string name="automation_token_regenerated">Token regenerated</string>
+    <string name="automation_data_channel">Automation data</string>
+    <string name="automation_data_exporting">Backing up app data…</string>
+    <string name="automation_data_importing">Restoring app data…</string>
     <string name="all_files_access">All files access — for backups outside Download/Documents</string>
     <string name="all_files_access_granted">Granted</string>
     <string name="all_files_access_needed">Not granted — tap to allow</string>

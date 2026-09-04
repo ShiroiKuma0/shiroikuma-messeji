@@ -114,8 +114,9 @@ object SettingsEximport {
         THEME_V1_SEEDED, PURE_YELLOW_MIGRATED, WAS_DB_CLEARED, LAST_RECYCLE_BIN_CHECK,
         SOFT_KEYBOARD_HEIGHT, LAST_BLOCKED_KEYWORD_EXPORT_PATH,
         // the automation gate is device-local: the token must never travel in a backup, and a
-        // restored archive must never silently switch this app's automation on
-        AUTOMATION_ENABLED, AUTOMATION_TOKEN,
+        // restored archive must never silently switch this app's automation on — nor, now, silently
+        // switch its token requirement off on a phone where 白い熊 had deliberately turned it on
+        AUTOMATION_ENABLED, AUTOMATION_REQUIRE_TOKEN, AUTOMATION_TOKEN,
         "app_run_count", "last_version", "app_sideloading_status",
         "sd_card_path_2", "otg_real_path_2", "internal_storage_path", "otg_partition_2",
         "last_handled_shortcut_color", "last_icon_color", "last_export_path",
@@ -175,6 +176,25 @@ object SettingsEximport {
         val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT)
             .format(Date(newest.lastModified()))
         return context.getString(R.string.eim_last, timestamp) to false
+    }
+
+    /**
+     * The categories an automation request means: the ids named in [items], or — absent or empty —
+     * this app's DEFAULT set, which is what LIST_CATEGORIES reports as `on` rather than everything
+     * the app can write. null when an id names a category we do not export, which the caller answers
+     * as "unknown category in items".
+     *
+     * One resolver for both doors (the broadcast receiver and the provider's data service), so a
+     * request cannot mean one thing on one and something else on the other. Every category this app
+     * has is [Category.defaultOn], so the default set is currently the whole list.
+     */
+    fun categoriesFor(items: String?): Set<Category>? {
+        val ids = items.orEmpty().split(',').map { it.trim() }.filter { it.isNotEmpty() }
+        if (ids.isEmpty()) {
+            return Category.entries.filter { it.defaultOn }.toSet()
+        }
+        val cats = ids.mapNotNull { Category.byId(it) }.toSet()
+        return cats.takeIf { it.size == ids.distinct().size }
     }
 
     /** Thrown out of [export] when [isCancelled] turned true; the caller removes the partial file. */
@@ -250,8 +270,24 @@ object SettingsEximport {
         bytes: ByteArray,
         categories: Set<Category>,
         onProgress: ProgressReporter = { _, _, _, _ -> },
+    ): String = import(context, bytes.inputStream(), categories, onProgress)
+
+    /**
+     * The same import, reading the archive as a **stream**.
+     *
+     * The automation data door takes this one: it is handed a descriptor onto a caller's file, and an
+     * archive carrying this app's whole message corpus (MMS attachments included) has no business
+     * being pulled into a byte array first just to be unzipped out of it again. The guarantee is
+     * unchanged — [readZip] consumes the entire archive before a single key is applied, so a stream
+     * that fails halfway restores nothing rather than half.
+     */
+    fun import(
+        context: Context,
+        input: InputStream,
+        categories: Set<Category>,
+        onProgress: ProgressReporter = { _, _, _, _ -> },
     ): String {
-        val entries = readZip(bytes.inputStream())
+        val entries = readZip(input)
         val summary = StringBuilder()
         categories.forEach { category ->
             val json = entries["${category.id}.json"] ?: return@forEach
@@ -318,7 +354,15 @@ object SettingsEximport {
             }
             count++
         }
-        editor.apply()
+        // commit(), NOT apply(): 応用管理 force-stops this app the instant an automation import
+        // reports success — deliberately, because a process shutting down writes its cached prefs
+        // back out and would undo the restore. That force-stop is a SIGKILL, so an apply() still in
+        // flight on the async writer is simply lost and the restore reports success over data that
+        // never reached disk. This is the one write on the restore path that was not already
+        // synchronous: the message rows go through contentResolver.insert, MMS attachment bytes
+        // through a closed openOutputStream, and fonts through File.writeBytes — all durable by the
+        // time they return. Both callers run on a background thread, so the blocking write is free.
+        editor.commit()
         return count
     }
 
