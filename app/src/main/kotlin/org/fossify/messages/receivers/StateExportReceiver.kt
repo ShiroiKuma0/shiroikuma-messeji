@@ -10,41 +10,43 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.helpers.isRPlus
-import org.fossify.messages.R
 import org.fossify.messages.extensions.config
 import org.fossify.messages.helpers.ACTION_CANCEL_EXPORT
 import org.fossify.messages.helpers.ACTION_EXPORT_STATE
 import org.fossify.messages.helpers.ACTION_LIST_CATEGORIES
+import org.fossify.messages.helpers.AutomationProgress
 import org.fossify.messages.helpers.EXTRA_AUTOMATION_TOKEN
 import org.fossify.messages.helpers.EXTRA_BACKUP_PATH
 import org.fossify.messages.helpers.EXTRA_EXPORT_ITEMS
 import org.fossify.messages.helpers.EXTRA_PROGRESS_ACTION
-import org.fossify.messages.helpers.EXTRA_PROGRESS_APP
-import org.fossify.messages.helpers.EXTRA_PROGRESS_CURRENT
-import org.fossify.messages.helpers.EXTRA_PROGRESS_TEXT
-import org.fossify.messages.helpers.EXTRA_PROGRESS_TOTAL
-import org.fossify.messages.helpers.EXTRA_PROGRESS_UNIT
 import org.fossify.messages.helpers.EXTRA_REPLY_ACTION
 import org.fossify.messages.helpers.EXTRA_REPLY_ID
 import org.fossify.messages.helpers.EXTRA_REPLY_PACKAGE
 import org.fossify.messages.helpers.EXTRA_REPLY_RESULT
-import org.fossify.messages.helpers.PROGRESS_THROTTLE_MS
-import org.fossify.messages.helpers.ProgressReporter
 import org.fossify.messages.helpers.SettingsEximport
 
 /**
  * The 保存復元 state-export contract, for 白い熊 自由作業盤's one-run backup of every sister app.
  *
- * Three exported, token-gated actions:
+ * Contract v2: this receiver is the **unauthenticated** half of the automation surface, deliberately.
+ * It only ever writes where it was told to and reports what it did, so it is gated by nothing but the
+ * app's own master switch — and by the token only when 白い熊 has asked for one (see
+ * [org.fossify.messages.helpers.Config.automationRefusal]; a token sent to an app that does not
+ * require one is ignored, never refused). Everything that moves data through a caller-supplied
+ * descriptor lives behind [org.fossify.messages.automation.AutomationProvider] instead, which knows
+ * who is calling. **Import exists only there**, never as a broadcast action: an import overwrites this
+ * app's data, and an unauthenticated door to that would let any app on the phone wipe it.
+ *
+ * Three exported actions:
  *  - [ACTION_LIST_CATEGORIES] — instant; replies "OK:" plus one `id<TAB>label<TAB>parent<TAB>on|off`
  *    line per selectable category, the ids being exactly the ones "items" accepts (and the ZIP's entry
  *    names). This app's list is flat, so the parent field is always empty; the last field is the app's
  *    own answer to whether the item starts ticked in the caller's picker.
  *  - [ACTION_EXPORT_STATE] — runs the same category ZIP export as the Export/Import page, headlessly
  *    (no Activity, no interaction), and replies with the written path and its real size. Extras:
- *    "token", optional "path" (an absolute directory that OVERRIDES the configured export folder),
- *    optional "items" (comma-separated category ids; absent = everything), optional
- *    "progress_action", plus "reply_action"/"reply_package"/"reply_id".
+ *    optional "token", optional "path" (an absolute directory that OVERRIDES the configured export
+ *    folder), optional "items" (comma-separated category ids; absent = this app's default set),
+ *    optional "progress_action", plus "reply_action"/"reply_package"/"reply_id".
  *  - [ACTION_CANCEL_EXPORT] — stops a running export: fire-and-forget, no reply of its own, and a
  *    silent no-op whenever there is nothing (of that "reply_id") to stop. See [cancel].
  *
@@ -56,8 +58,8 @@ import org.fossify.messages.helpers.SettingsEximport
  * terminal reply per request, guarded by an [AtomicBoolean] so an async success and a synchronous
  * error can never both fire.
  *
- * Progress is reported as real counts, never a percentage — "メッセージ 1234/8942", throttled to one
- * broadcast per [PROGRESS_THROTTLE_MS] with an unthrottled final one at completion.
+ * Progress is reported as real counts, never a percentage — "メッセージ 1234/8942" — through
+ * [AutomationProgress], the one sender this door and the data door share.
  */
 // Broad catches throughout are deliberate: whatever a request or a storage backend throws must become
 // one ERROR: reply line, never a crash in the app that happens to host the receiver.
@@ -142,13 +144,16 @@ class StateExportReceiver : BroadcastReceiver() {
         when (request) {
             is Request.Done -> finishWith(request.result)
             is Request.Export -> {
-                val progress = throttledProgress(appContext, progressAction, replyPackage, replyId)
+                val progress = AutomationProgress.channel(appContext, progressAction, replyPackage, replyId)
                 val job = RunningExport(replyId)
                 running = job
                 ensureBackgroundThread {
                     try {
                         finishWith(export(appContext, request.cats, request.path, progress, job))
                     } finally {
+                        // stops the heartbeat; a leaked one would go on repeating a finished export's
+                        // last line to a caller that has moved on
+                        progress.close()
                         // only clear the slot while it is still ours — a later request owns it otherwise
                         if (running === job) {
                             running = null
@@ -167,10 +172,11 @@ class StateExportReceiver : BroadcastReceiver() {
      * no-op — not an error, not a reply, not a crash.
      */
     private fun cancel(context: Context, intent: Intent) {
-        val config = context.config
         val token = intent.getStringExtra(EXTRA_AUTOMATION_TOKEN)
-        if (!config.automationEnabled || !config.isAutomationTokenValid(token)) {
-            Log.i(TAG, "cancel refused: enabled=${config.automationEnabled}, tokenLen=${token?.length ?: 0}")
+        val refusal = context.config.automationRefusal(token)
+        if (refusal != null) {
+            // silent: a cancel has nobody to report to, and the contract forbids it answering at all
+            Log.i(TAG, "cancel refused: $refusal")
             return
         }
 
@@ -195,15 +201,15 @@ class StateExportReceiver : BroadcastReceiver() {
         val itemsRaw = intent.getStringExtra(EXTRA_EXPORT_ITEMS)?.trim().orEmpty()
         val path = intent.getStringExtra(EXTRA_BACKUP_PATH)?.trim().orEmpty()
         val cats = parseItems(itemsRaw)
+        val refusal = config.automationRefusal(token)
         Log.i(
             TAG,
-            "received $action: enabled=${config.automationEnabled}, tokenLen=${token?.length ?: 0}, " +
-                "items=$itemsRaw, path=$path"
+            "received $action: enabled=${config.automationEnabled}, requireToken=${config.automationRequireToken}, " +
+                "tokenLen=${token?.length ?: 0}, items=$itemsRaw, path=$path"
         )
 
         return when {
-            !config.automationEnabled -> Request.Done("ERROR:automation disabled")
-            !config.isAutomationTokenValid(token) -> Request.Done("ERROR:bad token")
+            refusal != null -> Request.Done(refusal)
             action == ACTION_LIST_CATEGORIES -> Request.Done(categoryList(context))
             cats == null -> Request.Done("ERROR:unknown category in items: $itemsRaw")
             path.isNotEmpty() && !path.startsWith("/") ->
@@ -226,23 +232,18 @@ class StateExportReceiver : BroadcastReceiver() {
 
     /**
      * The requested categories, or null when [itemsRaw] names an id we do not export. Absent or empty
-     * means everything.
+     * means this app's default set — resolved by the one helper the provider's data door uses too, so
+     * "items" cannot mean two different things depending on which door a caller knocked on.
      */
-    private fun parseItems(itemsRaw: String): Set<SettingsEximport.Category>? {
-        val ids = itemsRaw.split(',').map { it.trim() }.filter { it.isNotEmpty() }
-        if (ids.isEmpty()) {
-            return SettingsEximport.Category.entries.toSet()
-        }
-        val cats = ids.mapNotNull { SettingsEximport.Category.byId(it) }.toSet()
-        return cats.takeIf { it.size == ids.distinct().size }
-    }
+    private fun parseItems(itemsRaw: String): Set<SettingsEximport.Category>? =
+        SettingsEximport.categoriesFor(itemsRaw)
 
     /** Runs on a background thread; returns the single result line and never throws. */
     private fun export(
         context: Context,
         cats: Set<SettingsEximport.Category>,
         path: String,
-        progress: ThrottledProgress,
+        progress: AutomationProgress.Channel,
         job: RunningExport,
     ): String {
         val target = try {
@@ -257,7 +258,7 @@ class StateExportReceiver : BroadcastReceiver() {
             val counting = CountingOutputStream(target.open())
             counting.use { SettingsEximport.export(context, cats, it, progress.reporter) { job.cancelled } }
             val bytes = target.size().takeIf { it > 0 } ?: counting.count
-            progress.final(cats.size.toLong())
+            progress.complete(cats.size.toLong())
             "OK:${target.displayPath}|$bytes|${humanSize(bytes)}|${cats.size} categories"
         } catch (e: SettingsEximport.ExportCancelledException) {
             // the whole point of the cancel: leave the backup directory exactly as it was found
@@ -287,53 +288,6 @@ class StateExportReceiver : BroadcastReceiver() {
         bytes < KILO * KILO * KILO -> "%.1f MB".format(Locale.ROOT, bytes / (KILO * KILO))
         else -> "%.2f GB".format(Locale.ROOT, bytes / (KILO * KILO * KILO))
     }
-
-    private fun throttledProgress(
-        context: Context,
-        progressAction: String,
-        replyPackage: String,
-        replyId: String,
-    ): ThrottledProgress {
-        val appLabel = context.getString(R.string.app_launcher_name)
-        val unitCategory = context.getString(R.string.state_progress_unit_category)
-
-        fun send(current: Long, total: Long, unit: String, text: String) {
-            try {
-                context.sendBroadcast(
-                    Intent(progressAction)
-                        .setPackage(replyPackage.ifEmpty { null })
-                        .putExtra(EXTRA_REPLY_ID, replyId)
-                        .putExtra(EXTRA_PROGRESS_APP, appLabel)
-                        .putExtra(EXTRA_PROGRESS_TEXT, text)
-                        .putExtra(EXTRA_PROGRESS_CURRENT, current)
-                        .putExtra(EXTRA_PROGRESS_TOTAL, total)
-                        .putExtra(EXTRA_PROGRESS_UNIT, unit)
-                        .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
-                )
-            } catch (e: Exception) {
-                Log.w(TAG, "progress broadcast failed: $e")
-            }
-        }
-
-        var lastSent = 0L
-        return ThrottledProgress(
-            reporter = { current, total, unit, text ->
-                val now = System.currentTimeMillis()
-                if (progressAction.isNotEmpty() && now - lastSent >= PROGRESS_THROTTLE_MS) {
-                    lastSent = now
-                    send(current, total, unit, text)
-                }
-            },
-            final = { categories ->
-                if (progressAction.isNotEmpty()) {
-                    send(categories, categories, unitCategory, "$unitCategory $categories/$categories")
-                }
-            },
-        )
-    }
-
-    /** The throttled progress channel plus the unthrottled completion broadcast. */
-    private class ThrottledProgress(val reporter: ProgressReporter, val final: (Long) -> Unit)
 
     private class CountingOutputStream(private val out: OutputStream) : OutputStream() {
         var count = 0L

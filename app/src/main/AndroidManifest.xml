@@ -19,6 +19,14 @@
 
     <uses-permission android:name="android.permission.READ_CONTACTS" />
 
+    <!-- Fork (automation contract v2): the data door's export/import runs in a foreground service,
+         because a multi-minute write from a backgrounded app is frozen mid-stream on 白い熊's EMUI —
+         which yields a truncated archive underneath a success reply. "specialUse" because it is
+         neither a sync with a server nor any other declared type: it is another app on this phone
+         backing this one up. See automation/AutomationDataService. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
     <!-- Fork: the token-gated EXPORT_STATE broadcast can target ANY absolute path (e.g. 白い熊's
          archive folder, outside Download/Documents). On API 30+ that needs All-files access, granted
          once per device via the UI page → Export / Import → 自動化. -->
@@ -30,6 +38,13 @@
     <queries>
         <package android:name="org.fossify.contacts.debug" />
         <package android:name="org.fossify.contacts" />
+        <!-- The two automation callers. Without them setPackage() on our reply and progress
+             broadcasts fails SILENTLY on Android 11+: the export runs, writes correctly, and is never
+             heard of. Package visibility is granted transiently when another app broadcasts to us,
+             which is why v1's replies worked at all — but 応用管理 reaches us through a provider call
+             and we read its signing certificate, so nothing here may rest on that. -->
+        <package android:name="shiroikuma.oyokanri" />
+        <package android:name="shiroikuma.jiyusagyoban" />
     </queries>
 
     <uses-feature android:name="android.hardware.telephony" />
@@ -270,6 +285,43 @@
                 <action android:name="shiroikuma.messeji.action.CANCEL_EXPORT" />
             </intent-filter>
         </receiver>
+
+        <!-- Fork (automation contract v2): the DATA door. The receiver above is the unauthenticated
+             half — it only writes where it was told to and reports what it did. This one moves this
+             app's data through a descriptor the caller opened, so it identifies its caller three ways
+             (exact package name, uid cross-check, pinned signing certificate) before anything else,
+             and IMPORT exists only here: an unauthenticated import would let any app on the phone
+             rewrite 白い熊's message history. No android:permission — a custom one would have to be
+             "normal" (any app may hold it) or "signature" (impossible: every app in this family has
+             its own keystore). See automation/AutomationCallers. -->
+        <provider
+            android:name=".automation.AutomationProvider"
+            android:authorities="${applicationId}.automation"
+            android:exported="true"
+            tools:ignore="ExportedContentProvider" />
+
+        <service
+            android:name=".automation.AutomationDataService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Automation data export/import" />
+        </service>
+
+        <!-- Capability discovery, readable WITHOUT waking this app — 白い熊 freezes apps
+             aggressively, and a frozen package cannot be asked anything, so 応用管理 reads these
+             across every installed package at once (with MATCH_UNINSTALLED_PACKAGES |
+             MATCH_DISABLED_COMPONENTS). An app without them is simply not offered for data backup. -->
+        <meta-data
+            android:name="shiroikuma.automation.contract"
+            android:value="2" />
+        <meta-data
+            android:name="shiroikuma.automation.format"
+            android:value="1" />
+        <meta-data
+            android:name="shiroikuma.automation.min_format"
+            android:value="1" />
 
         <receiver
             android:name=".receivers.RescheduleAlarmsReceiver"

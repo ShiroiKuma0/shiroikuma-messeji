@@ -196,11 +196,20 @@ class Config(context: Context) : BaseConfig(context) {
     fun setFontSize(slotKey: String, value: Int) =
         prefs.edit().putInt(FONT_SIZE_PREFIX + slotKey, value).apply()
 
-    // External-automation intent surface (StateExportReceiver): a master switch plus a shared secret
-    // that every automation broadcast must carry. Same model as the renrakusaki fork's Config.
+    // The external-automation surface — the StateExportReceiver's broadcasts and the AutomationProvider's
+    // data door. Contract v2: the app answers out of the box, and the token is an extra 白い熊 may ask a
+    // caller for rather than the gate itself.
+
+    // Default ON. It stays a switch rather than being removed because it is the only way to close this
+    // app off, and a feature that can be turned on but never off is one 白い熊 cannot retreat from.
     var automationEnabled: Boolean
-        get() = prefs.getBoolean(AUTOMATION_ENABLED, false)
+        get() = prefs.getBoolean(AUTOMATION_ENABLED, true)
         set(value) = prefs.edit().putBoolean(AUTOMATION_ENABLED, value).apply()
+
+    // Default OFF: a pasted secret cannot survive the wipe this whole surface exists to recover from.
+    var automationRequireToken: Boolean
+        get() = prefs.getBoolean(AUTOMATION_REQUIRE_TOKEN, false)
+        set(value) = prefs.edit().putBoolean(AUTOMATION_REQUIRE_TOKEN, value).apply()
 
     // The shared secret; generated on first read so the settings row always shows a value.
     val automationToken: String
@@ -213,8 +222,26 @@ class Config(context: Context) : BaseConfig(context) {
         return token
     }
 
-    // True when the caller's token matches the stored secret (constant-time). The enabled check is
-    // kept separate so callers can report "disabled" and "bad token" as distinct failures.
+    /**
+     * The whole automation gate, in ONE place: null means proceed, anything else is the exact "ERROR:"
+     * line to answer with. Every entry point — the three broadcast actions and all four provider
+     * methods — asks this and nothing else. Two checks written out per entry point is precisely how
+     * "disabled" and "bad token" drift apart across a family of forty-odd apps.
+     *
+     * **A token handed to an app that does not require one is IGNORED — never an error.** Tokens live
+     * in task arguments and workspace variables that outlive the setting they were pasted for, and a
+     * caller still sending one (configured last year, or because a sister app on the same batch does
+     * want one) must be served. Refusing it would turn "白い熊 turned a switch off" into "half the
+     * batch mysteriously fails", which is the friction the switch exists to remove.
+     */
+    fun automationRefusal(candidate: String?): String? = when {
+        !automationEnabled -> AUTOMATION_REFUSAL_DISABLED
+        automationRequireToken && !isAutomationTokenValid(candidate) -> AUTOMATION_REFUSAL_BAD_TOKEN
+        else -> null
+    }
+
+    // True when the caller's token matches the stored secret (constant-time). Only consulted when the
+    // token is actually being asked for — see automationRefusal.
     fun isAutomationTokenValid(token: String?): Boolean {
         if (token.isNullOrEmpty()) return false
         return MessageDigest.isEqual(token.toByteArray(), automationToken.toByteArray())
