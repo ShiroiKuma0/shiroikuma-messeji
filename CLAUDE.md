@@ -43,12 +43,22 @@ We base our version on upstream and add a fork increment (`BUILD_NUMBER`).
 
 - `VERSION_NAME` / `VERSION_CODE` in `gradle.properties` **track upstream** (currently `1.8.0` / `20`).
 - `BUILD_NUMBER` is **our** increment. It starts at `1` and bumps by `1` on every build with changes.
-- Fork `versionName` = `"<VERSION_NAME>+<BUILD_NUMBER>"` (e.g. `1.8.0+1`).
-- Fork `versionCode` = `VERSION_CODE * 10000 + BUILD_NUMBER` (e.g. `20 * 10000 + 1 = 200001`).
-- Output APK filename = `shiroikuma-messeji_<VERSION_NAME>+<BUILD_NUMBER>_arm64-v8a.apk`
-  (e.g. `shiroikuma-messeji_1.8.0+1_arm64-v8a.apk`).
+  It is stored bare in `gradle.properties` and **always rendered zero-padded to three digits** —
+  `+001`, `+014`, `+011` — so `~/tmp`, the release page and the tag list keep sorting in build order
+  (unpadded, a string sort puts `+10` before `+9`). The padding is applied once, in
+  `app/build.gradle.kts`'s `forkVersionName`, which is the single source of both the `versionName`
+  and the APK filename.
+- Fork `versionName` = `"<VERSION_NAME>+<NNN>"` (e.g. `1.9.1+011`).
+- Fork `versionCode` = `VERSION_CODE * 10000 + BUILD_NUMBER` (e.g. `23 * 10000 + 11 = 230011`) —
+  arithmetic, so the padding never touches it.
+- Output APK filename = `shiroikuma-messeji_<VERSION_NAME>+<NNN>_arm64-v8a.apk`
+  (e.g. `shiroikuma-messeji_1.9.1+011_arm64-v8a.apk`).
 
-So the first build is `+1` (`200001`), the next build with changes is `+2` (`200002`), and so on.
+So the first build is `+001` (`200001`), the next build with changes is `+002` (`200002`), and so on.
+
+**Releases published before 2026-09-04 are unpadded** (`1.9.1+8`, `1.9.1+10`). Never retag or rename
+what is already published — the padding simply starts from the current build. Expect the padded tags
+to sort below the older unpadded ones for a while.
 
 ### Building
 

@@ -23,9 +23,21 @@ fun hasSigningVars(): Boolean {
             && providers.environmentVariable("SIGNING_STORE_PASSWORD").orNull != null
 }
 
-val forkVersionName = "${project.property("VERSION_NAME")}+${project.property("BUILD_NUMBER")}"
-val forkVersionCode = project.property("VERSION_CODE").toString().toInt() * 10000 +
-        project.property("BUILD_NUMBER").toString().toInt()
+val forkBuildNumber = project.property("BUILD_NUMBER").toString().toInt()
+
+// The build counter is ALWAYS zero-padded to three digits (白い熊, standing rule across every fork).
+// Unpadded, a plain string sort puts "+10" before "+9", so ~/tmp, the release page and the tag list
+// all stop reading in build order exactly when there are enough builds for that to matter. The
+// padding lives HERE, in the single value both the versionName and the APK filename are built from,
+// so the artefact, the git tag, the release title and the version the app reports about itself can
+// never disagree — which is what lets a publish take the tag from the filename rather than re-derive
+// it. gradle.properties keeps storing the bare integer; only its rendering is padded.
+val forkVersionName = "${project.property("VERSION_NAME")}+${"%03d".format(forkBuildNumber)}"
+
+// The versionCode is arithmetic, not a string, so padding cannot touch it: 23 * 10000 + 11 = 230011,
+// still strictly greater than the 230010 that preceded it. Upgrades over an installed build are
+// unaffected by the rename.
+val forkVersionCode = project.property("VERSION_CODE").toString().toInt() * 10000 + forkBuildNumber
 
 base {
     archivesName = "shiroikuma-messeji_${forkVersionName}_arm64-v8a"
@@ -160,7 +172,7 @@ tasks.register("buildFoss") {
 
         // Auto-increment BUILD_NUMBER for the next build.
         val propsFile = rootProject.file("gradle.properties")
-        val currentBuildNumber = project.property("BUILD_NUMBER").toString().toInt()
+        val currentBuildNumber = forkBuildNumber
         val nextBuildNumber = currentBuildNumber + 1
         propsFile.writeText(
             propsFile.readText().replace(
