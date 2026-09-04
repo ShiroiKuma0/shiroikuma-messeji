@@ -6,11 +6,11 @@
 
 **A black-and-pure-yellow SMS/MMS app with per-element theming, per-element fonts, and Sino-Japanese time & imperial-era dates.**
 
-A fork of [Fossify Messages](https://github.com/FossifyOrg/Messages) with **major additions**: a granular per-element Theme & Colors system (black `#000000` / pure yellow `#FFFF00` by default), per-element font family/weight/size, full category export/import (messages included), token-gated headless backup driven from 白い熊 自由作業盤, an alpha-capable color picker, Japanese kanji clock readings and 令和 imperial-era dates, a 設定 toolbar launcher, and a fully black/yellow chrome — menus, action bar, dialogs, and toasts included.
+A fork of [Fossify Messages](https://github.com/FossifyOrg/Messages) with **major additions**: a granular per-element Theme & Colors system (black `#000000` / pure yellow `#FFFF00` by default), per-element font family/weight/size, full category export/import (messages included), headless backup driven from 白い熊 自由作業盤, a verified data door that lets 白い熊 応用管理 restore this app *with its messages* onto a wiped phone, an alpha-capable color picker, Japanese kanji clock readings and 令和 imperial-era dates, a 設定 toolbar launcher, and a fully black/yellow chrome — menus, action bar, dialogs, and toasts included.
 
 Installs **side-by-side** with Fossify Messages (app id `shiroikuma.messeji`).
 
-**📥 Latest release: [`1.9.1+8`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
+**📥 Latest release: [`1.9.1+10`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
 
 </div>
 
@@ -36,7 +36,17 @@ The UI page opens with an **Export / Import** section: pick an export directory 
 
 ## 🤖 Backed up in one run, from 自由作業盤
 
-The app answers a **token-gated intent** from 白い熊 自由作業盤's 保存復元 project: it runs that same category export headlessly — no screen, no tapping — writes one ZIP wherever it was told to, and replies with the path and the real byte size. While it works it reports **real counts, never a percentage**: 「区分 3/7 — 設定」 as it walks the categories, 「メッセージ 1234/8942」 while the messages stream through. It also **answers which items should start ticked**, so 自由作業盤's picker opens on the same selection as the app's own, and a running export can be **stopped from outside** — it unwinds at the next entry boundary and removes the half-written archive, leaving the backup directory exactly as it found it. The switch ships **off**; nothing is reachable until you turn it on and paste the app's token — copied straight from the settings row — into 自由作業盤.
+The app answers an intent from 白い熊 自由作業盤's 保存復元 project: it runs that same category export headlessly — no screen, no tapping — writes one ZIP wherever it was told to, and replies with the path and the real byte size. While it works it reports **real counts, never a percentage**: 「区分 3/7 — 設定」 as it walks the categories, 「メッセージ 1234/8942」 while the messages stream through — and it keeps reporting through a stalled write, so a slow destination reads as *working* rather than *dead*. It also **answers which items should start ticked**, so 自由作業盤's picker opens on the same selection as the app's own, and a running export can be **stopped from outside** — it unwinds at the next entry boundary and removes the half-written archive, leaving the backup directory exactly as it found it.
+
+The switch now ships **on**, and the authorization token is **optional**: 「認証トークンを使用しますか？」 sits beneath it, off by default, and the token row appears only if you ask for one. A pasted secret cannot survive a wipe — which is exactly the situation the next section exists for.
+
+---
+
+## 🗄️ Restored with its messages, onto a wiped phone
+
+A separate **data door** lets 白い熊 応用管理 back this app up *with its data* and put it back on a clean phone — the case no APK backup can cover, because an app's own storage is unreadable without root. It is a `ContentProvider` rather than another broadcast for one decisive reason: **a broadcast cannot tell you who sent it.** Every caller is checked three ways before a byte moves — the **exact package name** (never a prefix, which any sideloaded app could simply claim), the **uid the kernel reports**, and a **pinned signing certificate**. The archive travels through a **file descriptor the caller opened**, so this app never writes into someone else's backup directory and the permission expires the moment that descriptor closes.
+
+**Restoring exists only here** — never as a broadcast. An import overwrites this app's data, and an unauthenticated door to that would let any app on the phone rewrite your message history.
 
 ---
 
