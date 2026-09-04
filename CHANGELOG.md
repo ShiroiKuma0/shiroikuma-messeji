@@ -4,6 +4,19 @@ This file carries **both** histories. The fork's own releases come first, newest
 from the second `# Changelog` heading downwards is Fossify's original changelog, kept byte-for-byte
 as upstream writes it so that a rebase merges it cleanly instead of conflicting.
 
+## 白い熊 メッセージ 1.9.1+011 — 2026-09-04
+
+Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build.
+
+A packaging release: the fork's build counter is now **zero-padded to three digits**, matching every sister app. No behaviour changes — the automation contract v2 work landed in [`1.9.1+10`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/tag/1.9.1%2B10).
+
+## 📦 Packaging
+
+- **The build counter is zero-padded to three digits** — `1.9.1+011` rather than `1.9.1+11`. Unpadded, a plain string sort puts `+10` before `+9`, so downloads, release pages and tag lists stopped reading in build order exactly when there were enough builds for it to matter.
+- The padding is applied in **one place**, the single value both the `versionName` and the APK filename are built from, so the artefact, the tag, the release title and the version the app reports about itself cannot drift apart.
+- **`versionCode` is unchanged in kind** — still `<upstream code> × 10000 + <counter>`, so `230011` follows `230010` and this installs over an existing build normally.
+- **Earlier releases are not retagged.** `1.9.1+8` and `1.9.1+10` stay exactly as published; padding starts from this build, so padded tags will sort below the older ones for a while.
+
 ## 白い熊 メッセージ 1.9.1+10 — 2026-09-04
 
 Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build.
