@@ -1,3 +1,66 @@
+# Changelog — 白い熊 メッセージ (fork) and Fossify Messages (upstream)
+
+This file carries **both** histories. The fork's own releases come first, newest first; everything
+from the second `# Changelog` heading downwards is Fossify's original changelog, kept byte-for-byte
+as upstream writes it so that a rebase merges it cleanly instead of conflicting.
+
+## 白い熊 メッセージ 1.9.1+10 — 2026-09-04
+
+Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build.
+
+This release lands **automation contract v2**: the sister-app backup surface stops depending on a secret that has to be pasted by hand, and gains a verified **data door** so 白い熊 応用管理 can back this app up *with its messages* and restore it onto a wiped phone. This is also the fork's first changelog entry, so everything built on top of stock is listed below — the v2 work is marked **new in +10**.
+
+## 🆕 New in 1.9.1+10 — automation contract v2
+
+- **The automation switch ships ON, and the token is now optional.** A new 「認証トークンを使用しますか？」 row sits beneath the master switch, **off by default**; the token row itself appears only when you ask for one, so a 48-character secret is never left sitting under a switch that ignores it. The reason is concrete: a pasted secret cannot survive a wipe, and restoring a wiped phone is exactly when the backup surface has to work.
+- **A token sent to the app while it does not require one is ignored, never refused.** Tokens outlive the setting they were pasted for, and a caller still sending one must be served rather than failing half a backup batch.
+- **One gate, one place.** The master switch and the token check now live in a single function that every entry point calls, so "disabled" and "bad token" cannot drift apart between doors.
+- **New: a data door for backup *with data*.** A `ContentProvider` answering `describe` / `export` / `import` / `cancel` — a provider rather than a broadcast because **a broadcast cannot tell you who sent it**. Every caller is verified three ways before a byte moves: **exact package name** (never a prefix, which any sideloaded app could claim), the **uid the kernel reports**, and a **pinned signing certificate**.
+- **The archive travels through a file descriptor the caller opened** — not a path, not a URI. The app never writes into someone else's backup directory, and the permission expires when the descriptor closes.
+- **Restoring exists only at that door.** An import overwrites this app's data, so it is deliberately absent from the unauthenticated broadcast surface, where it would let any app on the phone rewrite your message history.
+- **Capability discovery without waking the app** — three manifest entries readable even while the app is frozen, so a backup tool can tell whether this app can be backed up without launching it.
+- **Fixed: a restore could report success while its settings never reached disk.** The restoring caller force-stops the app the instant it hears success — deliberately, since a shutting-down process would write stale settings back over the restore — and that force-stop is a `SIGKILL`, which discards an asynchronous preference write still in flight. Preferences are now committed synchronously before success is reported. Every other write on the restore path was audited and was already durable: message rows go through the system provider, MMS attachment bytes through a stream closed before return, fonts through a closing file write.
+- **Fixed: a long export could look dead while working perfectly.** Progress was throttled but not heartbeated, so an export that stopped reporting stopped broadcasting. Since the data door writes into a descriptor that may be a pipe, a single write blocks for as long as the caller is slow to drain it — and this app streams every MMS attachment through it. The last true progress line is now re-sent every 20 seconds while a write stalls; nothing is invented, it repeats the truth rather than fabricating movement.
+
+## 📦 Export / Import — everything, by category
+
+- A full **category export/import** on the 白い熊 メッセージ UI page: the messages themselves (SMS · MMS as stock-backup-compatible JSON), theme & colours, fonts *including imported font files*, date & time formats, app settings, conversations, and blocked keywords — all into **one ZIP**.
+- Live **done/total counters** while thousands of messages stream through, and an import that **merges** per key rather than clearing, skipping categories the archive does not carry.
+- Pick an export directory once; the page then shows the newest export at a glance.
+- **Headless export** driven by 白い熊 自由作業盤's 保存復元 batch: the same export, no screen and no tapping, writing one ZIP wherever it is told to and replying with the path and real byte size.
+- Progress as **real counts, never a percentage** — 「区分 3/7 — 設定」 walking the categories, 「メッセージ 1234/8942」 through the messages.
+- The app **states which items should start ticked**, so the caller's picker opens on the same selection as the app's own.
+- A running export can be **cancelled from outside**: it unwinds at the next entry boundary, deletes the half-written archive, and leaves the backup directory exactly as it found it.
+- Archives are written to a temporary name and renamed only once complete, so a killed export never leaves something that looks like a backup.
+- The automation switch, its token requirement and the token are all **excluded from the export**, so a restored archive can neither carry the secret nor silently re-gate the app.
+
+## 🎨 UI & theming
+
+- **Granular per-element Theme & Colors system** with two-tier inheritance: foundation slots (background / primary / text) drive everything until a specific element is overridden.
+- **Black `#000000` + pure yellow `#FFFF00`** as the seeded default — pure yellow, never material `#FFEB3B`; previously persisted material yellow is migrated once.
+- **Per-element fonts**: family, weight and size per themed text element, with a live sample that redraws as you tweak, and an "Add font…" import that makes any font file available everywhere.
+- **Alpha/transparency slider** in the colour picker (stock is opaque-only) plus a shared recently-used-colours row.
+- Black/yellow chrome throughout — overflow menu, contextual action bar, popup menus, dialogs, and **toasts**.
+- A **設定 toolbar pair**: 設 opens the UI page, 定 the regular Settings screen; each glyph is its own themeable element. Long-pressing the ⋮ overflow icon also jumps to the UI page.
+- A brush-stroke yellow **人 glyph** for contacts without a photo, replacing the generated coloured-letter avatar everywhere it appears.
+- Restyled app icon: yellow line-art bubble on black.
+- Reorganised and prominently indented UI settings page hierarchy.
+
+## 🕐 Japanese time & imperial-era dates
+
+- Today's messages show a **Sino-Japanese clock reading** (午前八時); older ones an **imperial-era date** (令和八年五月十四日（木曜日）) — in the conversation list, in-thread date separators, and search results.
+- Configurable under 日時の表示形式: kanji / system / 24-hour / 12-hour, plus an imperial-dates toggle.
+
+## 🔓 Packaging & platform
+
+- Built against **patched Fossify Commons**, which removes the anti-tamper "fake version" check that misfires on any renamed fork, and fixes Commons' hard-coded `org.fossify.*` assumptions — including reading the Contacts app's shared private contacts. No in-app workaround is carried as a result.
+- App id **`shiroikuma.messeji`** with the code namespace deliberately left as `org.fossify.messages`, so only the installed package differs.
+- Launcher label 白い熊 メッセージ in both English and Japanese resources.
+- Fork versioning: `versionName` `<upstream>+<N>`, `versionCode` `<upstream code> * 10000 + N`.
+- De-branded issue templates pointing at this fork.
+
+---
+
 # Changelog
 All notable changes to this project will be documented in this file.
 
