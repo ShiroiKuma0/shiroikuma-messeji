@@ -126,6 +126,7 @@ class AutomationProvider : ContentProvider() {
             .put("format", FORMAT)
             .put("min_format_readable", MIN_FORMAT_READABLE)
             .put("requires_launch_first", false)
+            .put("requires_permissions", JSONArray(IMPORT_PERMISSIONS))
             .put("contains", JSONArray(contains))
         return "OK:$header"
     }
@@ -156,7 +157,11 @@ class AutomationProvider : ContentProvider() {
             AutomationJobs.finish(jobId)
             runCatching { dup.close() }
             Log.w(TAG, "could not start the data service: $e")
-            fail("ERROR:${e.message ?: e.javaClass.simpleName}")
+            // Returned as this call's value, never broadcast: no OK:<job_id> was ever handed out for
+            // a job that will not run, so a broadcast here would answer the caller twice. The
+            // service's own promotion is the site where the OK has already gone and a broadcast IS
+            // required — see AutomationDataService.onStartCommand.
+            fail(AutomationDataService.startRefusal(ctx, e))
         }
     }
 
@@ -197,6 +202,28 @@ class AutomationProvider : ContentProvider() {
         const val KEY_REPLY_ACTION = "reply_action"
         const val KEY_REPLY_PACKAGE = "reply_package"
         const val KEY_PROGRESS_ACTION = "progress_action"
+
+        /**
+         * What an import needs **granted** before it can succeed — derived from what this app's
+         * restore path actually writes, not from what kind of app it is. The restore order is
+         * install → do not launch → import → force-stop, and a freshly installed app holds no
+         * runtime permissions at all, so a caller that does not know this streams the whole archive
+         * and only then collects a `SecurityException`.
+         *
+         * Every prefs-backed category here needs nothing. The **messages** category is the one that
+         * does: `MessagesWriter` inserts SMS and MMS rows, MMS parts and addresses straight into the
+         * system Telephony provider, and updates conversation dates there afterwards.
+         *
+         * **One caveat this array cannot express**, and the caller should not be misled by its
+         * absence: the operative gate on that provider is being the **default SMS app**, a role
+         * 白い熊 assigns rather than a permission any prompt can grant. Naming these two is still
+         * strictly better than declaring `[]` — it moves the failure before the stream instead of
+         * after it — but a granted pair is not by itself sufficient here.
+         */
+        private val IMPORT_PERMISSIONS = listOf(
+            "android.permission.READ_SMS",
+            "android.permission.WRITE_SMS",
+        )
 
         /** This app's archive format — the FORMAT_VERSION SettingsEximport stamps into manifest.json. */
         const val FORMAT = 1
