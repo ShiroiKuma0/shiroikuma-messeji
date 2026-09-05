@@ -4,6 +4,40 @@ This file carries **both** histories. The fork's own releases come first, newest
 from the second `# Changelog` heading downwards is Fossify's original changelog, kept byte-for-byte
 as upstream writes it so that a rebase merges it cleanly instead of conflicting.
 
+## 白い熊 メッセージ 1.9.1+012 — 2026-09-05
+
+Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build.
+
+**This release fixes a live defect in [`1.9.1+011`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/tag/1.9.1%2B011).** Anyone on `+011` should take this build.
+
+> **Note on testing:** the phone currently has `1.9.1+011` installed, so this release is *ahead* of the build that has been used. The fix below is verified by build and review, not yet by a cold-start restore on the device.
+
+## 🩹 Fixed — a refused foreground start left the caller waiting forever
+
+The data door starts a foreground service to do the actual export or import. On Android 12 and later that promotion can be **refused outright** when the app is cold, which is exactly the case this whole feature exists for: an unattended backup batch, or a restore onto a freshly wiped phone.
+
+`+011` caught that refusal, closed the caller's file descriptor and stopped — but **never answered**. By that point the caller had already, and correctly, been handed `OK:<job id>`, because starting the service had succeeded; only the promotion inside it failed. So the backup tool sat waiting out its entire timeout on a job that was never going to report, and the result was indistinguishable from an app that had never implemented the contract at all.
+
+The service now reads the reply address **before** the call that can fail, answers a refusal with a proper terminal error, releases the descriptor and stops. Catching the exception was never the fix; answering it is.
+
+- **The refusal is classified, so the repair offered actually matches the fault.** A dedicated `no-foreground-start` error is reported only when the throwable is the not-allowed exception **and** the app is not already exempt from battery optimisation. If the exemption is already held and the start was still refused, the cause is something a battery-settings button cannot touch, and the error stays descriptive instead of sending you to a setting that is already correct.
+- **That exception class is matched by name, never by type.** It arrived in Android 12 and this app supports Android 8 and up, so a direct reference would fail to load on an older device — in a `catch` block, the natural way to write it is the wrong way.
+- **The provider's own start site was deliberately left alone.** It returns its refusal as the return value of the call and never hands out a job id for work that will not run, so adding a broadcast there would answer the caller twice. Two start sites, two different correct fixes.
+
+**How it was found:** the sister-app contract this implements is corrected in place while apps are being built from it, and now carries a revision stamp. Checking that stamp showed the document had moved eight minutes after `+011` was built — and re-reading it turned up this defect in already-published code.
+
+## 🔐 The restore now declares what it needs granted
+
+`describe` gained a `requires_permissions` field, so a backup tool can ask for what a restore needs **before** streaming an archive rather than reporting a failure afterwards. A freshly installed app holds no runtime permissions at all, and the restore order is install → do not launch → import.
+
+Derived from what the restore actually writes rather than from the kind of app this is: every settings-backed category needs nothing, while the **messages** category writes SMS and MMS rows, parts and addresses straight into the system Telephony provider. It therefore declares `READ_SMS` and `WRITE_SMS`.
+
+**One caveat that the field cannot express**, stated here so it is not mistaken for a fault: granting both is still not sufficient, because the operative gate on that provider is being the **default SMS app** — a role you assign, and no permission prompt can hand it over. A non-empty declaration means "at least this", never "only this".
+
+## Unchanged on purpose
+
+The headless export triggered by the older broadcast still runs inside the broadcast itself rather than on a service of its own, which is a real limitation for a large message archive. It predates this work and changing it is a change of mechanism rather than a fix, so it is left as a recommendation instead of being altered in a release meant to correct one specific defect.
+
 ## 白い熊 メッセージ 1.9.1+011 — 2026-09-04
 
 Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build.
