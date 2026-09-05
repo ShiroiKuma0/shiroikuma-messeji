@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Bundle
 import android.os.IBinder
+import android.os.PowerManager
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import java.io.File
@@ -58,38 +59,37 @@ class AutomationDataService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    /**
+     * Three steps, in this order, because two of the rules that govern this method collide if either
+     * is applied on its own.
+     *
+     * 1. **Read the extras.** Microseconds and no early returns, so the five-second `startForeground`
+     *    window is untouched — and a refusal in step 2 has a reply address to answer at.
+     * 2. **Go foreground, guarded.** By the time this runs the caller has ALREADY been handed
+     *    `OK:<job_id>`, because `startForegroundService` succeeded; a refusal here must therefore be
+     *    answered with the terminal broadcast, not merely caught.
+     * 3. **Then the early returns** — a stale job id, a descriptor already consumed. These come last
+     *    because a service started with `startForegroundService` must reach `startForeground`
+     *    whatever it then decides, or the platform kills the app for it.
+     *
+     * The obvious orderings each break one of those. Extras first, then the guard, then the bail.
+     */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // STEP 1 — the extras, including the address a refusal answers at.
         val jobId = intent?.getStringExtra(EXTRA_JOB)
-        // Out of the map FIRST — see the class doc. Everything below may fail; none of it may fail
-        // with the caller's file still parked in a map nothing will ever read again.
+        // Out of the map here, before anything that can fail: from this point the descriptor has
+        // exactly one owner, and no failure below can leave the caller's file parked in a map
+        // nothing will ever read again.
         val fd = jobId?.let { HANDOVER.remove(it) }
         val importing = intent?.getBooleanExtra(EXTRA_IMPORTING, false) == true
-
-        try {
-            goForeground(importing)
-        } catch (e: Exception) {
-            // API 31+ can refuse a background start outright, and a foreground type disagreeing with
-            // the manifest fails here too. Neither may cost the caller its descriptor.
-            Log.w(TAG, "could not go foreground: $e")
-            runCatching { fd?.close() }
-            jobId?.let { AutomationJobs.finish(it) }
-            return stop(startId)
-        }
-
-        if (jobId == null || fd == null) {
-            // START_NOT_STICKY, so this is only ever a restart we have no descriptor for
-            Log.w(TAG, "no job to run (id=$jobId)")
-            return stop(startId)
-        }
-
-        val replyAction = intent.getStringExtra(AutomationProvider.KEY_REPLY_ACTION)?.trim().orEmpty()
-        val replyPackage = intent.getStringExtra(AutomationProvider.KEY_REPLY_PACKAGE)?.trim().orEmpty()
-        val progressAction = intent.getStringExtra(AutomationProvider.KEY_PROGRESS_ACTION)?.trim().orEmpty()
-        val items = intent.getStringExtra(AutomationProvider.KEY_ITEMS)
+        val replyAction = intent?.getStringExtra(AutomationProvider.KEY_REPLY_ACTION)?.trim().orEmpty()
+        val replyPackage = intent?.getStringExtra(AutomationProvider.KEY_REPLY_PACKAGE)?.trim().orEmpty()
+        val progressAction = intent?.getStringExtra(AutomationProvider.KEY_PROGRESS_ACTION)?.trim().orEmpty()
+        val items = intent?.getStringExtra(AutomationProvider.KEY_ITEMS)
         val replied = AtomicBoolean(false)
 
         fun reply(result: String) {
-            if (!replied.compareAndSet(false, true)) {
+            if (jobId == null || !replied.compareAndSet(false, true)) {
                 return
             }
             AutomationJobs.finish(jobId)
@@ -111,6 +111,25 @@ class AutomationDataService : Service() {
             } catch (e: Exception) {
                 Log.w(TAG, "reply broadcast failed: $e")
             }
+        }
+
+        // STEP 2 — the promotion, guarded. Catching without replying is not a fix: it turns a crash
+        // into a silent no-export, and a caller that waits out its whole timeout cannot tell that
+        // apart from an app that never implemented the contract.
+        try {
+            goForeground(importing)
+        } catch (e: Exception) {
+            Log.w(TAG, "could not go foreground: $e")
+            reply(startRefusal(this, e))
+            runCatching { fd?.close() }
+            return stop(startId)
+        }
+
+        // STEP 3 — only now the early returns.
+        if (jobId == null || fd == null) {
+            // START_NOT_STICKY, so this is only ever a restart we have no descriptor for
+            Log.w(TAG, "no job to run (id=$jobId)")
+            return stop(startId)
         }
 
         ensureBackgroundThread {
@@ -295,6 +314,34 @@ class AutomationDataService : Service() {
          * out before anything that can throw and closes it in a `finally`.
          */
         private val HANDOVER = ConcurrentHashMap<String, ParcelFileDescriptor>()
+
+        /**
+         * The refusal string for a failed foreground start — classified so the caller only offers
+         * 白い熊 a 「電池最適化を除外」 button when that button would actually help.
+         *
+         * **Two conditions, not one.** The reserved `ERROR:no-foreground-start` key is emitted only
+         * when the throwable is the not-allowed exception **and** the exemption is not already held.
+         * If it is held and the start was still refused, the cause is something the button cannot
+         * touch — アプリ起動管理 on 自動管理 being the likeliest on this phone — and offering it
+         * sends 白い熊 to a setting that is already correct. "Is this the fault the button fixes"
+         * and "is the button still available" are different questions; only the pair answers it.
+         *
+         * **Matched by NAME, never `instanceof`.** `ForegroundServiceStartNotAllowedException` is
+         * API 31 and this app's minSdk is 26, so a class literal in a catch block — the natural way
+         * to write this — would fail to load on an older device.
+         */
+        fun startRefusal(context: Context, t: Throwable): String {
+            val notAllowed = t.javaClass.simpleName == "ForegroundServiceStartNotAllowedException"
+            val exempt = runCatching {
+                context.getSystemService(PowerManager::class.java)
+                    .isIgnoringBatteryOptimizations(context.packageName)
+            }.getOrDefault(false)
+            return if (notAllowed && !exempt) {
+                "ERROR:no-foreground-start"
+            } else {
+                "ERROR:cannot start export service: ${t.javaClass.simpleName}"
+            }
+        }
 
         fun start(
             context: Context,
