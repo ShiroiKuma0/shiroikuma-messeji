@@ -78,6 +78,18 @@
     <string name="format_time_24h">24-hour (14:53)</string>
     <string name="format_time_12h">12-hour (2:53 PM)</string>
     <string name="use_imperial_date">Imperial Japanese dates (令和八年五月三十日（土曜日）)</string>
+    <!-- 白い熊 メッセージ UI page: conversation-list swipe gestures -->
+    <string name="swipe_section">Swipe gestures</string>
+    <string name="swipe_right_label">Swipe right</string>
+    <string name="swipe_left_label">Swipe left</string>
+    <string name="swipe_action_none">Nothing</string>
+    <string name="swipe_action_delete">Delete</string>
+    <string name="swipe_action_toggle_read">Toggle read / unread</string>
+    <string name="swipe_action_archive">Archive</string>
+    <string name="swipe_action_toggle_pin">Pin / unpin</string>
+    <string name="swipe_delete_confirm">Ask before deleting</string>
+    <string name="swipe_delete_confirm_desc">Off: the conversation goes at once, with an Undo bar at the bottom for a few seconds.</string>
+    <string name="conversation_deleted">Conversation deleted</string>
     <!-- Message thread subgroups -->
     <string name="theme_group_thread_received">Received messages</string>
     <string name="theme_group_thread_sent">Sent messages</string>

@@ -162,6 +162,18 @@
     <string name="format_time_24h">24時間制（14:53）</string>
     <string name="format_time_12h">12時間制（午後2:53）</string>
     <string name="use_imperial_date">和暦の日付（令和八年五月三十日（土曜日））</string>
+    <!-- 白い熊 メッセージ UI page: conversation-list swipe gestures -->
+    <string name="swipe_section">スワイプ操作</string>
+    <string name="swipe_right_label">右スワイプ</string>
+    <string name="swipe_left_label">左スワイプ</string>
+    <string name="swipe_action_none">何もしない</string>
+    <string name="swipe_action_delete">削除</string>
+    <string name="swipe_action_toggle_read">既読・未読の切り替え</string>
+    <string name="swipe_action_archive">アーカイブ</string>
+    <string name="swipe_action_toggle_pin">固定・固定解除</string>
+    <string name="swipe_delete_confirm">削除前に確認する</string>
+    <string name="swipe_delete_confirm_desc">オフ：すぐに削除し、数秒間だけ画面下部に「元に戻す」バーを表示します。</string>
+    <string name="conversation_deleted">会話を削除しました</string>
     <!-- Message thread subgroups -->
     <string name="theme_group_thread_received">受信メッセージ</string>
     <string name="theme_group_thread_sent">送信メッセージ</string>

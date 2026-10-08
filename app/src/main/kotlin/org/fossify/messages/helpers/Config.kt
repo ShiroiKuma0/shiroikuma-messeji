@@ -165,6 +165,23 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(USE_IMPERIAL_DATE, true)
         set(value) = prefs.edit().putBoolean(USE_IMPERIAL_DATE, value).apply()
 
+    // Conversation-list swipe gestures; ordinals into SwipeAction (right: delete, left: toggle read).
+    var swipeRightAction: Int
+        get() = prefs.getInt(SWIPE_RIGHT_ACTION, SwipeAction.DELETE.ordinal)
+        set(value) = prefs.edit().putInt(SWIPE_RIGHT_ACTION, value).apply()
+
+    var swipeDeleteConfirm: Boolean
+        get() = prefs.getBoolean(SWIPE_DELETE_CONFIRM, false)
+        set(value) = prefs.edit().putBoolean(SWIPE_DELETE_CONFIRM, value).apply()
+
+    var dialogStyleSeeded: Boolean
+        get() = prefs.getBoolean(DIALOG_STYLE_SEEDED, false)
+        set(value) = prefs.edit().putBoolean(DIALOG_STYLE_SEEDED, value).apply()
+
+    var swipeLeftAction: Int
+        get() = prefs.getInt(SWIPE_LEFT_ACTION, SwipeAction.TOGGLE_READ.ordinal)
+        set(value) = prefs.edit().putInt(SWIPE_LEFT_ACTION, value).apply()
+
     // Granular theming: one Int override per color slot, THEME_UNSET means "follow the default".
     var themeV1Seeded: Boolean
         get() = prefs.getBoolean(THEME_V1_SEEDED, false)

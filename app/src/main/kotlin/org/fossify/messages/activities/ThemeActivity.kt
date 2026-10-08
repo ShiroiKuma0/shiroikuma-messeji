@@ -56,6 +56,8 @@ import org.fossify.messages.extensions.themeColor
 import org.fossify.messages.helpers.EXIM_WARN_COLOR
 import org.fossify.messages.helpers.MAX_FONT_SIZE_SP
 import org.fossify.messages.helpers.SettingsEximport
+import org.fossify.messages.helpers.SwipeAction
+import org.fossify.messages.helpers.swipeActionOf
 
 // kxkb indent ladder: section headings at 36dp (in XML), their rows one step in at 72dp,
 // sub-headings at 54dp (in XML), their rows at 90dp — so rows sit at (base + level * step).
@@ -132,6 +134,7 @@ class ThemeActivity : SimpleActivity() {
 
         addEximportSection(primaryColor)
         addFormatSection(primaryColor)
+        addSwipeSection(primaryColor)
 
         ThemeSection.entries.forEach { section ->
             addSectionHeader(getString(section.labelRes), primaryColor)
@@ -319,6 +322,28 @@ class ThemeActivity : SimpleActivity() {
             }
         }
         addSwitchRow(R.string.use_imperial_date, config.useImperialDate) { config.useImperialDate = it }
+    }
+
+    // Conversation-list swipe gestures: one action per direction, picked from SwipeAction.
+    private fun addSwipeSection(primaryColor: Int) {
+        addSectionHeader(getString(R.string.swipe_section), primaryColor)
+        addSwipeRow(R.string.swipe_right_label, { config.swipeRightAction }) { config.swipeRightAction = it }
+        addSwipeRow(R.string.swipe_left_label, { config.swipeLeftAction }) { config.swipeLeftAction = it }
+        addSwitchRow(
+            labelRes = R.string.swipe_delete_confirm,
+            checked = config.swipeDeleteConfirm,
+            description = getString(R.string.swipe_delete_confirm_desc),
+        ) { config.swipeDeleteConfirm = it }
+    }
+
+    private fun addSwipeRow(@StringRes labelRes: Int, current: () -> Int, store: (Int) -> Unit) {
+        addValueRow(labelRes, getString(swipeActionOf(current()).labelRes)) { valueView ->
+            val items = ArrayList(SwipeAction.entries.map { RadioItem(it.ordinal, getString(it.labelRes)) })
+            RadioGroupDialog(this, items, swipeActionOf(current()).ordinal) {
+                store(it as Int)
+                valueView.text = getString(swipeActionOf(current()).labelRes)
+            }
+        }
     }
 
     private fun addValueRow(

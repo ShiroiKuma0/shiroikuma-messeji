@@ -1,12 +1,20 @@
 package org.fossify.messages.extensions
 
+import android.app.Dialog
 import android.content.Context
+import android.graphics.drawable.GradientDrawable
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.view.Menu
 import androidx.annotation.StringRes
 import org.fossify.commons.extensions.adjustAlpha
 import org.fossify.commons.extensions.getContrastColor
 import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
+import org.fossify.commons.extensions.withDialogBorder
+import org.fossify.messages.helpers.DIALOG_BORDER_WIDTH_DEFAULT
 import org.fossify.messages.R
 import org.fossify.messages.helpers.PALETTE_BLACK
 import org.fossify.messages.helpers.PALETTE_YELLOW
@@ -15,6 +23,7 @@ import org.fossify.messages.helpers.THEME_UNSET
 
 private const val SECONDARY_TEXT_ALPHA = 0.6f
 private const val SEARCH_HINT_ALPHA = 0.5f
+private const val DIALOG_CORNER_DP = 16f
 
 // Granular, per-element theming for 白い熊 メッセージ.
 //
@@ -171,6 +180,22 @@ private fun Context.themeDefault(slot: ThemeSlot): Int = when (slot) {
     ThemeSlot.THREAD_STATUS -> themeColor(ThemeSlot.TEXT)
 }
 
+/**
+ * Paint every item title of a contextual-action-bar menu in the menu-text colour. Commons draws that
+ * bar's overflow popup black with a yellow frame but leaves the titles in the theme's white, and the
+ * popup's text colour has no runtime hook — a span on the title is the one thing it honours.
+ */
+fun Context.colorMenuTitles(menu: Menu) {
+    val color = themeColor(ThemeSlot.MENU_TEXT)
+    for (i in 0 until menu.size()) {
+        val item = menu.getItem(i)
+        val title = item.title?.toString() ?: continue
+        item.title = SpannableString(title).apply {
+            setSpan(ForegroundColorSpan(color), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+    }
+}
+
 /** Set an explicit override for a slot. Foundation slots write through to the stock commons colors. */
 fun Context.setThemeColor(slot: ThemeSlot, color: Int) {
     when (slot) {
@@ -214,6 +239,33 @@ fun Context.seedBlackYellowThemeIfNeeded() {
     config.primaryColor = PALETTE_YELLOW
     config.accentColor = PALETTE_YELLOW
     config.themeV1Seeded = true
+}
+
+/**
+ * One-time seed of Commons' dialog accent border (sk3): a 2 dp yellow frame round every dialog, so a
+ * black dialog stands out from the black list behind it. The keys live in Commons' BaseConfig, read by
+ * its patched setupDialogStuff; written once so existing installs pick them up too.
+ */
+fun Context.seedDialogStyleIfNeeded() {
+    if (config.dialogStyleSeeded) {
+        return
+    }
+
+    config.dialogBorderColor = PALETTE_YELLOW
+    config.dialogBorderWidth = DIALOG_BORDER_WIDTH_DEFAULT
+    config.dialogStyleSeeded = true
+}
+
+/**
+ * Give a platform dialog that bypasses Commons' setupDialogStuff (the date and time pickers) the same
+ * window as every other dialog: theme background, rounded corners and the accent border. Call after show().
+ */
+fun Dialog.applyDialogBorder() {
+    val background = GradientDrawable().apply {
+        cornerRadius = DIALOG_CORNER_DP * context.resources.displayMetrics.density
+        setColor(context.getProperBackgroundColor())
+    }
+    window?.setBackgroundDrawable(context.withDialogBorder(background))
 }
 
 /** [PALETTE_YELLOW] with [color]'s alpha if its RGB is the legacy material yellow, else null. */

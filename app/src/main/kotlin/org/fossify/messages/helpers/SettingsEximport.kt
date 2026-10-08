@@ -22,6 +22,9 @@ import org.fossify.commons.helpers.ACCENT_COLOR
 import org.fossify.commons.helpers.APP_ICON_COLOR
 import org.fossify.commons.helpers.BACKGROUND_COLOR
 import org.fossify.commons.helpers.COLOR_PICKER_RECENT_COLORS
+import org.fossify.commons.helpers.DIALOG_BORDER_COLOR
+import org.fossify.commons.helpers.DIALOG_BORDER_WIDTH
+import org.fossify.commons.helpers.STYLED_DIALOG_BUTTONS
 import org.fossify.commons.helpers.FontHelper
 import org.fossify.commons.helpers.IS_SYSTEM_THEME_ENABLED
 import org.fossify.commons.helpers.PRIMARY_COLOR
@@ -116,7 +119,7 @@ object SettingsEximport {
     // Device-local / runtime keys never worth exporting: migration flags, version counters,
     // storage paths & SAF grants, one-time dialog flags, lock-screen retry state, widget scratch.
     private val EXCLUDED_KEYS = setOf(
-        THEME_V1_SEEDED, PURE_YELLOW_MIGRATED, WAS_DB_CLEARED, LAST_RECYCLE_BIN_CHECK,
+        THEME_V1_SEEDED, PURE_YELLOW_MIGRATED, DIALOG_STYLE_SEEDED, WAS_DB_CLEARED, LAST_RECYCLE_BIN_CHECK,
         SOFT_KEYBOARD_HEIGHT, LAST_BLOCKED_KEYWORD_EXPORT_PATH,
         // the automation gate is device-local: the token must never travel in a backup, and a
         // restored archive must never silently switch this app's automation on — nor, now, silently
@@ -133,6 +136,7 @@ object SettingsEximport {
     private val THEME_KEYS = setOf(
         TEXT_COLOR, BACKGROUND_COLOR, PRIMARY_COLOR, ACCENT_COLOR, APP_ICON_COLOR,
         IS_SYSTEM_THEME_ENABLED, COLOR_PICKER_RECENT_COLORS,
+        DIALOG_BORDER_COLOR, DIALOG_BORDER_WIDTH, STYLED_DIALOG_BUTTONS,
     )
 
     private val FORMAT_KEYS = setOf(MESSAGE_TIME_FORMAT, USE_IMPERIAL_DATE)

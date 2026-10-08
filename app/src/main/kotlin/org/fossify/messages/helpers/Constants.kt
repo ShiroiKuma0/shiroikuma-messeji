@@ -55,6 +55,16 @@ const val PURE_YELLOW_MIGRATED = "pure_yellow_migrated"
 const val MESSAGE_TIME_FORMAT = "message_time_format" // Int, ordinal into MessageTimeFormat; 0 = Japanese kanji
 const val USE_IMPERIAL_DATE = "use_imperial_date"     // Boolean, true = 和暦 (令和…（土曜日）) for earlier dates
 
+// Conversation-list swipe gestures (白い熊 メッセージ UI page); Int, ordinal into SwipeAction
+const val SWIPE_RIGHT_ACTION = "swipe_right_action"   // default: delete
+const val SWIPE_LEFT_ACTION = "swipe_left_action"     // default: toggle read/unread
+const val SWIPE_DELETE_CONFIRM = "swipe_delete_confirm" // Boolean, default off: delete behind an undo bar instead
+const val UNDO_DELETE_MS = 5000                       // how long the swipe-delete undo bar stays up
+
+// Dialog accent border (Commons' sk3 BaseConfig keys), seeded once to yellow / 2 dp
+const val DIALOG_STYLE_SEEDED = "dialog_style_seeded"
+const val DIALOG_BORDER_WIDTH_DEFAULT = 2 // dp
+
 // Export/Import: warning red for "no directory / no export yet" states
 const val EXIM_WARN_COLOR = 0xFFFF5252.toInt()
 

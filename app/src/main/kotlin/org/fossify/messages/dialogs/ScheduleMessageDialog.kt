@@ -17,6 +17,7 @@ import org.fossify.commons.extensions.getTimeFormat
 import org.fossify.commons.extensions.isDynamicTheme
 import org.fossify.commons.extensions.setupDialogStuff
 import org.fossify.commons.extensions.toast
+import org.fossify.messages.extensions.applyDialogBorder
 import org.fossify.messages.R
 import org.fossify.messages.databinding.ScheduleMessageDialogBinding
 import org.fossify.messages.extensions.config
@@ -110,6 +111,7 @@ class ScheduleMessageDialog(
         ).apply {
             datePicker.minDate = System.currentTimeMillis()
             show()
+            applyDialogBorder()
             getButton(AlertDialog.BUTTON_NEGATIVE).apply {
                 text = activity.getString(org.fossify.commons.R.string.cancel)
                 setOnClickListener {
@@ -152,6 +154,7 @@ class ScheduleMessageDialog(
                 DateFormat.is24HourFormat(activity)
             ).apply {
                 show()
+                applyDialogBorder()
                 getButton(AlertDialog.BUTTON_NEGATIVE).apply {
                     text = activity.getString(org.fossify.commons.R.string.cancel)
                     setOnClickListener {

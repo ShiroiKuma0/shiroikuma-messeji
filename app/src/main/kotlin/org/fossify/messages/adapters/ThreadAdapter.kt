@@ -63,6 +63,7 @@ import org.fossify.messages.dialogs.MessageDetailsDialog
 import org.fossify.messages.dialogs.SelectTextDialog
 import org.fossify.messages.extensions.ThemeSlot
 import org.fossify.messages.extensions.applyThemeFont
+import org.fossify.messages.extensions.colorMenuTitles
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.getContactFromAddress
 import org.fossify.messages.extensions.isImageMimeType
@@ -134,6 +135,7 @@ class ThreadAdapter(
             findItem(R.id.cab_select_text).isVisible = isOneItemSelected && hasText
             findItem(R.id.cab_properties).isVisible = isOneItemSelected
             findItem(R.id.cab_restore).isVisible = isRecycleBin
+            activity.colorMenuTitles(this)
         }
     }
 

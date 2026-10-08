@@ -50,6 +50,9 @@ abstract class BaseConversationsAdapter(
 
     private var recyclerViewState: Parcelable? = null
 
+    // Conversations kept out of the list whatever a refresh brings back (a swipe-delete awaiting undo).
+    protected val hiddenThreadIds = HashSet<Long>()
+
     init {
         setupDragListener(true)
         setHasStableIds(true)
@@ -82,7 +85,7 @@ abstract class BaseConversationsAdapter(
         commitCallback: (() -> Unit)? = null,
     ) {
         saveRecyclerViewState()
-        submitList(newConversations.toList(), commitCallback)
+        submitList(newConversations.filter { it.threadId !in hiddenThreadIds }, commitCallback)
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -100,6 +103,8 @@ abstract class BaseConversationsAdapter(
     }
 
     override fun getSelectableItemCount() = itemCount
+
+    fun isInActionMode() = actMode != null
 
     protected fun getSelectedItems() = currentList.filter {
         selectedKeys.contains(it.hashCode())
