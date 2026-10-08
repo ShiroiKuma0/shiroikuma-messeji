@@ -6,11 +6,11 @@
 
 **A black-and-pure-yellow SMS/MMS app with per-element theming, per-element fonts, and Sino-Japanese time & imperial-era dates.**
 
-A fork of [Fossify Messages](https://github.com/FossifyOrg/Messages) with **major additions**: a granular per-element Theme & Colors system (black `#000000` / pure yellow `#FFFF00` by default), per-element font family/weight/size, full category export/import (messages included), headless backup driven from 白い熊 自由作業盤, a verified data door that lets 白い熊 応用管理 restore this app *with its messages* onto a wiped phone, an alpha-capable color picker, Japanese kanji clock readings and 令和 imperial-era dates, a 設定 toolbar launcher, and a fully black/yellow chrome — menus, action bar, dialogs, and toasts included.
+A fork of [Fossify Messages](https://github.com/FossifyOrg/Messages) with **major additions**: a granular per-element Theme & Colors system (black `#000000` / pure yellow `#FFFF00` by default), per-element font family/weight/size, full category export/import (messages included), headless backup driven from 白い熊 自由作業盤, a verified data door that lets 白い熊 応用管理 restore this app *with its messages* onto a wiped phone, swipe-left / swipe-right actions on the conversation list with undo-delete, an alpha-capable color picker, Japanese kanji clock readings and 令和 imperial-era dates, a 設定 toolbar launcher, and a fully black/yellow chrome — menus, action bar, dialogs, and toasts included.
 
 Installs **side-by-side** with Fossify Messages (app id `shiroikuma.messeji`).
 
-**📥 Latest release: [`1.9.1+019`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
+**📥 Latest release: [`1.9.1+025`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
 
 </div>
 
@@ -18,7 +18,13 @@ Installs **side-by-side** with Fossify Messages (app id `shiroikuma.messeji`).
 
 ## 🎨 Granular per-element theming, black & pure yellow
 
-Every visible element — search bar, conversation list, message bubbles (received / sent / status & time), headers, menus, back arrows — has its own color slot on the **白い熊 メッセージ UI** page, with two-tier inheritance: foundation slots (background / primary / text) drive everything until you override a specific element. The app seeds a black background with pure-yellow (`#FFFF00`) text and accents on first launch, and the whole chrome follows: overflow menu, contextual action bar, popup menus, dialogs, and even toasts render black with a yellow frame.
+Every visible element — search bar, conversation list, message bubbles (received / sent / status & time), headers, menus, back arrows — has its own color slot on the **白い熊 メッセージ UI** page, with two-tier inheritance: foundation slots (background / primary / text) drive everything until you override a specific element. The app seeds a black background with pure-yellow (`#FFFF00`) text and accents on first launch, and the whole chrome follows: overflow menu, contextual action bar and its menu, popup menus, every dialog (date and time pickers included), the undo bar, and even toasts raised in the background render black with a yellow frame.
+
+---
+
+## 👆 Swipe to act — and undo
+
+Flick a conversation **right** to delete it, **left** to toggle read / unread — or pick any of *nothing · delete · toggle read · archive · pin / unpin* for each direction on the UI page. A short flick is enough: once the drag passes about 40 dp the yellow strip turns solid, and on release it runs out to the end of the row, holds for a beat, and the action lands. Delete doesn't nag: the conversation goes at once and a black, yellow-framed **Undo** bar waits bottom right for five seconds before anything is actually removed. Prefer the old Yes/No? “Ask before deleting” brings it back.
 
 ---
 

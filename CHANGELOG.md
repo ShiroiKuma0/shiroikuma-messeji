@@ -4,6 +4,33 @@ This file carries **both** histories. The fork's own releases come first, newest
 from the second `# Changelog` heading downwards is Fossify's original changelog, kept byte-for-byte
 as upstream writes it so that a rebase merges it cleanly instead of conflicting.
 
+## 白い熊 メッセージ 1.9.1+025 — 2026-10-08
+
+Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `6.1.6-sk9`** to build.
+
+## 👆 Swipe gestures on the conversation list
+
+- **Swipe right / swipe left**, each mapped to an action on the 白い熊 メッセージ UI page (new **Swipe gestures** section): *Nothing*, *Delete*, *Toggle read / unread*, *Archive*, *Pin / unpin*. Defaults: right deletes, left toggles read / unread.
+- **Short swipes register.** About 40 dp of drag arms the swipe; a quick flick counts too. Below the arm point the strip is drawn faded, past it solid, so you can see when letting go will act. Releasing earlier springs the row back in 0.12 s.
+- **The strip finishes the line.** On release the yellow strip runs out to the row's end (0.15 s), holds there for 0.2 s — the same for every action — and then the action lands: a deleted or archived row leaves, a toggled row snaps back with its new state. The swipe callback puts kept rows back itself, so a strip never lingers while the list refreshes.
+- The strip names what will happen: *Mark as Unread* or *Mark as Read*, *Pin to the top* or *Unpin*, with a matching icon.
+- Swiping is disabled while a multi-selection is active, so it never fights the contextual action bar. Archive is a no-op while archiving is turned off.
+- Both settings travel in the **App settings** category of Export / Import.
+
+## ↩️ Delete with undo instead of a dialog
+
+- **Swipe-delete no longer asks by default.** The conversation leaves the list at once and an **Undo** bar shows for 5 s — black, yellow text, 2 dp yellow frame, bottom right just above the **+** button.
+- **Nothing is deleted until the bar is gone**, because a deleted thread cannot be brought back: the telephony rows are removed only when the bar times out, a second swipe-delete settles the first, or the list leaves the screen. Undo restores the row from the cache.
+- A list refresh during the undo window (a new message arriving, a read toggle) cannot resurrect the row.
+- **Ask before deleting** (UI page, off by default) brings back the Yes/No confirmation, without the undo bar.
+
+## 🟨 Black / yellow everywhere
+
+- **Every dialog has a yellow frame.** Commons' opt-in dialog border (`sk3`) is now seeded once — yellow, 2 dp — so confirmations, pickers, rename, schedule and export dialogs stand out from the black list behind them. The date and time pickers when scheduling a message bypass Commons, so they get the same frame by hand. The border settings travel with **Theme & colours** in Export / Import.
+- **The selection bar's overflow menu** (Mark as Unread, Add number to contact, Block number, …) showed white titles on its black, yellow-framed popup; the titles now follow the **Menu text** colour (yellow by default). Same in the message thread and the recycle bin.
+- **The selection bar itself** (`1 / 426`, back arrow, icons) was still grey on the conversation list and in threads: the June recolouring covered only one of Commons' two list adapters. Commons `sk8` applies it to `MyRecyclerViewListAdapter` too — black bar, yellow title, icons, back arrow and overflow dots.
+- **Toasts raised from background code** — an MMS send failure, a failed scheduled message, a direct-reply error — came up as the system's white bubble even with the app open. Commons `sk9` lets such a toast borrow the activity on screen, so it is themed like every other toast. With the app in the background Android shows only plain toasts, so those stay plain.
+
 ## 白い熊 メッセージ 1.9.1+019 — 2026-09-08
 
 Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build.
