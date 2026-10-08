@@ -19,6 +19,7 @@ import android.widget.LinearLayout
 import android.widget.PopupWindow
 import android.widget.TextView
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.recyclerview.widget.ItemTouchHelper
 import org.fossify.commons.dialogs.PermissionRequiredDialog
 import org.fossify.commons.extensions.adjustAlpha
 import org.fossify.commons.extensions.appLaunched
@@ -59,6 +60,7 @@ import org.fossify.commons.models.Release
 import org.fossify.messages.BuildConfig
 import org.fossify.messages.R
 import org.fossify.messages.adapters.ConversationsAdapter
+import org.fossify.messages.helpers.ConversationSwipeCallback
 import org.fossify.messages.adapters.SearchResultsAdapter
 import org.fossify.messages.databinding.ActivityMainBinding
 import org.fossify.messages.databinding.ItemOverflowMenuBinding
@@ -149,6 +151,12 @@ class MainActivity : SimpleActivity() {
     override fun onPause() {
         super.onPause()
         storeStateVariables()
+    }
+
+    // A swipe-delete still waiting behind its undo bar is carried out once the list leaves the screen.
+    override fun onStop() {
+        super.onStop()
+        (binding.conversationsList.adapter as? ConversationsAdapter)?.commitPendingDeletes()
     }
 
     override fun onDestroy() {
@@ -506,6 +514,8 @@ class MainActivity : SimpleActivity() {
             )
 
             binding.conversationsList.adapter = currAdapter
+            ItemTouchHelper(ConversationSwipeCallback(currAdapter)).attachToRecyclerView(binding.conversationsList)
+            currAdapter.undoAnchor = binding.conversationsFab
             if (areSystemAnimationsEnabled) {
                 binding.conversationsList.scheduleLayoutAnimation()
             }

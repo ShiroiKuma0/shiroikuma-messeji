@@ -10,6 +10,7 @@ import org.fossify.commons.extensions.hasPermission
 import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.extensions.migratePureYellowIfNeeded
+import org.fossify.messages.extensions.seedDialogStyleIfNeeded
 import org.fossify.messages.extensions.rescheduleAllScheduledMessages
 import org.fossify.messages.extensions.seedBlackYellowThemeIfNeeded
 import org.fossify.messages.helpers.MessagingCache
@@ -23,6 +24,8 @@ class App : FossifyApp() {
         seedBlackYellowThemeIfNeeded()
         // Rewrite any persisted legacy material yellow to the pure yellow palette, once.
         migratePureYellowIfNeeded()
+        // Frame every dialog in yellow (Commons' opt-in dialog border), once.
+        seedDialogStyleIfNeeded()
         if (hasPermission(PERMISSION_READ_CONTACTS)) {
             listOf(
                 ContactsContract.Contacts.CONTENT_URI,
