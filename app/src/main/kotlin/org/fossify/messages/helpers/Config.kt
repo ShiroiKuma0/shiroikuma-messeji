@@ -174,6 +174,18 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(SWIPE_DELETE_CONFIRM, false)
         set(value) = prefs.edit().putBoolean(SWIPE_DELETE_CONFIRM, value).apply()
 
+    var filingTabs: String
+        get() = prefs.getString(FILING_TABS, "") ?: ""
+        set(value) = prefs.edit().putString(FILING_TABS, value).apply()
+
+    var filingRules: String
+        get() = prefs.getString(FILING_RULES, "") ?: ""
+        set(value) = prefs.edit().putString(FILING_RULES, value).apply()
+
+    var filingSelectedTab: Int
+        get() = prefs.getInt(FILING_SELECTED_TAB, Filing.TAB_ALL)
+        set(value) = prefs.edit().putInt(FILING_SELECTED_TAB, value).apply()
+
     var dialogStyleSeeded: Boolean
         get() = prefs.getBoolean(DIALOG_STYLE_SEEDED, false)
         set(value) = prefs.edit().putBoolean(DIALOG_STYLE_SEEDED, value).apply()

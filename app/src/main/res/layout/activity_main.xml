@@ -29,11 +29,18 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
+                <!-- 白い熊 filing: the folder tabs (自分 個人 仕事 … 未分類 送信 全部) -->
+                <org.fossify.messages.views.FolderTabBar
+                    android:id="@+id/folder_tabs"
+                    android:layout_width="match_parent"
+                    android:layout_height="46dp"
+                    android:layout_alignParentTop="true" />
+
                 <com.google.android.material.progressindicator.LinearProgressIndicator
                     android:id="@+id/conversations_progress_bar"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentTop="true"
+                    android:layout_below="@+id/folder_tabs"
                     android:indeterminate="true"
                     android:visibility="gone"
                     app:hideAnimationBehavior="outward"
@@ -45,6 +52,7 @@
                     android:id="@+id/no_conversations_placeholder"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_below="@+id/folder_tabs"
                     android:layout_centerHorizontal="true"
                     android:layout_marginTop="@dimen/bigger_margin"
                     android:alpha="0.8"
@@ -72,7 +80,8 @@
                 <com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller
                     android:id="@+id/conversations_fastscroller"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/folder_tabs">
 
                     <org.fossify.commons.views.MyRecyclerView
                         android:id="@+id/conversations_list"
@@ -85,6 +94,17 @@
                         app:layoutManager="org.fossify.commons.views.MyLinearLayoutManager" />
 
                 </com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller>
+
+                <!-- the 送信 tab: every sent message, newest first -->
+                <org.fossify.commons.views.MyRecyclerView
+                    android:id="@+id/sent_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_below="@+id/folder_tabs"
+                    android:clipToPadding="false"
+                    android:scrollbars="vertical"
+                    android:visibility="gone"
+                    app:layoutManager="org.fossify.commons.views.MyLinearLayoutManager" />
             </RelativeLayout>
         </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
@@ -95,10 +115,20 @@
             android:alpha="0"
             android:visibility="gone">
 
+            <org.fossify.commons.views.MyAppCompatCheckbox
+                android:id="@+id/search_this_tab"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:paddingStart="@dimen/small_margin"
+                android:paddingEnd="@dimen/activity_margin"
+                android:text="@string/search_this_tab_only" />
+
             <org.fossify.commons.views.MyTextView
                 android:id="@+id/search_placeholder"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_below="@+id/search_this_tab"
                 android:layout_centerHorizontal="true"
                 android:layout_marginTop="@dimen/activity_margin"
                 android:alpha="0.8"
@@ -129,6 +159,7 @@
                 android:id="@+id/search_results_list"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_below="@+id/search_this_tab"
                 android:clipToPadding="false"
                 android:scrollbars="vertical"
                 app:layoutManager="org.fossify.commons.views.MyLinearLayoutManager" />

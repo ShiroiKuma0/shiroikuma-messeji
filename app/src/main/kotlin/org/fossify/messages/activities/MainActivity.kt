@@ -12,11 +12,8 @@ import android.os.Bundle
 import android.provider.Telephony
 import android.text.TextUtils
 import android.view.View
-import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.PopupWindow
 import android.widget.TextView
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -63,7 +60,6 @@ import org.fossify.messages.adapters.ConversationsAdapter
 import org.fossify.messages.helpers.ConversationSwipeCallback
 import org.fossify.messages.adapters.SearchResultsAdapter
 import org.fossify.messages.databinding.ActivityMainBinding
-import org.fossify.messages.databinding.ItemOverflowMenuBinding
 import org.fossify.messages.extensions.checkAndDeleteOldRecycleBinMessages
 import org.fossify.messages.extensions.clearAllMessagesIfNeeded
 import org.fossify.messages.extensions.clearExpiredScheduledMessages
@@ -79,17 +75,19 @@ import org.fossify.messages.extensions.themeColor
 import org.fossify.messages.helpers.SEARCHED_MESSAGE_ID
 import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.helpers.THREAD_TITLE
+import org.fossify.messages.extensions.showThemedPopupMenu
+import org.fossify.messages.helpers.Filing
 import org.fossify.messages.models.Conversation
 import org.fossify.messages.models.Events
 import org.fossify.messages.models.Message
 import org.fossify.messages.models.SearchResult
+import org.fossify.messages.views.DayHeaderDecoration
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 
 private const val SEARCH_BAR_CORNER_RADIUS_DP = 16f
-private const val OVERFLOW_MENU_CORNER_DP = 8f
-private const val OVERFLOW_MENU_ELEVATION_DP = 8f
+private const val MILLIS_PER_SECOND = 1000L
 
 class MainActivity : SimpleActivity() {
     override var isSearchBarEnabled = true
@@ -100,6 +98,28 @@ class MainActivity : SimpleActivity() {
     private var storedFontSize = 0
     private var lastSearchedText = ""
     private var bus: EventBus? = null
+
+    // 白い熊 filing: every non-archived conversation, before the selected tab narrows it
+    private var allConversations: List<Conversation> = emptyList()
+    private var lastSetupWasCached = false
+    // the pinned set as of the last list update, so the day headers needn't read prefs per row
+    private var pinnedThreads = emptySet<String>()
+
+    private val dayHeaders by lazy {
+        DayHeaderDecoration(this) { position ->
+            val adapter = binding.conversationsList.adapter as? ConversationsAdapter
+            val conversation = adapter?.currentList?.getOrNull(position)
+            conversation?.takeIf { it.threadId.toString() !in pinnedThreads }?.let { it.date * MILLIS_PER_SECOND }
+        }
+    }
+
+    private val tabs by lazy {
+        MainTabs(this, binding, onChanged = ::refilter, openResult = ::openSearchResult, onSelected = {
+            getOrCreateConversationsAdapter().finishActMode()
+            refilter()
+            binding.conversationsList.scrollToPosition(0)
+        })
+    }
 
     private val binding by viewBinding(ActivityMainBinding::inflate)
 
@@ -135,6 +155,10 @@ class MainActivity : SimpleActivity() {
             // reflect any per-element color/font changes made in Settings
             refreshTheme()
         }
+        dayHeaders.refresh()
+        binding.conversationsList.invalidateItemDecorations()
+        tabs.sentDayHeaders.refresh()
+        binding.sentList.invalidateItemDecorations()
 
         updateTextColors(binding.mainCoordinator)
         binding.searchHolder.setBackgroundColor(getProperBackgroundColor())
@@ -182,6 +206,13 @@ class MainActivity : SimpleActivity() {
 
         binding.mainMenu.onSearchOpenListener = {
             binding.mainMenu.post { styleSearchBar() }
+            // "only this tab" starts unticked on every search
+            binding.searchThisTab.isChecked = false
+            tabs.updateSearchLabel()
+        }
+
+        binding.searchThisTab.setOnCheckedChangeListener { _, _ ->
+            searchTextChanged(lastSearchedText, forceUpdate = true)
         }
 
         binding.mainMenu.onSearchClosedListener = {
@@ -234,33 +265,7 @@ class MainActivity : SimpleActivity() {
             add(getString(org.fossify.commons.R.string.about) to ::launchAbout)
         }
 
-        val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val popup = PopupWindow(
-            content,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            true
-        )
-        val menuTextColor = themeColor(ThemeSlot.MENU_TEXT)
-        entries.forEach { (title, action) ->
-            val item = ItemOverflowMenuBinding.inflate(layoutInflater, content, false)
-            item.overflowMenuItem.text = title
-            item.overflowMenuItem.setTextColor(menuTextColor)
-            item.overflowMenuItem.setOnClickListener {
-                popup.dismiss()
-                action()
-            }
-            content.addView(item.root)
-        }
-
-        popup.setBackgroundDrawable(
-            GradientDrawable().apply {
-                cornerRadius = OVERFLOW_MENU_CORNER_DP * resources.displayMetrics.density
-                setColor(themeColor(ThemeSlot.MENU_BACKGROUND))
-            }
-        )
-        popup.elevation = OVERFLOW_MENU_ELEVATION_DP * resources.displayMetrics.density
-        popup.showAsDropDown(anchor)
+        showThemedPopupMenu(anchor, entries)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
@@ -398,6 +403,7 @@ class MainActivity : SimpleActivity() {
     private fun initMessenger() {
         checkWhatsNewDialog()
         storeStateVariables()
+        tabs.applyImport()
         getCachedConversations()
         binding.noConversationsPlaceholder2.setOnClickListener {
             launchNewConversation()
@@ -514,8 +520,10 @@ class MainActivity : SimpleActivity() {
             )
 
             binding.conversationsList.adapter = currAdapter
+            binding.conversationsList.addItemDecoration(dayHeaders)
             ItemTouchHelper(ConversationSwipeCallback(currAdapter)).attachToRecyclerView(binding.conversationsList)
             currAdapter.undoAnchor = binding.conversationsFab
+            currAdapter.onFiled = ::refilter
             if (areSystemAnimationsEnabled) {
                 binding.conversationsList.scheduleLayoutAnimation()
             }
@@ -527,7 +535,11 @@ class MainActivity : SimpleActivity() {
         conversations: ArrayList<Conversation>,
         cached: Boolean = false,
     ) {
-        val sortedConversations = conversations
+        allConversations = conversations
+        lastSetupWasCached = cached
+        val visible = tabs.visible(conversations) ?: return
+
+        val sortedConversations = visible
             .sortedWith(
                 compareByDescending<Conversation> {
                     config.pinnedConversations.contains(it.threadId.toString())
@@ -540,10 +552,11 @@ class MainActivity : SimpleActivity() {
             showOrHideProgress(conversations.isEmpty())
         } else {
             showOrHideProgress(false)
-            showOrHidePlaceholder(conversations.isEmpty())
+            showOrHidePlaceholder(sortedConversations.isEmpty())
         }
 
         try {
+            pinnedThreads = config.pinnedConversations
             getOrCreateConversationsAdapter().apply {
                 updateConversations(sortedConversations) {
                     if (!cached) {
@@ -552,6 +565,23 @@ class MainActivity : SimpleActivity() {
                 }
             }
         } catch (_: Exception) {
+        }
+    }
+
+    // --- 白い熊 filing tabs (the bar, its menus and the 送信 list live in MainTabs) ---
+
+    /** Re-run the tab filter over the conversations already loaded (after a filing or a tab change). */
+    private fun refilter() {
+        setupConversations(ArrayList(allConversations), lastSetupWasCached)
+    }
+
+    private fun openSearchResult(result: SearchResult) {
+        hideKeyboard()
+        Intent(this, ThreadActivity::class.java).apply {
+            putExtra(THREAD_ID, result.threadId)
+            putExtra(THREAD_TITLE, result.title)
+            putExtra(SEARCHED_MESSAGE_ID, result.messageId)
+            startActivity(this)
         }
     }
 
@@ -650,10 +680,14 @@ class MainActivity : SimpleActivity() {
         lastSearchedText = text
         binding.searchPlaceholder2.beGoneIf(text.length >= 2)
         if (text.length >= 2) {
+            val onlyTab = if (binding.searchThisTab.isChecked) config.filingSelectedTab else Filing.TAB_ALL
             ensureBackgroundThread {
                 val searchQuery = "%$text%"
-                val messages = messagesDB.getMessagesWithText(searchQuery)
-                val conversations = conversationsDB.getConversationsWithText(searchQuery)
+                val (messages, conversations) = tabs.narrowSearch(
+                    onlyTab,
+                    messagesDB.getMessagesWithText(searchQuery),
+                    conversationsDB.getConversationsWithText(searchQuery)
+                )
                 if (text == lastSearchedText) {
                     showSearchResults(messages, conversations, text)
                 }
@@ -719,13 +753,7 @@ class MainActivity : SimpleActivity() {
             val currAdapter = binding.searchResultsList.adapter
             if (currAdapter == null) {
                 SearchResultsAdapter(this, searchResults, binding.searchResultsList, searchedText) {
-                    hideKeyboard()
-                    Intent(this, ThreadActivity::class.java).apply {
-                        putExtra(THREAD_ID, (it as SearchResult).threadId)
-                        putExtra(THREAD_TITLE, it.title)
-                        putExtra(SEARCHED_MESSAGE_ID, it.messageId)
-                        startActivity(this)
-                    }
+                    openSearchResult(it as SearchResult)
                 }.apply {
                     binding.searchResultsList.adapter = this
                 }

@@ -59,6 +59,10 @@ const val USE_IMPERIAL_DATE = "use_imperial_date"     // Boolean, true = 和暦 
 const val SWIPE_RIGHT_ACTION = "swipe_right_action"   // default: delete
 const val SWIPE_LEFT_ACTION = "swipe_left_action"     // default: toggle read/unread
 const val SWIPE_DELETE_CONFIRM = "swipe_delete_confirm" // Boolean, default off: delete behind an undo bar instead
+// 白い熊 filing tabs (helpers/Filing.kt)
+const val FILING_TABS = "filing_tabs" // JSON [{id,name}] in display order
+const val FILING_RULES = "filing_rules" // JSON {senderKey: tabId}
+const val FILING_SELECTED_TAB = "filing_selected_tab" // Int, the tab the list opens on
 const val UNDO_DELETE_MS = 5000                       // how long the swipe-delete undo bar stays up
 
 // Dialog accent border (Commons' sk3 BaseConfig keys), seeded once to yellow / 2 dp

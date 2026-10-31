@@ -18,6 +18,7 @@ import org.fossify.messages.extensions.getNotificationBitmap
 import org.fossify.messages.extensions.getThreadId
 import org.fossify.messages.extensions.insertNewSMS
 import org.fossify.messages.extensions.insertOrUpdateConversation
+import org.fossify.messages.helpers.Filing
 import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.extensions.shouldUnarchive
 import org.fossify.messages.extensions.showReceivedMessageNotification
@@ -107,6 +108,9 @@ class SmsReceiver : BroadcastReceiver() {
         val senderName = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use {
             context.getNameFromAddress(address, it)
         }
+
+        // 白い熊 filing: an unknown non-contact sender of a one-time code goes straight to 認証
+        runCatching { Filing.onIncoming(context, address, body, isContact = senderName != address) }
 
         val participant = SimpleContact(
             rawId = 0,
