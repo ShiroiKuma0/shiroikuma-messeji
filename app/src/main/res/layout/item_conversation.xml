@@ -34,7 +34,7 @@
         android:textDirection="locale"
         android:textSize="@dimen/list_primary_text_size"
         app:layout_constraintBottom_toTopOf="@id/conversation_body_short"
-        app:layout_constraintEnd_toStartOf="@id/conversation_date"
+        app:layout_constraintEnd_toStartOf="@id/unfiled_indicator"
         app:layout_constraintStart_toEndOf="@id/conversation_image"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="John" />
@@ -85,6 +85,23 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/conversation_address"
         tools:text="13:30" />
+
+    <!-- 白い熊 filing: shown on an unfiled conversation; a tap offers the tabs to file it in -->
+    <org.fossify.commons.views.MyTextView
+        android:id="@+id/unfiled_indicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/small_margin"
+        android:paddingHorizontal="@dimen/small_margin"
+        android:paddingVertical="1dp"
+        android:text="@string/tab_unfiled"
+        android:textSize="@dimen/list_tertiary_text_size"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/conversation_date"
+        app:layout_constraintEnd_toStartOf="@id/conversation_date"
+        app:layout_constraintTop_toTopOf="@id/conversation_date"
+        tools:visibility="visible" />
 
     <ImageView
         android:id="@+id/pin_indicator"

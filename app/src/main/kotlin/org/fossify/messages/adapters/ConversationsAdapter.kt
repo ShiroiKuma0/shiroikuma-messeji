@@ -34,6 +34,8 @@ import org.fossify.messages.extensions.markThreadMessagesUnread
 import org.fossify.messages.extensions.renameConversation
 import org.fossify.messages.extensions.themeColor
 import org.fossify.messages.extensions.updateConversationArchivedStatus
+import org.fossify.messages.extensions.showTabPicker
+import org.fossify.messages.helpers.Filing
 import org.fossify.messages.helpers.SwipeAction
 import org.fossify.messages.helpers.UNDO_DELETE_MS
 import org.fossify.messages.helpers.refreshConversations
@@ -88,6 +90,7 @@ class ConversationsAdapter(
         }
 
         when (id) {
+            R.id.cab_move_to_tab -> moveToTab()
             R.id.cab_add_number_to_contact -> addNumberToContact()
             R.id.cab_block_number -> tryBlocking()
             R.id.cab_dial_number -> dialNumber()
@@ -103,6 +106,18 @@ class ConversationsAdapter(
             R.id.cab_pin_conversation -> pinConversation(true)
             R.id.cab_unpin_conversation -> pinConversation(false)
             R.id.cab_select_all -> selectAll()
+        }
+    }
+
+    // Long-press → 移動: file every selected conversation's sender in the chosen tab.
+    private fun moveToTab() {
+        val selected = getSelectedItems()
+        val anchor = activity.findViewById<View>(R.id.cab_move_to_tab) ?: recyclerView
+        val current = selected.map { Filing.tabOf(activity, it) }.distinct().singleOrNull()
+        activity.showTabPicker(anchor, current) { tabId ->
+            Filing.file(activity, selected.map { it.phoneNumber }, tabId)
+            finishActMode()
+            onFiled()
         }
     }
 

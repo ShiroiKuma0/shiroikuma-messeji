@@ -219,6 +219,12 @@
     <string name="theme_conversation_unread">未読バッジ</string>
     <string name="theme_conversation_draft">下書きの表示</string>
     <string name="theme_conversation_pin">ピン留めアイコン</string>
+    <string name="theme_conversation_day_date">日付見出し</string>
+    <string name="theme_conversation_day_divider">日付の区切り線</string>
+    <string name="theme_conversation_date_underline">日付見出しの下線</string>
+    <string name="day_header_today">今日</string>
+    <string name="day_header_yesterday">昨日</string>
+    <string name="day_header_pinned">ピン留め</string>
     <string name="theme_thread_received_bubble">受信メッセージの吹き出し</string>
     <string name="theme_thread_received_text">受信メッセージの文字</string>
     <string name="theme_thread_sent_bubble">送信メッセージの吹き出し</string>
@@ -254,4 +260,19 @@
     <string name="restore_whole_conversation_confirmation">この会話の全てのメッセージを復元してよろしいですか？</string>
     <string name="couldnt_download_mms">MMSをダウンロードできませんでした</string>
     <string name="keep_conversations_archived">会話をアーカイブに保存する</string>
+    <!-- 白い熊 filing tabs -->
+    <string name="tab_unfiled">未分類</string>
+    <string name="tab_sent">送信済み</string>
+    <string name="tab_all">全部</string>
+    <string name="search_this_tab_only">このタブのみ検索</string>
+    <string name="search_this_tab_named">このタブのみ検索：%s</string>
+    <string name="move_to_tab">タブへ移動</string>
+    <string name="new_tab">新しいタブ</string>
+    <string name="rename_tab">タブ名を変更</string>
+    <string name="delete_tab">タブを削除</string>
+    <string name="delete_tab_confirmation">タブ「%s」を削除しますか？会話は未分類に戻ります。</string>
+    <string name="tab_name">タブ名</string>
+    <string name="tab_name_taken">同じ名前のタブが既にあります</string>
+    <string name="filing_imported">%d件の送信者を振り分けました</string>
+    <string name="no_sent_messages">送信済みメッセージはありません</string>
 </resources>

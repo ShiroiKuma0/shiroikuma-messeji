@@ -16,6 +16,12 @@
         android:title="@string/unpin_conversation"
         app:showAsAction="always" />
     <item
+        android:id="@+id/cab_move_to_tab"
+        android:icon="@drawable/ic_move_to_tab_vector"
+        android:showAsAction="always"
+        android:title="@string/move_to_tab"
+        app:showAsAction="always" />
+    <item
         android:id="@+id/cab_dial_number"
         android:icon="@drawable/ic_phone_vector"
         android:showAsAction="always"

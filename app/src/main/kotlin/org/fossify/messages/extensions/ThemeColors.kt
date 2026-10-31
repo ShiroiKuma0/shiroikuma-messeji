@@ -86,6 +86,17 @@ enum class ThemeSlot(
     ),
     CONVERSATION_PIN("theme_conversation_pin", ThemeGroup.CONVERSATION, R.string.theme_conversation_pin),
 
+    // Day headers between the conversations (今日 / 昨日 / 令和…), as in 白い熊 電話's call log
+    CONVERSATION_DAY_DATE(
+        "theme_conversation_day_date", ThemeGroup.CONVERSATION, R.string.theme_conversation_day_date, hasFont = true
+    ),
+    CONVERSATION_DAY_DIVIDER(
+        "theme_conversation_day_divider", ThemeGroup.CONVERSATION, R.string.theme_conversation_day_divider
+    ),
+    CONVERSATION_DATE_UNDERLINE(
+        "theme_conversation_date_underline", ThemeGroup.CONVERSATION, R.string.theme_conversation_date_underline
+    ),
+
     // Message thread — received bubbles
     THREAD_RECEIVED_BUBBLE(
         "theme_thread_received_bubble", ThemeGroup.THREAD_RECEIVED, R.string.theme_thread_received_bubble
@@ -169,6 +180,9 @@ private fun Context.themeDefault(slot: ThemeSlot): Int = when (slot) {
     ThemeSlot.CONVERSATION_UNREAD -> themeColor(ThemeSlot.PRIMARY)
     ThemeSlot.CONVERSATION_DRAFT -> themeColor(ThemeSlot.PRIMARY)
     ThemeSlot.CONVERSATION_PIN -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.CONVERSATION_DAY_DATE -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.CONVERSATION_DAY_DIVIDER -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.CONVERSATION_DATE_UNDERLINE -> themeColor(ThemeSlot.PRIMARY)
 
     // Message thread: sent bubble follows primary (contrast text), received bubble keeps the
     // subtle elevated surface; both texts inherit foundation by default.

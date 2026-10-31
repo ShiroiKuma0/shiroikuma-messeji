@@ -2,6 +2,7 @@ package org.fossify.messages.adapters
 
 import android.annotation.SuppressLint
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Parcelable
 import android.util.TypedValue
 import android.view.View
@@ -28,7 +29,10 @@ import org.fossify.messages.extensions.applyThemeFont
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.getAllDrafts
 import org.fossify.messages.extensions.loadContactPhotoOrUnknown
+import org.fossify.messages.extensions.showTabPicker
 import org.fossify.messages.extensions.themeColor
+import org.fossify.messages.helpers.Filing
+import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.models.Conversation
 
 @Suppress("LeakingThis")
@@ -52,6 +56,9 @@ abstract class BaseConversationsAdapter(
 
     // Conversations kept out of the list whatever a refresh brings back (a swipe-delete awaiting undo).
     protected val hiddenThreadIds = HashSet<Long>()
+
+    /** Run after a conversation was filed from its row; the conversation list re-sorts its tabs. */
+    var onFiled: () -> Unit = { refreshConversations() }
 
     init {
         setupDragListener(true)
@@ -169,6 +176,8 @@ abstract class BaseConversationsAdapter(
 
             conversationFrame.isSelected = selectedKeys.contains(conversation.hashCode())
 
+            setupUnfiledIndicator(unfiledIndicator, conversation)
+
             conversationAddress.apply {
                 text = conversation.title
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 1.2f)
@@ -220,6 +229,30 @@ abstract class BaseConversationsAdapter(
         }
     }
 
+    // An unfiled conversation carries a 未分類 tag; a tap on it offers the tabs, a tap there files it.
+    private fun setupUnfiledIndicator(view: TextView, conversation: Conversation) {
+        val unfiled = Filing.tabOf(activity, conversation) == Filing.TAB_UNFILED
+        view.beVisibleIf(unfiled)
+        if (!unfiled) {
+            view.setOnClickListener(null)
+            view.isClickable = false
+            return
+        }
+        val color = activity.themeColor(ThemeSlot.PRIMARY)
+        val density = activity.resources.displayMetrics.density
+        view.setTextColor(color)
+        view.background = GradientDrawable().apply {
+            cornerRadius = UNFILED_CORNER_DP * density
+            setStroke((UNFILED_BORDER_DP * density).toInt(), color)
+        }
+        view.setOnClickListener { anchor ->
+            activity.showTabPicker(anchor, currentTab = null) { tabId ->
+                Filing.file(activity, listOf(conversation.phoneNumber), tabId)
+                onFiled()
+            }
+        }
+    }
+
     private fun setupBadgeCount(view: TextView, isUnread: Boolean, count: Int) {
         view.apply {
             beVisibleIf(isUnread)
@@ -258,5 +291,7 @@ abstract class BaseConversationsAdapter(
 
     companion object {
         private const val MAX_UNREAD_BADGE_COUNT = 99
+        private const val UNFILED_CORNER_DP = 6f
+        private const val UNFILED_BORDER_DP = 1.5f
     }
 }
