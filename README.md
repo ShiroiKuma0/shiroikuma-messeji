@@ -6,13 +6,25 @@
 
 **A black-and-pure-yellow SMS/MMS app with per-element theming, per-element fonts, and Sino-Japanese time & imperial-era dates.**
 
-A fork of [Fossify Messages](https://github.com/FossifyOrg/Messages) with **major additions**: a granular per-element Theme & Colors system (black `#000000` / pure yellow `#FFFF00` by default), per-element font family/weight/size, full category export/import (messages included), headless backup driven from 白い熊 自由作業盤, a verified data door that lets 白い熊 応用管理 restore this app *with its messages* onto a wiped phone, swipe-left / swipe-right actions on the conversation list with undo-delete, an alpha-capable color picker, Japanese kanji clock readings and 令和 imperial-era dates, a 設定 toolbar launcher, and a fully black/yellow chrome — menus, action bar, dialogs, and toasts included.
+A fork of [Fossify Messages](https://github.com/FossifyOrg/Messages) with **major additions**: folder tabs that file every conversation (自分 · 個人 · 仕事 · 買物 · 認証 …) with one-tap filing of unknown senders, a 送信済み list and per-tab search, day headers in the style of 白い熊 電話, a granular per-element Theme & Colors system (black `#000000` / pure yellow `#FFFF00` by default), per-element font family/weight/size, full category export/import (messages included), headless backup driven from 白い熊 自由作業盤, a verified data door that lets 白い熊 応用管理 restore this app *with its messages* onto a wiped phone, swipe-left / swipe-right actions on the conversation list with undo-delete, an alpha-capable color picker, Japanese kanji clock readings and 令和 imperial-era dates, a 設定 toolbar launcher, and a fully black/yellow chrome — menus, action bar, dialogs, and toasts included.
 
 Installs **side-by-side** with Fossify Messages (app id `shiroikuma.messeji`).
 
-**📥 Latest release: [`1.9.1+025`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
+**📥 Latest release: [`1.9.1+029`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
 
 </div>
+
+---
+
+## 🗂️ Folder tabs — every conversation filed
+
+Under the search bar sits a row of paper-folder tabs: **自分 · 個人 · 仕事 · 買物 · 認証 · 用事 · 宣伝**, then **未分類 · 送信済み · 全部** at the end. Each tab carries a bold unread counter, and the tab you leave open is the one you come back to. Long-press a tab to create, rename or delete one; long-press and drag to reorder. A sender the app can't place gets an outlined **未分類** tag — tap it, pick a tab, filed. Long-press any conversation to move it elsewhere. Unknown senders of login codes land in 認証 by themselves; commercial senders and short codes come pre-filed. **送信済み** lists every sent message, newest first, and a checkbox narrows search to the current tab. Your own filing lives in the app's settings — never in the code — and travels with Export / Import.
+
+---
+
+## 📅 Day headers
+
+The conversation list and the 送信済み list are split by day — **今日**, **昨日**, then **令和八年十月二十九日（木曜日）** — each header underlined, with a full-width divider above, exactly as in 白い熊 電話's call log. Font, size and the colours of text, divider and underline are all set on the UI page.
 
 ---
 

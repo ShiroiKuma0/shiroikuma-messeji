@@ -4,6 +4,48 @@ This file carries **both** histories. The fork's own releases come first, newest
 from the second `# Changelog` heading downwards is Fossify's original changelog, kept byte-for-byte
 as upstream writes it so that a rebase merges it cleanly instead of conflicting.
 
+## 白い熊 メッセージ 1.9.1+029 — 2026-10-31
+
+Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `6.1.6-sk9`** to build.
+
+## 🗂️ Folder tabs and filing
+
+- **A folder tab bar under the search bar**, drawn as stacked paper folders in the look of 白い熊 書類管理 and 白い熊 応用管理: the active folder rises out of a border line that runs under the others.
+- **Default tabs:** 自分, 個人, 仕事, 買物, 認証, 用事, 宣伝 — then the fixed **未分類** (shown only while it holds something), **送信済み** and **全部**, always at the end.
+- **A bold unread counter** in a filled circle on every tab heading (a pill from two digits, `99+` beyond).
+- **The selected tab persists** across closing and reopening the app.
+- **Long-press a tab** for a menu: *New tab* everywhere, *Rename tab* and *Delete tab* on your own tabs (delete asks first; a deleted tab's conversations fall back to their built-in tab or 未分類). Duplicate names are refused.
+- **Long-press and drag a tab** to reorder it among your own tabs; neighbours slide aside as it passes.
+- **Filing rules** map a sender to a tab: a named sender by its lowercased name, a number by its last nine digits (short codes whole). They are stored in the app's prefs and travel in Export / Import with the conversation settings.
+- **Only commercial senders are built in** — about 90 named senders and short codes (shops, parcel lockers, banks, carriers, login-code services). Personal and work filing is never part of the code.
+- **Unknown senders are marked**: an outlined **未分類** tag beside the date. Tap it, pick a tab, and the sender is filed.
+- **Refile anything**: select conversations and use the new *Move to tab* action in the action bar.
+- **Login codes file themselves**: an incoming message from a non-contact with no rule, whose text looks like a verification code, is filed under 認証 on arrival.
+- **Bulk import**: a `filing-import.json` dropped into the app's external files directory is applied on start (tabs plus sender → tab rules) and renamed to `.done`.
+
+## 📤 送信済み
+
+- A tab listing **every sent SMS**, newest first, straight from the telephony store; tap one to open its conversation at that message.
+
+## 🔍 Search within a tab
+
+- A **"Search only in <tab>"** checkbox at the top of search, off by default and hidden on 全部. On 送信済み it narrows to sent messages.
+
+## 📅 Day headers
+
+- **The conversation list and the 送信済み list are split by day**: 今日, 昨日, then the imperial-era date (or the regular date when imperial dates are off). Pinned conversations sit under their own ピン留め header.
+- Drawn like 白い熊 電話's call log: a 2 dp full-width divider, the date 16 dp in, a 1 dp underline as wide as the text. Default size 27 sp.
+- **Themeable** under *Conversation list* on the UI page: *Day header* (colour, font, weight, size), *Day divider line*, *Day header underline*. Until the header has a font of its own it borrows the 設 key's.
+- Headers are a list decoration, not rows, so selection and swipe still act on one conversation at a time; a swiped row slides out from under its header.
+
+## 🈯 Japanese names everywhere
+
+- The fixed tab names (未分類 / 送信済み / 全部) and the day words (今日 / 昨日 / ピン留め) stay Japanese even with *Use English language* on, matching your own tabs.
+
+## 🎨 Smaller changes
+
+- The main overflow menu now uses the app's own themed popup, the same one the tab menus use.
+
 ## 白い熊 メッセージ 1.9.1+025 — 2026-10-08
 
 Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `6.1.6-sk9`** to build.
