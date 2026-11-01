@@ -5,14 +5,16 @@
     android:id="@+id/conversation_frame"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="@dimen/tiny_margin"
     android:clickable="true"
     android:focusable="true"
-    android:minHeight="@dimen/two_line_list_item_min_height"
     android:paddingStart="@dimen/activity_margin"
-    android:paddingTop="@dimen/medium_margin"
+    android:paddingTop="@dimen/tiny_margin"
     android:paddingEnd="@dimen/activity_margin"
-    android:paddingBottom="@dimen/medium_margin">
+    android:paddingBottom="15dp">
+    <!-- Fork: tight rows (stock: 8 dp padding, 2 dp gap, 72 dp minimum); the avatar is sized in code
+         to span both text lines (BaseConversationsAdapter.setupView). The bottom padding is larger so
+         the preview sits as far above the divider below as the name sits below the day header's rule
+         (measured on the GRL-LX9: ~56 px above, 22 px below at 2 dp). -->
 
     <ImageView
         android:id="@+id/conversation_image"

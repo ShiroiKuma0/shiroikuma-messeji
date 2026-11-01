@@ -54,10 +54,21 @@ class FolderTabBar @JvmOverloads constructor(
         onSelect: (Int) -> Unit,
         onMenu: (id: Int, anchor: View) -> Unit,
         onReorder: (id: Int, toIndex: Int) -> Unit,
+        textScale: Float = 1f,
     ) {
         setBackgroundColor(background)
+        // Fork: the bar grows with the tab text (白い熊 メッセージ UI → Tabs); the folders keep their
+        // proportions, and a row wider than the screen scrolls sideways (this is a HorizontalScrollView).
+        val density = resources.displayMetrics.density
+        val barHeight = ((BAR_HEIGHT_DP - INACTIVE_HEIGHT_DP + INACTIVE_HEIGHT_DP * textScale) * density).toInt()
+        layoutParams?.let { params ->
+            if (params.height != barHeight) {
+                params.height = barHeight
+                layoutParams = params
+            }
+        }
         val scrollBefore = scrollX
-        row.rebuild(items, selectedId, ink, background, onSelect, onMenu, onReorder)
+        row.rebuild(items, selectedId, ink, background, onSelect, onMenu, onReorder, textScale)
         post {
             val selected = row.selectedView ?: return@post
             val visible = selected.left >= scrollBefore && selected.right + row.slantPx <= scrollBefore + width
@@ -73,7 +84,7 @@ class FolderTabBar @JvmOverloads constructor(
         private val density = resources.displayMetrics.density
         val slantPx = SLANT_DP * density
         private val activeTopMarginPx = (ACTIVE_TOP_DP * density).toInt()
-        private val inactiveHeightPx = (INACTIVE_HEIGHT_DP * density).toInt()
+        private var inactiveHeightPx = (INACTIVE_HEIGHT_DP * density).toInt()
         private val touchSlopPx = TOUCH_SLOP_DP * density
         private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
@@ -112,8 +123,10 @@ class FolderTabBar @JvmOverloads constructor(
             onSelect: (Int) -> Unit,
             onMenu: (Int, View) -> Unit,
             onReorder: (Int, Int) -> Unit,
+            textScale: Float,
         ) {
             endDrag()
+            inactiveHeightPx = (INACTIVE_HEIGHT_DP * textScale * density).toInt()
             this.onMenu = onMenu
             this.onReorder = onReorder
             removeAllViews()
@@ -129,12 +142,12 @@ class FolderTabBar @JvmOverloads constructor(
                 val tab = LinearLayout(context).apply {
                     orientation = HORIZONTAL
                     gravity = Gravity.CENTER
-                    val padH = (TAB_PADDING_DP * density).toInt()
+                    val padH = (TAB_PADDING_DP * textScale * density).toInt()
                     setPadding(padH, 0, padH, 0)
                 }
                 tab.addView(TextView(context).apply {
                     text = item.title
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, TITLE_SP)
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, TITLE_SP * textScale)
                     setTextColor(if (active) ink else dim)
                     setTypeface(typeface, if (active) Typeface.BOLD else Typeface.NORMAL)
                     maxLines = 1
@@ -337,6 +350,7 @@ class FolderTabBar @JvmOverloads constructor(
         const val SLANT_DP = 10f
         const val ACTIVE_TOP_DP = 4f
         const val INACTIVE_HEIGHT_DP = 34f
+        const val BAR_HEIGHT_DP = 46f // activity_main's height for the bar at text scale 1
         const val TOUCH_SLOP_DP = 8f
         const val STROKE_DP = 1.5f
         const val CORNER_DP = 8f

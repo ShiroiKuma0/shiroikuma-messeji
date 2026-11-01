@@ -1,5 +1,6 @@
 package org.fossify.messages.helpers
 
+import org.fossify.messages.bridge.Bridge
 import android.net.Uri
 import android.util.Xml
 import kotlinx.serialization.SerializationException
@@ -62,8 +63,9 @@ class MessagesImporter(private val activity: SimpleActivity) {
                     // workaround for messages not being imported on Android 14 when the device
                     // has a different subscriptionId (see #191)
                     when (message) {
-                        is SmsBackup -> message.copy(subscriptionId = -1)
-                        is MmsBackup -> message.copy(subscriptionId = -1)
+                        // fork: a bridge transport id is ours, not a foreign SIM — keep it
+                        is SmsBackup -> if (message.subscriptionId <= Bridge.MAX_PSEUDO_SUB_ID) message else message.copy(subscriptionId = -1)
+                        is MmsBackup -> if (message.subscriptionId <= Bridge.MAX_PSEUDO_SUB_ID) message else message.copy(subscriptionId = -1)
                     }
                 }
             } else {

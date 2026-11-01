@@ -1,5 +1,6 @@
 package org.fossify.messages.dialogs
 
+import org.fossify.messages.bridge.Bridge
 import android.annotation.SuppressLint
 import android.telephony.SubscriptionInfo
 import org.fossify.commons.activities.BaseSimpleActivity
@@ -20,7 +21,10 @@ class MessageDetailsDialog(val activity: BaseSimpleActivity, val message: Messag
         val availableSIMs = activity.subscriptionManagerCompat().activeSubscriptionInfoList.orEmpty()
 
         addProperty(message.getSenderOrReceiverLabel(), message.getSenderOrReceiverPhoneNumbers())
-        if (availableSIMs.count() > 1) {
+        val transport = Bridge.transport(activity, message.subscriptionId)
+        if (transport != null) {
+            addProperty(R.string.message_details_sim, transport.name)
+        } else if (availableSIMs.count() > 1) {
             addProperty(R.string.message_details_sim, message.getSIM(availableSIMs))
         }
         addProperty(message.getSentOrReceivedAtLabel(), message.getSentOrReceivedAt())

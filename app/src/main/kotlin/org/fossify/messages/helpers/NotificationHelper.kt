@@ -88,6 +88,8 @@ class NotificationHelper(private val context: Context) {
                 context,
                 notificationId,
                 deleteSmsIntent,
+                // Nothing needs to fill this in, so nobody may: a mutable delete intent would let its
+                // holder overwrite MESSAGE_ID. Only the reply intent stays mutable (RemoteInput).
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 

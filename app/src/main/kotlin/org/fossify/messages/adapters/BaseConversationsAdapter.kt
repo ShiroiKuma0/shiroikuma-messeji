@@ -180,12 +180,12 @@ abstract class BaseConversationsAdapter(
 
             conversationAddress.apply {
                 text = conversation.title
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 1.2f)
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * NAME_SCALE)
             }
 
             conversationBodyShort.apply {
                 text = smsDraft ?: conversation.snippet
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * 0.9f)
+                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * SNIPPET_SCALE)
             }
 
             conversationDate.apply {
@@ -213,6 +213,16 @@ abstract class BaseConversationsAdapter(
             conversationAddress.setTextColor(activity.themeColor(ThemeSlot.CONVERSATION_NAME))
             conversationBodyShort.setTextColor(activity.themeColor(ThemeSlot.CONVERSATION_SNIPPET))
             conversationDate.setTextColor(activity.themeColor(ThemeSlot.CONVERSATION_DATE))
+
+            // Fork: the avatar spans the row's full text height — name line plus preview line.
+            val avatarSize = conversationAddress.lineHeight + conversationBodyShort.lineHeight
+            conversationImage.layoutParams.let { params ->
+                if (params.width != avatarSize || params.height != avatarSize) {
+                    params.width = avatarSize
+                    params.height = avatarSize
+                    conversationImage.layoutParams = params
+                }
+            }
 
             setupBadgeCount(unreadCountBadge, isUnread, conversation.unreadCount)
             if (conversation.isGroupConversation) {
@@ -291,6 +301,8 @@ abstract class BaseConversationsAdapter(
 
     companion object {
         private const val MAX_UNREAD_BADGE_COUNT = 99
+        private const val NAME_SCALE = 1.2f * 1.4f    // fork: stock 1.2, made 40 % bigger
+        private const val SNIPPET_SCALE = 0.9f * 1.4f // fork: stock 0.9, made 40 % bigger
         private const val UNFILED_CORNER_DP = 6f
         private const val UNFILED_BORDER_DP = 1.5f
     }

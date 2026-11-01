@@ -9,6 +9,8 @@ import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.R
+import org.fossify.messages.bridge.Bridge
+import org.fossify.messages.bridge.BridgeMessages
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.getThreadId
 import org.fossify.messages.extensions.messagingUtils
@@ -43,6 +45,13 @@ fun Context.sendMessageCompat(
     attachments: List<Attachment>,
     messageId: Long? = null
 ) {
+    // Fork: a pseudo-SIM (bridge transport) never touches the radio — the row is queued and its id
+    // handed to the transport's peer, which reports back.
+    if (Bridge.isPseudo(subId)) {
+        BridgeMessages.queueOutgoing(this, text, addresses, subId!!, attachments, messageId)
+        ensureBackgroundThread { shortcutHelper.reportSendMessageUsage(getThreadId(addresses.toSet())) }
+        return
+    }
     val settings = getSendMessageSettings()
     if (subId != null) {
         settings.subscriptionId = subId

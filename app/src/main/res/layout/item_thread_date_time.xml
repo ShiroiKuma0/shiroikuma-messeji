@@ -16,7 +16,7 @@
 
     <ImageView
         android:id="@+id/thread_sim_icon"
-        android:layout_width="@dimen/activity_margin"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignTop="@+id/thread_date_time"
         android:layout_alignBottom="@id/thread_date_time"

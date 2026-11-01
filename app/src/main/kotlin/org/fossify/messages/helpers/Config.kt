@@ -19,6 +19,15 @@ class Config(context: Context) : BaseConfig(context) {
 
     fun getUseSIMIdAtNumber(number: String) = prefs.getInt(USE_SIM_ID_PREFIX + number, 0)
 
+    // Fork: the SMS bridge's settings — see bridge/Bridge. Plain strings; the bridge parses them.
+    fun getBridgeString(key: String): String? = prefs.getString(key, null)
+
+    fun setBridgeStrings(vararg pairs: Pair<String, String?>) {
+        val editor = prefs.edit()
+        pairs.forEach { (key, value) -> if (value == null) editor.remove(key) else editor.putString(key, value) }
+        editor.apply()
+    }
+
     var showCharacterCounter: Boolean
         get() = prefs.getBoolean(SHOW_CHARACTER_COUNTER, false)
         set(showCharacterCounter) = prefs.edit()
@@ -169,6 +178,16 @@ class Config(context: Context) : BaseConfig(context) {
     var swipeRightAction: Int
         get() = prefs.getInt(SWIPE_RIGHT_ACTION, SwipeAction.DELETE.ordinal)
         set(value) = prefs.edit().putInt(SWIPE_RIGHT_ACTION, value).apply()
+
+    // Filing tabs' text size, in percent of the stock size (default 150 %).
+    var tabTextScale: Int
+        get() = prefs.getInt(TAB_TEXT_SCALE, TAB_TEXT_SCALE_DEFAULT)
+        set(value) = prefs.edit().putInt(TAB_TEXT_SCALE, value).apply()
+
+    // Compose-bar SIM selector size; ordinal into SimSelectorSize (default: as tall as the send button).
+    var simSelectorSize: Int
+        get() = prefs.getInt(SIM_SELECTOR_SIZE, SimSelectorSize.FULL.ordinal)
+        set(value) = prefs.edit().putInt(SIM_SELECTOR_SIZE, value).apply()
 
     var swipeDeleteConfirm: Boolean
         get() = prefs.getBoolean(SWIPE_DELETE_CONFIRM, false)

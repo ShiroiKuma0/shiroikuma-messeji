@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One row of the compose bar's SIM menu: the tinted SIM glyph with its badge, then the full name. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
+    android:gravity="center_vertical"
+    android:minHeight="56dp"
+    android:orientation="horizontal"
+    android:paddingStart="@dimen/normal_margin"
+    android:paddingTop="@dimen/small_margin"
+    android:paddingEnd="@dimen/activity_margin"
+    android:paddingBottom="@dimen/small_margin">
+
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="48dp">
+
+        <ImageView
+            android:id="@+id/sim_choice_icon"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_sim_vector" />
+
+        <TextView
+            android:id="@+id/sim_choice_badge"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:importantForAccessibility="no"
+            android:textSize="17sp"
+            tools:text="1" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/sim_choice_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/normal_margin"
+        android:textSize="@dimen/big_text_size"
+        tools:text="O2 (+420 600 000 000)" />
+</LinearLayout>
