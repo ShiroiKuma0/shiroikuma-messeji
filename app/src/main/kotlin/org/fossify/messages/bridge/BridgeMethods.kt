@@ -195,6 +195,9 @@ object BridgeMethods {
         val subId = subIdOf(e)
         if (Bridge.transport(context, subId) == null) throw BridgeError("no such transport: $subId")
         val from = e.str("from")?.trim().orEmpty().ifEmpty { throw BridgeError("from missing") }
+        if (!Bridge.isSenderAddress(from)) {
+            throw BridgeError("from is not a sender address (a phone number, short code, sender name or e-mail): $from")
+        }
         val remoteId = e.str("remote_id")?.trim().orEmpty().ifEmpty { throw BridgeError("remote_id missing") }
         val body = e.str("body").orEmpty()
         val timestamp = e.str("timestamp")?.trim()?.toLongOrNull()?.takeIf { it > 0 } ?: System.currentTimeMillis()

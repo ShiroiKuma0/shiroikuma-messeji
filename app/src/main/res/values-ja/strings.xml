@@ -40,6 +40,8 @@
     <string name="send_now">今すぐ送信</string>
     <string name="channel_received_sms">受信した SMS</string>
     <string name="new_message">新しいメッセージ</string>
+    <string name="mark_all_as_read">すべて既読にする</string>
+    <string name="mark_all_as_unread">すべて未読にする</string>
     <string name="mark_as_read">既読にする</string>
     <string name="mark_as_unread">未読にする</string>
     <string name="me">自分</string>

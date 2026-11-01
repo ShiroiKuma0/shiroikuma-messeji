@@ -1501,7 +1501,10 @@ class ThreadActivity : SimpleActivity() {
                 items.add(ThreadSending(message.id))
             }
 
-            if (!message.read) {
+            // Fork: only while the conversation is on screen. A ThreadActivity left in the back stack
+            // or behind another app still rebuilds on every new message, and used to mark it read
+            // unseen; onResume marks the thread read when 白い熊 actually comes back to it.
+            if (!message.read && isActivityVisible) {
                 hadUnreadItems = true
                 markMessageRead(message.id, message.isMMS)
                 conversationsDB.markRead(threadId)

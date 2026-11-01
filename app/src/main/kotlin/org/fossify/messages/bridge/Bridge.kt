@@ -118,6 +118,15 @@ object Bridge {
     fun transportPeer(context: Context): String? =
         context.config.getBridgeString(PREF_TRANSPORT_PEER)?.takeIf { it.isNotEmpty() }
 
+    // What a received message's `from` may be. Anything else — a display line, a header with the SIM
+    // and a timestamp in it — would become a conversation (and a filing rule) of its own.
+    private val PHONE_SENDER = Regex("^\\+?[0-9][0-9 ()./-]{1,30}$")
+    private val NAMED_SENDER = Regex("^[\\p{L}\\p{N}][\\p{L}\\p{N} .&'_-]{0,19}$")
+    private val EMAIL_SENDER = Regex("^[^\\s@]{1,64}@[^\\s@]{1,190}\\.[^\\s@]{2,}$")
+
+    fun isSenderAddress(value: String): Boolean =
+        PHONE_SENDER.matches(value) || NAMED_SENDER.matches(value) || EMAIL_SENDER.matches(value)
+
     fun parseColor(value: String?): Int? = value?.trim()?.takeIf { it.isNotEmpty() }?.let {
         runCatching { Color.parseColor(it) }.getOrNull()
     }

@@ -8,6 +8,7 @@ import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beGoneIf
 import org.fossify.commons.extensions.beVisibleIf
+import org.fossify.commons.extensions.notificationManager
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.R
@@ -18,9 +19,12 @@ import org.fossify.messages.extensions.ThemeSlot
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.conversationsDB
 import org.fossify.messages.extensions.formatMessageDateOrTime
+import org.fossify.messages.extensions.markThreadMessagesRead
+import org.fossify.messages.extensions.markThreadMessagesUnread
 import org.fossify.messages.extensions.showThemedPopupMenu
 import org.fossify.messages.extensions.themeColor
 import org.fossify.messages.helpers.Filing
+import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.models.Conversation
 import org.fossify.messages.models.Message
 import org.fossify.messages.models.SearchResult
@@ -46,6 +50,9 @@ class MainTabs(
         (binding.sentList.adapter as? SearchResultsAdapter)?.searchResults?.getOrNull(position)?.timestamp
     }.also { binding.sentList.addItemDecoration(it) }
 
+    // what the bar was last drawn for, so the tab menu can mark a tab's conversations read
+    private var shown: List<Conversation> = emptyList()
+
     private fun unreadIn(conversation: Conversation) =
         if (conversation.read) 0 else conversation.unreadCount.coerceAtLeast(1)
 
@@ -65,6 +72,7 @@ class MainTabs(
     }
 
     private fun render(conversations: List<Conversation>) {
+        shown = conversations
         val tabs = Filing.tabs(activity)
         val byTab = conversations.groupBy { Filing.tabOf(activity, it) }
         var selected = config.filingSelectedTab
@@ -113,6 +121,15 @@ class MainTabs(
         entries.add(activity.getString(R.string.new_tab) to {
             askName(R.string.new_tab, "") { name -> config.filingSelectedTab = Filing.createTab(activity, name).id }
         })
+        val inTab = conversationsOf(id)
+        val unread = inTab.filter { !it.read }
+        if (unread.isNotEmpty()) {
+            entries.add(activity.getString(R.string.mark_all_as_read) to { markAllRead(unread) })
+        }
+        val read = inTab.filter { it.read }
+        if (read.isNotEmpty()) {
+            entries.add(activity.getString(R.string.mark_all_as_unread) to { markAllUnread(read) })
+        }
         val title = tabTitle(id)
         if (title.isNotEmpty()) {
             entries.add(activity.getString(R.string.look_up_tab_in_dictionary) to { lookUpInDictionary(title) })
@@ -130,6 +147,30 @@ class MainTabs(
             })
         }
         activity.showThemedPopupMenu(anchor, entries)
+    }
+
+    // The conversations a tab holds; the 送信済み tab holds none.
+    private fun conversationsOf(id: Int): List<Conversation> = when (id) {
+        Filing.TAB_SENT -> emptyList()
+        Filing.TAB_ALL -> shown
+        else -> shown.filter { Filing.tabOf(activity, it) == id }
+    }
+
+    private fun markAllUnread(conversations: List<Conversation>) {
+        ensureBackgroundThread {
+            conversations.forEach { activity.markThreadMessagesUnread(it.threadId) }
+            activity.runOnUiThread { refreshConversations() }
+        }
+    }
+
+    private fun markAllRead(conversations: List<Conversation>) {
+        ensureBackgroundThread {
+            conversations.forEach {
+                activity.markThreadMessagesRead(it.threadId)
+                activity.notificationManager.cancel(it.threadId.hashCode())
+            }
+            activity.runOnUiThread { refreshConversations() }
+        }
     }
 
     private fun tabTitle(id: Int) = when (id) {

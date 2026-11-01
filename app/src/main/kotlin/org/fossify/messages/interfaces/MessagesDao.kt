@@ -59,6 +59,9 @@ interface MessagesDao {
     @Query("UPDATE messages SET read = 1 WHERE id = :id")
     fun markRead(id: Long)
 
+    @Query("UPDATE messages SET read = 0 WHERE id = :id")
+    fun markUnread(id: Long)
+
     @Query("UPDATE messages SET read = 1 WHERE thread_id = :threadId")
     fun markThreadRead(threadId: Long)
 

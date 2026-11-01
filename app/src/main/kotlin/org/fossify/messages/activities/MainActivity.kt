@@ -123,6 +123,10 @@ class MainActivity : SimpleActivity() {
 
     private val binding by viewBinding(ActivityMainBinding::inflate)
 
+    // serialises getNewConversations; see there
+    private val conversationSyncLock = Any()
+    private var resumedBefore = false
+
     @SuppressLint("InlinedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -141,6 +145,13 @@ class MainActivity : SimpleActivity() {
     override fun onResume() {
         super.onResume()
         updateMenuColors()
+
+        // Fork: coming back to the list re-reads it, so it never opens on a state computed while it
+        // was in the background (the first resume is covered by onCreate's own load).
+        if (resumedBefore && allConversations.isNotEmpty()) {
+            getCachedConversations()
+        }
+        resumedBefore = true
 
         getOrCreateConversationsAdapter().apply {
             if (storedTextColor != getProperTextColor()) {
@@ -440,68 +451,81 @@ class MainActivity : SimpleActivity() {
         }
     }
 
-    private fun getNewConversations(cachedConversations: ArrayList<Conversation>) {
+    /**
+     * Fork: one sync at a time, each against the cache as it is *now*. A burst of refreshes (a send's
+     * status, then the reply arriving seconds later) used to run these side by side: an older run,
+     * which had read the provider before the new message, wrote its stale "read" row back over the
+     * fresh one, and the list opened with the new message not marked new.
+     */
+    private fun getNewConversations(@Suppress("UNUSED_PARAMETER") snapshot: ArrayList<Conversation>) {
         val privateCursor = getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true)
         ensureBackgroundThread {
-            val privateContacts = MyContactsContentProvider.getSimpleContacts(this, privateCursor)
-            val conversations = getConversations(privateContacts = privateContacts)
-
-            conversations.forEach { clonedConversation ->
-                val threadIds = cachedConversations.map { it.threadId }
-                if (!threadIds.contains(clonedConversation.threadId)) {
-                    conversationsDB.insertOrUpdate(clonedConversation)
-                    cachedConversations.add(clonedConversation)
+            synchronized(conversationSyncLock) {
+                val cachedConversations = try {
+                    (conversationsDB.getNonArchived() + conversationsDB.getAllArchived()).toMutableList() as ArrayList<Conversation>
+                } catch (_: Exception) {
+                    ArrayList()
                 }
-            }
+                val privateContacts = MyContactsContentProvider.getSimpleContacts(this, privateCursor)
+                val conversations = getConversations(privateContacts = privateContacts)
 
-            cachedConversations.forEach { cachedConversation ->
-                val threadId = cachedConversation.threadId
-
-                val isTemporaryThread = cachedConversation.isScheduled
-                val isConversationDeleted = !conversations.map { it.threadId }.contains(threadId)
-                if (isConversationDeleted && !isTemporaryThread) {
-                    conversationsDB.deleteThreadId(threadId)
+                conversations.forEach { clonedConversation ->
+                    val threadIds = cachedConversations.map { it.threadId }
+                    if (!threadIds.contains(clonedConversation.threadId)) {
+                        conversationsDB.insertOrUpdate(clonedConversation)
+                        cachedConversations.add(clonedConversation)
+                    }
                 }
 
-                val newConversation =
-                    conversations.find { it.phoneNumber == cachedConversation.phoneNumber }
-                if (isTemporaryThread && newConversation != null) {
-                    // delete the original temporary thread and move any scheduled messages
-                    // to the new thread
-                    conversationsDB.deleteThreadId(threadId)
-                    messagesDB.getScheduledThreadMessages(threadId)
-                        .forEach { message ->
-                            messagesDB.insertOrUpdate(
-                                message.copy(threadId = newConversation.threadId)
-                            )
+                cachedConversations.forEach { cachedConversation ->
+                    val threadId = cachedConversation.threadId
+
+                    val isTemporaryThread = cachedConversation.isScheduled
+                    val isConversationDeleted = !conversations.map { it.threadId }.contains(threadId)
+                    if (isConversationDeleted && !isTemporaryThread) {
+                        conversationsDB.deleteThreadId(threadId)
+                    }
+
+                    val newConversation =
+                        conversations.find { it.phoneNumber == cachedConversation.phoneNumber }
+                    if (isTemporaryThread && newConversation != null) {
+                        // delete the original temporary thread and move any scheduled messages
+                        // to the new thread
+                        conversationsDB.deleteThreadId(threadId)
+                        messagesDB.getScheduledThreadMessages(threadId)
+                            .forEach { message ->
+                                messagesDB.insertOrUpdate(
+                                    message.copy(threadId = newConversation.threadId)
+                                )
+                            }
+                        insertOrUpdateConversation(newConversation, cachedConversation)
+                    }
+                }
+
+                cachedConversations.forEach { cachedConv ->
+                    val conv = conversations.find {
+                        it.threadId == cachedConv.threadId && !Conversation.areContentsTheSame(
+                            old = cachedConv, new = it
+                        )
+                    }
+                    if (conv != null) {
+                        // FIXME: Scheduled message date is being reset here. Conversations with
+                        //  scheduled messages will have their original date.
+                        insertOrUpdateConversation(conv)
+                    }
+                }
+
+                val allConversations = conversationsDB.getNonArchived() as ArrayList<Conversation>
+                runOnUiThread {
+                    setupConversations(allConversations)
+                }
+
+                if (config.appRunCount == 1) {
+                    conversations.map { it.threadId }.forEach { threadId ->
+                        val messages = getMessages(threadId, includeScheduledMessages = false)
+                        messages.chunked(30).forEach { currentMessages ->
+                            messagesDB.insertMessages(*currentMessages.toTypedArray())
                         }
-                    insertOrUpdateConversation(newConversation, cachedConversation)
-                }
-            }
-
-            cachedConversations.forEach { cachedConv ->
-                val conv = conversations.find {
-                    it.threadId == cachedConv.threadId && !Conversation.areContentsTheSame(
-                        old = cachedConv, new = it
-                    )
-                }
-                if (conv != null) {
-                    // FIXME: Scheduled message date is being reset here. Conversations with
-                    //  scheduled messages will have their original date.
-                    insertOrUpdateConversation(conv)
-                }
-            }
-
-            val allConversations = conversationsDB.getNonArchived() as ArrayList<Conversation>
-            runOnUiThread {
-                setupConversations(allConversations)
-            }
-
-            if (config.appRunCount == 1) {
-                conversations.map { it.threadId }.forEach { threadId ->
-                    val messages = getMessages(threadId, includeScheduledMessages = false)
-                    messages.chunked(30).forEach { currentMessages ->
-                        messagesDB.insertMessages(*currentMessages.toTypedArray())
                     }
                 }
             }

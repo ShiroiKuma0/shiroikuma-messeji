@@ -1,5 +1,8 @@
 package org.fossify.messages.adapters
 
+import org.fossify.messages.helpers.refreshConversations
+import org.fossify.messages.extensions.markMessageUnread
+import org.fossify.messages.extensions.markMessageRead
 import org.fossify.messages.bridge.Bridge
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -142,6 +145,9 @@ class ThreadAdapter(
             findItem(R.id.cab_select_text).isVisible = isOneItemSelected && hasText
             findItem(R.id.cab_properties).isVisible = isOneItemSelected
             findItem(R.id.cab_restore).isVisible = isRecycleBin
+            val received = selectedMessages.filter { it.isReceivedMessage() }
+            findItem(R.id.cab_mark_as_read).isVisible = !isRecycleBin && received.any { !it.read }
+            findItem(R.id.cab_mark_as_unread).isVisible = !isRecycleBin && received.isNotEmpty()
             activity.colorMenuTitles(this)
         }
     }
@@ -161,6 +167,39 @@ class ThreadAdapter(
             R.id.cab_restore -> askConfirmRestore()
             R.id.cab_select_all -> selectAll()
             R.id.cab_properties -> showMessageDetails()
+            R.id.cab_mark_as_read -> markSelected(read = true)
+            R.id.cab_mark_as_unread -> markSelected(read = false)
+        }
+    }
+
+    /**
+     * Fork: mark the selected received messages read or unread. Unread sends 白い熊 back to the list,
+     * since staying in the conversation would mark it read again on the next resume.
+     */
+    private fun markSelected(read: Boolean) {
+        val received = getSelectedItems().filterIsInstance<Message>().filter { it.isReceivedMessage() }
+        if (received.isEmpty()) {
+            return
+        }
+        ensureBackgroundThread {
+            received.forEach {
+                if (read) {
+                    activity.markMessageRead(it.id, it.isMMS)
+                } else {
+                    activity.markMessageUnread(it.id, it.isMMS, it.threadId)
+                }
+            }
+            val updated = currentList.map { item ->
+                if (item is Message && received.any { it.id == item.id && it.isMMS == item.isMMS }) item.copy(read = read) else item
+            }
+            refreshConversations()
+            activity.runOnUiThread {
+                submitList(updated)
+                finishActMode()
+                if (!read) {
+                    activity.finish()
+                }
+            }
         }
     }
 

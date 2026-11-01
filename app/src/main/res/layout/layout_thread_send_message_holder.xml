@@ -121,7 +121,6 @@
         android:id="@+id/thread_select_sim_icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:alpha="0.9"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:paddingStart="@dimen/medium_margin"
         android:paddingTop="@dimen/normal_margin"

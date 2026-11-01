@@ -5,6 +5,7 @@ import android.graphics.ColorFilter
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PixelFormat
+import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.util.TypedValue
 import android.widget.ImageView
@@ -97,6 +98,7 @@ fun showSimBadge(
     label.text = style.text
     label.setTextColor(style.textColor ?: style.fill.getContrastColor())
     label.includeFontPadding = false
+    label.typeface = Typeface.DEFAULT_BOLD
     val textWidth = label.paint.measureText(style.text)
     val cardWidth = maxOf(cardHeightPx * SIM_ASPECT, textWidth + cardHeightPx * TEXT_SIDE_ROOM).toInt()
     val stroke = maxOf(1.5f * density, cardHeightPx * STROKE_FRACTION)
