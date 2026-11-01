@@ -7,6 +7,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Telephony.Sms
 import org.fossify.commons.helpers.ensureBackgroundThread
+import org.fossify.messages.bridge.Bridge
 import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.extensions.messagingUtils
 import org.fossify.messages.helpers.refreshMessages
@@ -57,6 +58,13 @@ class SmsStatusDeliveredReceiver : SendStatusReceiver() {
         }
 
         updateSmsStatusAndDateSent(context, messageUri, System.currentTimeMillis())
+        messageUri?.lastPathSegment?.toLongOrNull()?.let { id ->
+            when (status) {
+                Sms.STATUS_COMPLETE -> Bridge.onStatus(context, "sms:$id", Bridge.STATE_DELIVERED, "")
+                Sms.STATUS_FAILED -> Bridge.onStatus(context, "sms:$id", Bridge.STATE_FAILED, "delivery report: failed")
+                else -> Unit
+            }
+        }
     }
 
     private fun updateSmsStatusAndDateSent(context: Context, messageUri: Uri?, timeSentInMillis: Long = -1L) {

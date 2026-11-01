@@ -1,5 +1,7 @@
 package org.fossify.messages.activities
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.provider.Telephony
 import android.view.View
 import org.fossify.commons.dialogs.ConfirmationDialog
@@ -89,6 +91,7 @@ class MainTabs(
             items = items,
             selectedId = selected,
             ink = activity.themeColor(ThemeSlot.PRIMARY),
+            textScale = config.tabTextScale / 100f,
             background = activity.themeColor(ThemeSlot.BACKGROUND),
             onSelect = { id ->
                 if (id != config.filingSelectedTab) {
@@ -110,6 +113,10 @@ class MainTabs(
         entries.add(activity.getString(R.string.new_tab) to {
             askName(R.string.new_tab, "") { name -> config.filingSelectedTab = Filing.createTab(activity, name).id }
         })
+        val title = tabTitle(id)
+        if (title.isNotEmpty()) {
+            entries.add(activity.getString(R.string.look_up_tab_in_dictionary) to { lookUpInDictionary(title) })
+        }
         if (id > 0) {
             val name = Filing.tabName(activity, id).orEmpty()
             entries.add(activity.getString(R.string.rename_tab) to {
@@ -123,6 +130,28 @@ class MainTabs(
             })
         }
         activity.showThemedPopupMenu(anchor, entries)
+    }
+
+    private fun tabTitle(id: Int) = when (id) {
+        Filing.TAB_UNFILED -> activity.getString(R.string.tab_unfiled)
+        Filing.TAB_SENT -> activity.getString(R.string.tab_sent)
+        Filing.TAB_ALL -> activity.getString(R.string.tab_all)
+        else -> Filing.tabName(activity, id).orEmpty()
+    }
+
+    // 辞書で引く: open 白い熊 辞書's Japanese dictionary on the tab's name (its OPEN_DICTIONARY entry).
+    private fun lookUpInDictionary(text: String) {
+        val intent = Intent(JISHO_ACTION_OPEN_DICTIONARY).apply {
+            setPackage(JISHO_PACKAGE)
+            putExtra("language", "ja")
+            putExtra("query", text)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            activity.startActivity(intent)
+        } catch (_: ActivityNotFoundException) {
+            activity.toast(R.string.dictionary_not_installed)
+        }
     }
 
     private fun askName(titleRes: Int, current: String, onName: (String) -> Unit) {
@@ -241,5 +270,10 @@ class MainTabs(
             else -> Filing.tabName(activity, tab).orEmpty()
         }
         binding.searchThisTab.text = activity.getString(R.string.search_this_tab_named, name)
+    }
+
+    private companion object {
+        const val JISHO_PACKAGE = "shiroikuma.jisho"
+        const val JISHO_ACTION_OPEN_DICTIONARY = "shiroikuma.jisho.action.OPEN_DICTIONARY"
     }
 }

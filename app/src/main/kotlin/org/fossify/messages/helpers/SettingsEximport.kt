@@ -1,5 +1,6 @@
 package org.fossify.messages.helpers
 
+import org.fossify.messages.bridge.Bridge
 import android.app.AppOpsManager
 import android.app.role.RoleManager
 import android.content.ContentUris
@@ -542,8 +543,9 @@ object SettingsEximport {
             // same workaround as the stock importer: Android 14 rejects foreign subscription ids
             backup.map { message ->
                 when (message) {
-                    is SmsBackup -> message.copy(subscriptionId = -1)
-                    is MmsBackup -> message.copy(subscriptionId = -1)
+                    // fork: a bridge transport id is ours, not a foreign SIM — keep it
+                        is SmsBackup -> if (message.subscriptionId <= Bridge.MAX_PSEUDO_SUB_ID) message else message.copy(subscriptionId = -1)
+                    is MmsBackup -> if (message.subscriptionId <= Bridge.MAX_PSEUDO_SUB_ID) message else message.copy(subscriptionId = -1)
                 }
             }
         } else {

@@ -1,5 +1,6 @@
 package org.fossify.messages.adapters
 
+import org.fossify.messages.bridge.Bridge
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
@@ -74,6 +75,7 @@ import org.fossify.messages.extensions.startContactDetailsIntent
 import org.fossify.messages.extensions.subscriptionManagerCompat
 import org.fossify.messages.extensions.themeColor
 import org.fossify.messages.helpers.EXTRA_VCARD_URI
+import org.fossify.messages.helpers.SimBadgeStyle
 import org.fossify.messages.helpers.THREAD_DATE_TIME
 import org.fossify.messages.helpers.THREAD_RECEIVED_MESSAGE
 import org.fossify.messages.helpers.THREAD_SENT_MESSAGE
@@ -83,6 +85,7 @@ import org.fossify.messages.helpers.THREAD_SENT_MESSAGE_SENT
 import org.fossify.messages.helpers.generateStableId
 import org.fossify.messages.helpers.setupDocumentPreview
 import org.fossify.messages.helpers.setupVCardPreview
+import org.fossify.messages.helpers.showSimBadge
 import org.fossify.messages.models.Attachment
 import org.fossify.messages.models.Message
 import org.fossify.messages.models.ThreadItem
@@ -102,13 +105,17 @@ class ThreadAdapter(
     private var fontSize = activity.getTextSize()
 
     @SuppressLint("MissingPermission")
-    private val hasMultipleSIMCards = (activity.subscriptionManagerCompat().activeSubscriptionInfoList?.size ?: 0) > 1
+    // Fork: bridge transports count as SIMs here, so their messages show which one they came over.
+    private val hasMultipleSIMCards =
+        (activity.subscriptionManagerCompat().activeSubscriptionInfoList?.size ?: 0) > 1 ||
+            Bridge.transports(activity).isNotEmpty()
     private val maxChatBubbleWidth = (activity.usableScreenSize.x * 0.8f).toInt()
 
     companion object {
         private const val MAX_MEDIA_HEIGHT_RATIO = 3
         private const val SIM_BITS = 21
         private const val SIM_MASK = (1L shl SIM_BITS) - 1
+        private const val SIM_BADGE_TEXT_SHARE = 0.62f // badge text size, as a share of the date line height
     }
 
     init {
@@ -610,9 +617,20 @@ class ThreadAdapter(
             threadSimIcon.beVisibleIf(hasMultipleSIMCards)
             threadSimNumber.beVisibleIf(hasMultipleSIMCards)
             if (hasMultipleSIMCards) {
-                threadSimNumber.text = dateTime.simID
-                threadSimNumber.setTextColor(dateColor.getContrastColor())
-                threadSimIcon.applyColorFilter(dateColor)
+                // Fork: a card as tall as the date line, widening for a 2–3 character transport badge.
+                val lineHeight = threadDateTime.lineHeight
+                showSimBadge(
+                    icon = threadSimIcon,
+                    label = threadSimNumber,
+                    style = SimBadgeStyle(
+                        text = dateTime.simID,
+                        fill = dateTime.simColor ?: dateColor,
+                        textColor = dateTime.simTextColor,
+                        border = dateTime.simBorderColor,
+                    ),
+                    cardHeightPx = lineHeight,
+                    textSizePx = lineHeight * SIM_BADGE_TEXT_SHARE,
+                )
             }
         }
     }
@@ -667,7 +685,8 @@ private class ThreadItemDiffCallback : DiffUtil.ItemCallback<ThreadItem>() {
             is Message -> Message.areItemsTheSame(oldItem, newItem as Message)
             is ThreadDateTime -> {
                 val new = newItem as ThreadDateTime
-                oldItem.date == new.date && oldItem.simID == new.simID
+                oldItem.date == new.date && oldItem.simID == new.simID && oldItem.simColor == new.simColor &&
+                    oldItem.simTextColor == new.simTextColor && oldItem.simBorderColor == new.simBorderColor
             }
         }
     }
@@ -676,7 +695,7 @@ private class ThreadItemDiffCallback : DiffUtil.ItemCallback<ThreadItem>() {
         if (oldItem::class.java != newItem::class.java) return false
         return when (oldItem) {
             is ThreadSending -> true
-            is ThreadDateTime -> oldItem.simID == (newItem as ThreadDateTime).simID
+            is ThreadDateTime -> oldItem == newItem
             is ThreadError -> oldItem.messageText == (newItem as ThreadError).messageText
             is ThreadSent -> oldItem.delivered == (newItem as ThreadSent).delivered
             is Message -> Message.areContentsTheSame(oldItem, newItem as Message)

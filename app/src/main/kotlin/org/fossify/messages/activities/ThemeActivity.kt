@@ -56,7 +56,10 @@ import org.fossify.messages.extensions.themeColor
 import org.fossify.messages.helpers.EXIM_WARN_COLOR
 import org.fossify.messages.helpers.MAX_FONT_SIZE_SP
 import org.fossify.messages.helpers.SettingsEximport
+import org.fossify.messages.helpers.SimSelectorSize
+import org.fossify.messages.helpers.TAB_TEXT_SCALE_CHOICES
 import org.fossify.messages.helpers.SwipeAction
+import org.fossify.messages.helpers.simSelectorSizeOf
 import org.fossify.messages.helpers.swipeActionOf
 
 // kxkb indent ladder: section headings at 36dp (in XML), their rows one step in at 72dp,
@@ -135,6 +138,8 @@ class ThemeActivity : SimpleActivity() {
         addEximportSection(primaryColor)
         addFormatSection(primaryColor)
         addSwipeSection(primaryColor)
+        addTabsSection(primaryColor)
+        addComposeSection(primaryColor)
 
         ThemeSection.entries.forEach { section ->
             addSectionHeader(getString(section.labelRes), primaryColor)
@@ -334,6 +339,33 @@ class ThemeActivity : SimpleActivity() {
             checked = config.swipeDeleteConfirm,
             description = getString(R.string.swipe_delete_confirm_desc),
         ) { config.swipeDeleteConfirm = it }
+    }
+
+    // The conversation list's filing tabs: their text size, in percent of the stock size.
+    private fun addTabsSection(primaryColor: Int) {
+        addSectionHeader(getString(R.string.tabs_section), primaryColor)
+        addValueRow(R.string.tab_text_size_label, "${config.tabTextScale} %") { valueView ->
+            val items = ArrayList(TAB_TEXT_SCALE_CHOICES.map { RadioItem(it, "$it %") })
+            RadioGroupDialog(this, items, config.tabTextScale) {
+                config.tabTextScale = it as Int
+                valueView.text = "${config.tabTextScale} %"
+            }
+        }
+    }
+
+    // The thread screen's compose bar: how big the SIM selector next to the send button is drawn.
+    private fun addComposeSection(primaryColor: Int) {
+        addSectionHeader(getString(R.string.compose_section), primaryColor)
+        addValueRow(
+            R.string.sim_selector_size_label,
+            getString(simSelectorSizeOf(config.simSelectorSize).labelRes)
+        ) { valueView ->
+            val items = ArrayList(SimSelectorSize.entries.map { RadioItem(it.ordinal, getString(it.labelRes)) })
+            RadioGroupDialog(this, items, simSelectorSizeOf(config.simSelectorSize).ordinal) {
+                config.simSelectorSize = it as Int
+                valueView.text = getString(simSelectorSizeOf(config.simSelectorSize).labelRes)
+            }
+        }
     }
 
     private fun addSwipeRow(@StringRes labelRes: Int, current: () -> Int, store: (Int) -> Unit) {

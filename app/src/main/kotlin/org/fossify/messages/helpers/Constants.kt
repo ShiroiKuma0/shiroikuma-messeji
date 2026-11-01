@@ -59,6 +59,12 @@ const val USE_IMPERIAL_DATE = "use_imperial_date"     // Boolean, true = 和暦 
 const val SWIPE_RIGHT_ACTION = "swipe_right_action"   // default: delete
 const val SWIPE_LEFT_ACTION = "swipe_left_action"     // default: toggle read/unread
 const val SWIPE_DELETE_CONFIRM = "swipe_delete_confirm" // Boolean, default off: delete behind an undo bar instead
+// Filing tabs' text size (白い熊 メッセージ UI page): Int percent of the stock 15 sp; default 150
+const val TAB_TEXT_SCALE = "tab_text_scale"
+const val TAB_TEXT_SCALE_DEFAULT = 150
+val TAB_TEXT_SCALE_CHOICES = listOf(100, 125, 150, 175, 200)
+// Compose bar (白い熊 メッセージ UI page)
+const val SIM_SELECTOR_SIZE = "sim_selector_size"     // Int, ordinal into SimSelectorSize; default: full row height
 // 白い熊 filing tabs (helpers/Filing.kt)
 const val FILING_TABS = "filing_tabs" // JSON [{id,name}] in display order
 const val FILING_RULES = "filing_rules" // JSON {senderKey: tabId}

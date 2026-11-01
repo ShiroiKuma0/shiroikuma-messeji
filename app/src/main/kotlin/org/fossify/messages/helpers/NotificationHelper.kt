@@ -74,7 +74,7 @@ class NotificationHelper(private val context: Context) {
                 context,
                 notificationId,
                 markAsReadIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
         val deleteSmsIntent = Intent(context, DeleteSmsReceiver::class.java).apply {
@@ -86,7 +86,9 @@ class NotificationHelper(private val context: Context) {
                 context,
                 notificationId,
                 deleteSmsIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+                // Nothing needs to fill this in, so nobody may: a mutable delete intent would let its
+                // holder overwrite MESSAGE_ID. Only the reply intent stays mutable (RemoteInput).
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
         var replyAction: NotificationCompat.Action? = null

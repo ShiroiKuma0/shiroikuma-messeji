@@ -8,6 +8,8 @@ import android.content.Intent
 import android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
 import android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
 import android.content.res.ColorStateList
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
 import android.net.Uri
 import android.os.Bundle
@@ -30,12 +32,16 @@ import android.view.Gravity
 import android.view.KeyEvent
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.animation.OvershootInterpolator
 import android.view.inputmethod.EditorInfo
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.LinearLayout.LayoutParams
 import android.widget.RelativeLayout
+import android.widget.PopupWindow
+import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.appcompat.content.res.AppCompatResources
@@ -89,6 +95,7 @@ import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.extensions.showKeyboard
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.extensions.updateTextColors
+import org.fossify.commons.extensions.withDialogBorder
 import org.fossify.commons.extensions.value
 import org.fossify.commons.extensions.viewBinding
 import org.fossify.commons.helpers.ContactsHelper
@@ -111,6 +118,7 @@ import org.fossify.messages.adapters.AutoCompleteTextViewAdapter
 import org.fossify.messages.adapters.ThreadAdapter
 import org.fossify.messages.databinding.ActivityThreadBinding
 import org.fossify.messages.databinding.ItemSelectedContactBinding
+import org.fossify.messages.databinding.ItemSimChoiceBinding
 import org.fossify.messages.dialogs.GroupMessageSendDialog
 import org.fossify.messages.dialogs.InvalidNumberDialog
 import org.fossify.messages.dialogs.RenameConversationDialog
@@ -180,7 +188,10 @@ import org.fossify.messages.helpers.THREAD_TEXT
 import org.fossify.messages.helpers.THREAD_TITLE
 import org.fossify.messages.helpers.generateRandomId
 import org.fossify.messages.helpers.refreshConversations
+import org.fossify.messages.helpers.SimBadgeStyle
 import org.fossify.messages.helpers.refreshMessages
+import org.fossify.messages.helpers.showSimBadge
+import org.fossify.messages.helpers.simSelectorSizeOf
 import org.fossify.messages.messaging.cancelScheduleSendPendingIntent
 import org.fossify.messages.messaging.isLongMmsMessage
 import org.fossify.messages.messaging.isShortCodeWithLetters
@@ -192,6 +203,7 @@ import org.fossify.messages.models.Conversation
 import org.fossify.messages.models.Events
 import org.fossify.messages.models.Message
 import org.fossify.messages.models.MessageAttachment
+import org.fossify.messages.bridge.Bridge
 import org.fossify.messages.models.SIMCard
 import org.fossify.messages.models.ThreadItem
 import org.fossify.messages.models.ThreadItem.ThreadDateTime
@@ -286,6 +298,7 @@ class ThreadActivity : SimpleActivity() {
         )
 
         isActivityVisible = true
+        applySimSelectorSize() // fork: pick up a size changed on the UI settings page
 
         notificationManager.cancel(threadId.hashCode())
 
@@ -1072,8 +1085,12 @@ class ThreadActivity : SimpleActivity() {
 
     @SuppressLint("MissingPermission")
     private fun setupSIMSelector() {
-        val availableSIMs = subscriptionManagerCompat().activeSubscriptionInfoList ?: return
-        if (availableSIMs.size > 1) {
+        val availableSIMs = subscriptionManagerCompat().activeSubscriptionInfoList.orEmpty()
+        // Fork: bridge transports (pseudo-SIMs) join the real SIMs, after them, with their own badge
+        // and colour. With any transport configured the selector shows even on a SIM-less phone.
+        val transports = Bridge.transports(this)
+        if (availableSIMs.size > 1 || transports.isNotEmpty()) {
+            availableSIMCards.clear()
             availableSIMs.forEachIndexed { index, subscriptionInfo ->
                 var label = subscriptionInfo.displayName?.toString() ?: ""
                 if (subscriptionInfo.number?.isNotEmpty() == true) {
@@ -1081,6 +1098,20 @@ class ThreadActivity : SimpleActivity() {
                 }
                 val simCard = SIMCard(index + 1, subscriptionInfo.subscriptionId, label)
                 availableSIMCards.add(simCard)
+            }
+            transports.forEach { transport ->
+                val id = availableSIMCards.size + 1
+                availableSIMCards.add(
+                    SIMCard(
+                        id = id,
+                        subscriptionId = transport.subId,
+                        label = transport.name,
+                        badge = transport.badge.ifEmpty { id.toString() },
+                        color = transport.color,
+                        textColor = transport.textColor,
+                        borderColor = transport.borderColor,
+                    )
+                )
             }
 
             val numbers = ArrayList<String>()
@@ -1094,57 +1125,135 @@ class ThreadActivity : SimpleActivity() {
                 return
             }
 
-            currentSIMCardIndex = getProperSimIndex(availableSIMs, numbers)
-            binding.messageHolder.threadSelectSimIcon.applyColorFilter(getProperTextColor())
+            currentSIMCardIndex = getProperSimIndex(numbers)
             binding.messageHolder.threadSelectSimIcon.beVisible()
             binding.messageHolder.threadSelectSimNumber.beVisible()
 
             if (availableSIMCards.isNotEmpty()) {
-                binding.messageHolder.threadSelectSimIcon.setOnClickListener {
-                    currentSIMCardIndex = (currentSIMCardIndex + 1) % availableSIMCards.size
-                    val currentSIMCard = availableSIMCards[currentSIMCardIndex]
-                    @SuppressLint("SetTextI18n")
-                    binding.messageHolder.threadSelectSimNumber.text = currentSIMCard.id.toString()
-                    val currentSubscriptionId = currentSIMCard.subscriptionId
-                    numbers.forEach {
-                        config.saveUseSIMIdAtNumber(it, currentSubscriptionId)
+                // Fork: a tap opens a menu of every SIM and transport, by glyph and full name; picking
+                // one selects it and remembers it for these numbers. (Stock rotated to the next SIM.)
+                binding.messageHolder.threadSelectSimIcon.setOnClickListener { anchor ->
+                    showSimMenu(anchor) { index ->
+                        currentSIMCardIndex = index
+                        val currentSIMCard = availableSIMCards[index]
+                        showSimCard(currentSIMCard)
+                        numbers.forEach {
+                            config.saveUseSIMIdAtNumber(it, currentSIMCard.subscriptionId)
+                        }
                     }
-                    toast(currentSIMCard.label)
                 }
             }
 
-            binding.messageHolder.threadSelectSimNumber.setTextColor(
-                getProperTextColor().getContrastColor()
-            )
             try {
-                @SuppressLint("SetTextI18n")
-                binding.messageHolder.threadSelectSimNumber.text =
-                    (availableSIMCards[currentSIMCardIndex].id).toString()
+                showSimCard(availableSIMCards[currentSIMCardIndex])
             } catch (e: Exception) {
                 showErrorToast(e)
             }
         }
     }
 
+    /** The selector's badge: the SIM number, or a transport's own text and colours. */
+    private fun showSimCard(card: SIMCard) {
+        binding.messageHolder.threadSelectSimIcon.contentDescription = card.label
+        applySimSelectorSize()
+    }
+
+    /** A SIM's badge look: real SIMs in the text colour; transports with their own fill, text and ring. */
+    private fun badgeStyleOf(card: SIMCard) =
+        SimBadgeStyle(card.badge, card.color ?: getProperTextColor(), card.textColor, card.borderColor)
+
+    /**
+     * Fork: size the selector per the 白い熊 メッセージ UI setting. At full size the SIM glyph is as tall
+     * as the send button beside it (arrow plus “SMS”), with no vertical padding, so it spans the row.
+     */
+    private fun applySimSelectorSize() {
+        val card = availableSIMCards.getOrNull(currentSIMCardIndex) ?: return
+        val size = simSelectorSizeOf(config.simSelectorSize)
+        val metrics = resources.displayMetrics
+        val glyph = (size.glyphDp * metrics.density).toInt()
+        val sidePadding = resources.getDimensionPixelSize(org.fossify.commons.R.dimen.medium_margin)
+        val verticalPadding = ((resources.getDimensionPixelSize(org.fossify.commons.R.dimen.normal_icon_size) - glyph) / 2)
+            .coerceAtLeast(0)
+        showSimBadge(
+            icon = binding.messageHolder.threadSelectSimIcon,
+            label = binding.messageHolder.threadSelectSimNumber,
+            style = badgeStyleOf(card),
+            cardHeightPx = glyph,
+            textSizePx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, size.badgeSp, metrics),
+            padHPx = sidePadding,
+            padVPx = verticalPadding,
+        )
+    }
+
+    /** Fork: the SIM menu — every SIM and transport as its tinted glyph and badge plus its full name. */
+    private fun showSimMenu(anchor: View, onPick: (Int) -> Unit) {
+        val textColor = getProperTextColor()
+        val list = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val pad = resources.getDimensionPixelSize(org.fossify.commons.R.dimen.medium_margin)
+            setPadding(0, pad, 0, pad)
+        }
+        val title = TextView(this).apply {
+            text = getString(R.string.choose_sim)
+            setTextColor(getProperPrimaryColor())
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+            val pad = resources.getDimensionPixelSize(org.fossify.commons.R.dimen.activity_margin)
+            setPadding(pad, 0, pad, resources.getDimensionPixelSize(org.fossify.commons.R.dimen.small_margin))
+        }
+        list.addView(title)
+        val popup = PopupWindow(list, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true)
+        availableSIMCards.forEachIndexed { index, card ->
+            val row = ItemSimChoiceBinding.inflate(layoutInflater, list, false)
+            showSimBadge(
+                icon = row.simChoiceIcon,
+                label = row.simChoiceBadge,
+                style = badgeStyleOf(card),
+                cardHeightPx = (SIM_MENU_BADGE_DP * resources.displayMetrics.density).toInt(),
+                textSizePx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, SIM_MENU_BADGE_SP, resources.displayMetrics),
+            )
+            row.simChoiceLabel.text = card.label
+            val isCurrent = index == currentSIMCardIndex
+            row.simChoiceLabel.setTextColor(if (isCurrent) getProperPrimaryColor() else textColor)
+            row.simChoiceLabel.setTypeface(null, if (isCurrent) Typeface.BOLD else Typeface.NORMAL)
+            row.root.setOnClickListener {
+                popup.dismiss()
+                onPick(index)
+            }
+            list.addView(row.root)
+        }
+        val background = GradientDrawable().apply {
+            cornerRadius = SIM_MENU_CORNER_DP * resources.displayMetrics.density
+            setColor(getProperBackgroundColor())
+        }
+        popup.setBackgroundDrawable(withDialogBorder(background))
+        popup.elevation = SIM_MENU_ELEVATION_DP * resources.displayMetrics.density
+        list.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+        // Open upwards from the selector, right edge on the selector's right edge.
+        val location = IntArray(2)
+        anchor.getLocationInWindow(location)
+        val x = (location[0] + anchor.width - list.measuredWidth).coerceAtLeast(0)
+        val y = (location[1] - list.measuredHeight).coerceAtLeast(0)
+        popup.showAtLocation(anchor, Gravity.NO_GRAVITY, x, y)
+    }
+
     @SuppressLint("MissingPermission")
-    private fun getProperSimIndex(
-        availableSIMs: MutableList<SubscriptionInfo>,
-        numbers: List<String>,
-    ): Int {
+    private fun getProperSimIndex(numbers: List<String>): Int {
         val userPreferredSimId = config.getUseSIMIdAtNumber(numbers.first())
         val userPreferredSimIdx =
-            availableSIMs.indexOfFirstOrNull { it.subscriptionId == userPreferredSimId }
+            availableSIMCards.indexOfFirstOrNull { it.subscriptionId == userPreferredSimId }
 
+        // Fork: also for the last SENT message — on a transport thread the reply goes back the way
+        // the conversation has been going, received or sent.
         val lastMessage = messages.lastOrNull()
-        val senderPreferredSimIdx = if (lastMessage?.isReceivedMessage() == true) {
-            availableSIMs.indexOfFirstOrNull { it.subscriptionId == lastMessage.subscriptionId }
+        val senderPreferredSimIdx = if (lastMessage != null) {
+            availableSIMCards.indexOfFirstOrNull { it.subscriptionId == lastMessage.subscriptionId }
         } else {
             null
         }
 
         val defaultSmsSubscriptionId = SmsManager.getDefaultSmsSubscriptionId()
         val systemPreferredSimIdx = if (defaultSmsSubscriptionId >= 0) {
-            availableSIMs.indexOfFirstOrNull { it.subscriptionId == defaultSmsSubscriptionId }
+            availableSIMCards.indexOfFirstOrNull { it.subscriptionId == defaultSmsSubscriptionId }
         } else {
             null
         }
@@ -1347,8 +1456,17 @@ class ThreadActivity : SimpleActivity() {
 
         val subscriptionIdToSimId = HashMap<Int, String>()
         subscriptionIdToSimId[-1] = "?"
+        val simCount = subscriptionManagerCompat().activeSubscriptionInfoList?.size ?: 0
         subscriptionManagerCompat().activeSubscriptionInfoList?.forEachIndexed { index, subscriptionInfo ->
             subscriptionIdToSimId[subscriptionInfo.subscriptionId] = "${index + 1}"
+        }
+        // Fork: a transport's messages are labelled with its badge and coloured like it.
+        val subscriptionIdToColor = HashMap<Int, Int>()
+        val subscriptionIdToTransport = HashMap<Int, Bridge.Transport>()
+        Bridge.transports(this).forEachIndexed { index, transport ->
+            subscriptionIdToSimId[transport.subId] = transport.badge.ifEmpty { "${simCount + index + 1}" }
+            transport.color?.let { subscriptionIdToColor[transport.subId] = it }
+            subscriptionIdToTransport[transport.subId] = transport
         }
 
         var prevDateTime = 0
@@ -1361,7 +1479,16 @@ class ThreadActivity : SimpleActivity() {
             // or if the message is sent from a different SIM
             if (shouldShowThreadDateTime(message, prevDateTime, prevSIMId)) {
                 val simCardID = subscriptionIdToSimId[message.subscriptionId] ?: "?"
-                items.add(ThreadDateTime(message.date, simCardID))
+                val transport = subscriptionIdToTransport[message.subscriptionId]
+                items.add(
+                    ThreadDateTime(
+                        date = message.date,
+                        simID = simCardID,
+                        simColor = subscriptionIdToColor[message.subscriptionId],
+                        simTextColor = transport?.textColor,
+                        simBorderColor = transport?.borderColor,
+                    )
+                )
                 prevDateTime = message.date
             }
             items.add(message)
@@ -2209,5 +2336,9 @@ class ThreadActivity : SimpleActivity() {
         private const val MIN_DATE_TIME_DIFF_SECS = 300
         private const val SCROLL_TO_BOTTOM_FAB_LIMIT = 20
         private const val PREFETCH_THRESHOLD = 45
+        private const val SIM_MENU_CORNER_DP = 16f
+        private const val SIM_MENU_ELEVATION_DP = 8f
+        private const val SIM_MENU_BADGE_DP = 36f
+        private const val SIM_MENU_BADGE_SP = 16f
     }
 }

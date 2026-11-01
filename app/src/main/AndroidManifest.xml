@@ -36,6 +36,8 @@
         tools:node="remove" />
 
     <queries>
+        <!-- 白い熊 辞書: a filing tab's long-press menu looks its name up there (辞書で引く). -->
+        <package android:name="shiroikuma.jisho" />
         <package android:name="org.fossify.contacts.debug" />
         <package android:name="org.fossify.contacts" />
         <!-- The two automation callers. Without them setPackage() on our reply and progress
@@ -239,32 +241,25 @@
             android:exported="true"
             android:taskAffinity="com.klinker.android.messaging.MMS_RECEIVED" />
 
+        <!-- Fork: the three notification-action receivers are reached ONLY through this app's own
+             notification PendingIntents, which name the component explicitly and run as this app — so
+             they need not, and must not, be exported. Exported with no permission (upstream), any app
+             could make メッセージ send an arbitrary SMS (DirectReplyReceiver), delete any message
+             (DeleteSmsReceiver) or silently mark a thread read (MarkAsReadReceiver). -->
         <receiver
             android:name=".receivers.MarkAsReadReceiver"
             android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="org.fossify.messages.action.mark_as_read" />
-            </intent-filter>
-        </receiver>
+            android:exported="false" />
 
         <receiver
             android:name=".receivers.DirectReplyReceiver"
             android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="org.fossify.messages.action.reply" />
-            </intent-filter>
-        </receiver>
+            android:exported="false" />
 
         <receiver
             android:name=".receivers.DeleteSmsReceiver"
             android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="org.fossify.messages.action.delete" />
-            </intent-filter>
-        </receiver>
+            android:exported="false" />
 
         <receiver
             android:name=".receivers.ScheduledMessageReceiver"
@@ -321,6 +316,11 @@
             android:value="1" />
         <meta-data
             android:name="shiroikuma.automation.min_format"
+            android:value="1" />
+        <!-- The SMS bridge contract (pseudo-SIMs + SIM gateway), served through the same provider —
+             see bridge/BridgeMethods. Readable without waking this app, like the three above. -->
+        <meta-data
+            android:name="shiroikuma.bridge.contract"
             android:value="1" />
 
         <receiver

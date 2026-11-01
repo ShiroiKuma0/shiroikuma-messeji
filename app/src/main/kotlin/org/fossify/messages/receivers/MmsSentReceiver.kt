@@ -11,6 +11,9 @@ import android.widget.Toast
 import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.extensions.toast
 import org.fossify.messages.R
+import org.fossify.messages.bridge.Bridge
+import org.fossify.messages.bridge.BridgeMethods
+import org.fossify.messages.bridge.BridgeStore
 import org.fossify.messages.extensions.deleteMessage
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.refreshMessages
@@ -38,6 +41,15 @@ class MmsSentReceiver : SendStatusReceiver() {
             context.contentResolver.update(uri, values, null, null)
         } catch (e: SQLiteException) {
             context.showErrorToast(e)
+        }
+
+        // Fork: a bridge (gateway) MMS send — record which row it became and report how it went.
+        val bridgeSeq = intent.getLongExtra(BridgeMethods.EXTRA_BRIDGE_SEQ, -1L)
+        if (bridgeSeq >= 0) {
+            val ref = "mms:${uri.lastPathSegment}"
+            BridgeStore.get(context).setOutboundRef(bridgeSeq, ref)
+            val ok = receiverResultCode == Activity.RESULT_OK
+            Bridge.onStatus(context, ref, if (ok) Bridge.STATE_SENT else Bridge.STATE_FAILED, if (ok) "" else "result $receiverResultCode")
         }
 
         // In case of resent message, delete original to prevent duplication

@@ -11,6 +11,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import org.fossify.commons.extensions.getMyContactsCursor
 import org.fossify.commons.helpers.ensureBackgroundThread
+import org.fossify.messages.bridge.Bridge
 import org.fossify.messages.extensions.getMessageRecipientAddress
 import org.fossify.messages.extensions.getNameFromAddress
 import org.fossify.messages.extensions.getThreadId
@@ -34,6 +35,11 @@ class SmsStatusSentReceiver : SendStatusReceiver() {
             Sms.MESSAGE_TYPE_FAILED
         }
         messagingUtils.updateSmsMessageSendingStatus(messageUri, type)
+        messageUri?.lastPathSegment?.toLongOrNull()?.let { id ->
+            val ok = resultCode == Activity.RESULT_OK
+            val reason = if (ok) "" else "result $resultCode, error ${intent.getIntExtra(EXTRA_ERROR_CODE, NO_ERROR_CODE)}"
+            Bridge.onStatus(context, "sms:$id", if (ok) Bridge.STATE_SENT else Bridge.STATE_FAILED, reason)
+        }
         messagingUtils.maybeShowErrorToast(
             resultCode = resultCode,
             errorCode = intent.getIntExtra(EXTRA_ERROR_CODE, NO_ERROR_CODE)

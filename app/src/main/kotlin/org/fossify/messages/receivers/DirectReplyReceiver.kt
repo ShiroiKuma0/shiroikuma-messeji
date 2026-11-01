@@ -10,6 +10,7 @@ import androidx.core.app.RemoteInput
 import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.helpers.ensureBackgroundThread
+import org.fossify.messages.bridge.Bridge
 import org.fossify.messages.extensions.*
 import org.fossify.messages.helpers.REPLY
 import org.fossify.messages.helpers.THREAD_ID
@@ -28,11 +29,23 @@ class DirectReplyReceiver : BroadcastReceiver() {
         if (address != null) {
             var subscriptionId: Int? = null
             val availableSIMs = context.subscriptionManagerCompat().activeSubscriptionInfoList
-            if ((availableSIMs?.size ?: 0) > 1) {
-                val currentSIMCardIndex = context.config.getUseSIMIdAtNumber(address)
-                val wantedId = availableSIMs?.getOrNull(currentSIMCardIndex)
-                if (wantedId != null) {
-                    subscriptionId = wantedId.subscriptionId
+            val preferred = context.config.getUseSIMIdAtNumber(address)
+            if (Bridge.transport(context, preferred) != null) {
+                // Fork: the thread is set to a bridge transport — reply over it, not the radio.
+                subscriptionId = preferred
+            } else if (Bridge.transports(context).isNotEmpty() && (availableSIMs?.size ?: 0) == 0) {
+                // No SIM at all, and no per-number choice yet: go back the way the thread came in.
+                subscriptionId = context.getMessages(threadId = threadId, includeScheduledMessages = false, limit = 1)
+                    .lastOrNull()?.subscriptionId?.takeIf { Bridge.isPseudo(it) }
+                    ?: Bridge.transports(context).first().subId
+            } else if ((availableSIMs?.size ?: 0) > 1) {
+                // Fork: the per-number preference is a SUBSCRIPTION ID (ThreadActivity saves
+                // `currentSIMCard.subscriptionId`), not an index into this list — reading it as an
+                // index sent inline replies from the wrong SIM, or the default one.
+                val preferredSubscriptionId = context.config.getUseSIMIdAtNumber(address)
+                val wanted = availableSIMs?.firstOrNull { it.subscriptionId == preferredSubscriptionId }
+                if (wanted != null) {
+                    subscriptionId = wanted.subscriptionId
                 }
             }
 

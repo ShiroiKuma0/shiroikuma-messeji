@@ -12,6 +12,7 @@ import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.models.PhoneNumber
 import org.fossify.commons.models.SimpleContact
+import org.fossify.messages.bridge.Bridge
 import org.fossify.messages.extensions.getConversations
 import org.fossify.messages.extensions.getNameFromAddress
 import org.fossify.messages.extensions.getNotificationBitmap
@@ -75,85 +76,95 @@ class SmsReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun handleMessageSync(
-        context: Context,
-        address: String,
-        subject: String,
-        body: String,
-        date: Long,
-        read: Int = 0,
-        threadId: Long,
-        type: Int = Telephony.Sms.MESSAGE_TYPE_INBOX,
-        subscriptionId: Int,
-        status: Int
-    ) {
-        val photoUri = SimpleContactsHelper(context).getPhotoUriFromPhoneNumber(address)
-        val bitmap = context.getNotificationBitmap(photoUri)
+    companion object {
+        /**
+         * Store, cache, file and notify one received SMS. Shared with the bridge's `inject_message`
+         * so an injected pseudo-SIM message is handled exactly like one off the radio.
+         *
+         * @return the new row's id in the system store, or 0 when the store refused it.
+         */
+        fun handleMessageSync(
+            context: Context,
+            address: String,
+            subject: String,
+            body: String,
+            date: Long,
+            read: Int = 0,
+            threadId: Long,
+            type: Int = Telephony.Sms.MESSAGE_TYPE_INBOX,
+            subscriptionId: Int,
+            status: Int
+        ): Long {
+            val photoUri = SimpleContactsHelper(context).getPhotoUriFromPhoneNumber(address)
+            val bitmap = context.getNotificationBitmap(photoUri)
 
-        val newMessageId = context.insertNewSMS(
-            address = address,
-            subject = subject,
-            body = body,
-            date = date,
-            read = read,
-            threadId = threadId,
-            type = type,
-            subscriptionId = subscriptionId
-        )
+            val newMessageId = context.insertNewSMS(
+                address = address,
+                subject = subject,
+                body = body,
+                date = date,
+                read = read,
+                threadId = threadId,
+                type = type,
+                subscriptionId = subscriptionId
+            )
 
-        context.getConversations(threadId).firstOrNull()?.let { conv ->
-            runCatching { context.insertOrUpdateConversation(conv) }
+            context.getConversations(threadId).firstOrNull()?.let { conv ->
+                runCatching { context.insertOrUpdateConversation(conv) }
+            }
+
+            val senderName = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use {
+                context.getNameFromAddress(address, it)
+            }
+
+            // 白い熊 filing: an unknown non-contact sender of a one-time code goes straight to 認証
+            runCatching { Filing.onIncoming(context, address, body, isContact = senderName != address) }
+
+            val participant = SimpleContact(
+                rawId = 0,
+                contactId = 0,
+                name = senderName,
+                photoUri = photoUri,
+                phoneNumbers = arrayListOf(PhoneNumber(value = address, type = 0, label = "", normalizedNumber = address)),
+                birthdays = ArrayList(),
+                anniversaries = ArrayList()
+            )
+
+            val message = Message(
+                id = newMessageId,
+                body = body,
+                type = type,
+                status = status,
+                participants = arrayListOf(participant),
+                date = (date / 1000).toInt(),
+                read = false,
+                threadId = threadId,
+                isMMS = false,
+                attachment = null,
+                senderPhoneNumber = address,
+                senderName = senderName,
+                senderPhotoUri = photoUri,
+                subscriptionId = subscriptionId
+            )
+
+            context.messagesDB.insertOrUpdate(message)
+
+            if (context.shouldUnarchive()) {
+                context.updateConversationArchivedStatus(threadId, false)
+            }
+
+            refreshMessages()
+            refreshConversations()
+            context.showReceivedMessageNotification(
+                messageId = newMessageId,
+                address = address,
+                senderName = senderName,
+                body = body,
+                threadId = threadId,
+                bitmap = bitmap
+            )
+            if (newMessageId > 0) Bridge.onReceived(context, "sms:$newMessageId", subscriptionId, "sms")
+            return newMessageId
         }
-
-        val senderName = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true).use {
-            context.getNameFromAddress(address, it)
-        }
-
-        // 白い熊 filing: an unknown non-contact sender of a one-time code goes straight to 認証
-        runCatching { Filing.onIncoming(context, address, body, isContact = senderName != address) }
-
-        val participant = SimpleContact(
-            rawId = 0,
-            contactId = 0,
-            name = senderName,
-            photoUri = photoUri,
-            phoneNumbers = arrayListOf(PhoneNumber(value = address, type = 0, label = "", normalizedNumber = address)),
-            birthdays = ArrayList(),
-            anniversaries = ArrayList()
-        )
-
-        val message = Message(
-            id = newMessageId,
-            body = body,
-            type = type,
-            status = status,
-            participants = arrayListOf(participant),
-            date = (date / 1000).toInt(),
-            read = false,
-            threadId = threadId,
-            isMMS = false,
-            attachment = null,
-            senderPhoneNumber = address,
-            senderName = senderName,
-            senderPhotoUri = photoUri,
-            subscriptionId = subscriptionId
-        )
-
-        context.messagesDB.insertOrUpdate(message)
-
-        if (context.shouldUnarchive()) {
-            context.updateConversationArchivedStatus(threadId, false)
-        }
-
-        refreshMessages()
-        refreshConversations()
-        context.showReceivedMessageNotification(
-            messageId = newMessageId,
-            address = address,
-            senderName = senderName,
-            body = body,
-            threadId = threadId,
-            bitmap = bitmap
-        )
     }
 }

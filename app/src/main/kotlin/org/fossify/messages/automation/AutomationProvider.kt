@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.util.Log
+import org.fossify.messages.bridge.BridgeMethods
 import org.fossify.messages.extensions.config
 import org.fossify.messages.helpers.EXTRA_JOB_ID
 import org.fossify.messages.helpers.SettingsEximport
@@ -89,6 +90,8 @@ class AutomationProvider : ContentProvider() {
         }
 
         Log.i(TAG, "$method from $callingPackage")
+        // The SMS bridge (pseudo-SIMs on the carried phone, SIM gateway on the service phones).
+        BridgeMethods.handle(ctx, method, arg, extras, callingPackage.orEmpty())?.let { return it }
         return when (method) {
             METHOD_DESCRIBE -> ok(describe(ctx))
             METHOD_EXPORT -> start(ctx, extras, importing = false)
@@ -165,9 +168,19 @@ class AutomationProvider : ContentProvider() {
         }
     }
 
-    private fun ok(result: String) = Bundle().apply { putString(KEY_RESULT, result) }
+    // `status`/`error` alongside the legacy `result`, so a bridge caller parses every answer —
+    // including a refusal from the caller check — with one grammar.
+    private fun ok(result: String) = Bundle().apply {
+        putString(KEY_RESULT, result)
+        putString("status", "OK")
+        putString("error", "")
+    }
 
-    private fun fail(why: String) = Bundle().apply { putString(KEY_RESULT, why) }
+    private fun fail(why: String) = Bundle().apply {
+        putString(KEY_RESULT, why)
+        putString("status", "ERROR")
+        putString("error", why.removePrefix("ERROR:"))
+    }
 
     // A provider that is only ever call()ed still has to answer these. Refusing loudly beats returning
     // an empty cursor, which reads downstream as "there is no data" rather than "wrong door".
