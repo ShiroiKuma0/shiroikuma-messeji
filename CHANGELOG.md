@@ -4,6 +4,49 @@ This file carries **both** histories. The fork's own releases come first, newest
 from the second `# Changelog` heading downwards is Fossify's original changelog, kept byte-for-byte
 as upstream writes it so that a rebase merges it cleanly instead of conflicting.
 
+## 白い熊 メッセージ 1.9.1+044 — 2026-11-01
+
+Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `6.1.6-sk9`** to build.
+
+## 📡 SMS bridge for 白い熊 自由作業盤 (contract 1, rev 2)
+
+- **Pseudo-SIMs** (sub ids −100 to −109, at most ten) for a SIM-less carried phone. They join the SIM selector with their own name, badge (up to three characters) and fill, text and ring colours, all set by the peer through `set_transports`; `describe` reports the limits.
+- **Sending on a pseudo-SIM** writes an OUTBOX row and hands its id to the peer, which reports sent / delivered / failed. Inline reply from the notification goes back over the conversation's own transport.
+- **Receiving:** `inject_message` stores a message exactly like a real SMS or MMS — threaded, notified, filed — idempotent on (transport, remote id).
+- **`inject_message` rejects a `from` that is not a sender address** (phone number, short code, sender name of up to 20 characters, or e-mail), instead of creating a conversation and a filing rule keyed on a display line.
+- **Gateway mode** for the service phones holding the real SIMs: received SMS / MMS are journalled and hinted to the peer, with catch-up, and the peer can send from a chosen SIM.
+- Every call goes through the existing AutomationProvider caller checks; broadcasts carry ids only. The bridge's bookkeeping lives in its own `bridge.db`. Backup and restore keep pseudo sub ids.
+
+## 📶 SIM selector, SIM menu and badges
+
+- **The compose bar's SIM selector is as tall as the send button** by default; small / medium / full row height on the UI page (*Compose bar* section).
+- **A tap opens a menu** of every SIM and pseudo-SIM, by badge and full name, the current one in bold, instead of cycling.
+- **Badges are drawn SIM cards** that widen for two or three characters, with fill, text and ring colours, in the selector, the menu and the conversation's date headers. Badge text is bold.
+- The selector is fully opaque; at 90 % opacity the ring over the fill showed a pale band.
+
+## 🗂️ Filing tabs
+
+- **すべて既読にする / すべて未読にする** in a tab's long-press menu mark every conversation in it read or unread (全部 covers all; neither appears on 送信済み).
+- **辞書で引く** in a tab's long-press menu looks its name up in 白い熊 辞書 (a toast says so if 辞書 is not installed).
+- **Tab text is 150 % of stock by default**, settable on the UI page (*Tabs* section, 100–200 %). The bar grows with it and scrolls sideways when the tabs run past the screen.
+- The tab menus, the filing menu and the main overflow menu carry the dialog border.
+
+## ✉️ Read and unread
+
+- **Mark as read / mark as unread on single messages:** select messages in a conversation; both are in the action bar's menu. Marking unread returns to the list.
+- **Marking a conversation unread flags only its latest received message**, so it counts as one new message, not every message it ever received. Applies to the list's *Mark as Unread*, the read / unread swipe, the conversation menu and the tab menu.
+- **Fixed: a conversation left open in the background marked new messages read unseen.** It now marks read only while on screen; coming back to it still does.
+- **Fixed: a new message could show as read, with no tab badge, on the first open of the list.** A conversation is now unread whenever it holds an unread received message (the phone's own per-thread flag lags a fresh insert). Overlapping background syncs no longer overwrite each other, and the list re-reads itself on every return to it.
+
+## 📋 Conversation list
+
+- **Denser rows:** less padding above and below; name and preview 40 % larger; the avatar spans both lines. The gap below the preview matches the gap above the name.
+
+## 🔒 Fixes & security
+
+- **Closed an arbitrary-send hole:** the mark-as-read, inline-reply and delete receivers are no longer exported — any app could send an SMS as 白い熊 メッセージ through the inline-reply receiver. Mark-as-read and delete intents are immutable.
+- **Inline reply no longer replies from the wrong SIM:** the per-number SIM preference is read as a subscription id, not a list index.
+
 ## 白い熊 メッセージ 1.9.1+029 — 2026-10-31
 
 Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `6.1.6-sk9`** to build.
