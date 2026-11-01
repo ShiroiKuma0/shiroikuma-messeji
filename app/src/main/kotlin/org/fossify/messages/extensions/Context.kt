@@ -425,10 +425,13 @@ fun Context.getConversations(
                     phoneNumbers.first()
                 ) else ""
             val isGroupConversation = phoneNumbers.size > 1
-            val read = cursor.getIntValue(Threads.READ) == 1
+            // Fork: the unread rows themselves decide. The threads table's READ column lags behind a
+            // fresh insert on the GRL-LX9 (EMUI updates it seconds later), so a message stored and
+            // cached at once (SmsReceiver, the bridge's inject) looked read until a later resync.
+            val unreadCount = unreadMap[id] ?: 0
+            val read = cursor.getIntValue(Threads.READ) == 1 && unreadCount == 0
             val archived =
                 if (archiveAvailable) cursor.getIntValue(Threads.ARCHIVED) == 1 else false
-            val unreadCount = if (!read) unreadMap[id] ?: 0 else 0
             val conversation = Conversation(
                 threadId = id,
                 snippet = snippet,
@@ -561,7 +564,7 @@ fun Context.getMmsAttachment(id: Long): MessageAttachment {
 }
 
 fun Context.getLatestMMS(): Message? {
-    val sortOrder = "${Mms.DATE} DESC LIMIT 1"
+    val sortOrder = "${Mms.DATE} DESC"
     return getMMS(sortOrder = sortOrder).firstOrNull()
 }
 
@@ -570,7 +573,7 @@ fun Context.getMMS(messageUri: Uri): Message? {
 }
 
 fun Context.getThreadSnippet(threadId: Long): String {
-    val sortOrder = "${Mms.DATE} DESC LIMIT 1"
+    val sortOrder = "${Mms.DATE} DESC"
     val latestMms = getMMS(threadId, sortOrder).firstOrNull()
     var snippet = latestMms?.body ?: ""
 
@@ -1005,6 +1008,18 @@ fun Context.markMessageRead(id: Long, isMMS: Boolean) {
     messagesDB.markRead(id)
 }
 
+/** Fork: one received message back to unread; its conversation turns unread with it. */
+fun Context.markMessageUnread(id: Long, isMMS: Boolean, threadId: Long) {
+    val uri = if (isMMS) Mms.CONTENT_URI else Sms.CONTENT_URI
+    val contentValues = ContentValues().apply {
+        put(Sms.READ, 0)
+        put(Sms.SEEN, 0)
+    }
+    contentResolver.update(uri, contentValues, "${Sms._ID} = ?", arrayOf(id.toString()))
+    messagesDB.markUnread(id)
+    conversationsDB.markUnread(threadId)
+}
+
 fun Context.markThreadMessagesRead(threadId: Long) {
     val id = threadId.toString()
 
@@ -1028,18 +1043,39 @@ fun Context.markThreadMessagesRead(threadId: Long) {
     conversationsDB.markRead(threadId)
 }
 
+/**
+ * Fork: mark a conversation unread by flagging only its latest received message (SMS or MMS), so it
+ * counts as one new message, not every message it ever received. A thread with nothing received
+ * flags its latest message of any kind instead, so it still turns unread.
+ */
 fun Context.markThreadMessagesUnread(threadId: Long) {
-    arrayOf(Sms.CONTENT_URI, Mms.CONTENT_URI).forEach { uri ->
+    // (id, date in ms, isMMS) of the newest row matching [inboxOnly]
+    fun latest(inboxOnly: Boolean): Triple<Long, Long, Boolean>? {
+        val sms = contentResolver.query(
+            Sms.CONTENT_URI, arrayOf(Sms._ID, Sms.DATE),
+            "${Sms.THREAD_ID} = ?" + if (inboxOnly) " AND ${Sms.TYPE} = ${Sms.MESSAGE_TYPE_INBOX}" else "",
+            arrayOf(threadId.toString()), "${Sms.DATE} DESC",
+        )?.use { if (it.moveToFirst()) Triple(it.getLong(0), it.getLong(1), false) else null }
+        val mms = contentResolver.query(
+            Mms.CONTENT_URI, arrayOf(Mms._ID, Mms.DATE),
+            "${Mms.THREAD_ID} = ?" + if (inboxOnly) " AND ${Mms.MESSAGE_BOX} = ${Mms.MESSAGE_BOX_INBOX}" else "",
+            arrayOf(threadId.toString()), "${Mms.DATE} DESC",
+        )?.use { if (it.moveToFirst()) Triple(it.getLong(0), it.getLong(1) * 1000, true) else null }
+        return listOfNotNull(sms, mms).maxByOrNull { it.second }
+    }
+
+    val target = runCatching { latest(inboxOnly = true) ?: latest(inboxOnly = false) }.getOrNull()
+    if (target != null) {
+        val (id, _, isMMS) = target
         val contentValues = ContentValues().apply {
             put(Sms.READ, 0)
             put(Sms.SEEN, 0)
         }
-        val selection = "${Sms.THREAD_ID} = ?"
-        val selectionArgs = arrayOf(threadId.toString())
-        contentResolver.update(uri, contentValues, selection, selectionArgs)
+        contentResolver.update(if (isMMS) Mms.CONTENT_URI else Sms.CONTENT_URI, contentValues, "${Sms._ID} = ?", arrayOf(id.toString()))
+        messagesDB.markUnread(id)
     }
     conversationsDB.markUnread(threadId)
-} 
+}
 
 @SuppressLint("NewApi")
 fun Context.getThreadId(address: String): Long {

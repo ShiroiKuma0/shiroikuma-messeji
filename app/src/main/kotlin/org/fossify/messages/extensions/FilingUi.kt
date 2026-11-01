@@ -6,10 +6,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.PopupWindow
+import org.fossify.commons.extensions.withDialogBorder
 import org.fossify.messages.databinding.ItemOverflowMenuBinding
 import org.fossify.messages.helpers.Filing
 
-private const val POPUP_CORNER_DP = 8f
+private const val POPUP_CORNER_DP = 16f // matches withDialogBorder's ring
 private const val POPUP_ELEVATION_DP = 8f
 
 /** A small menu in the app's own menu colours, dropped below [anchor] (the main overflow uses it too). */
@@ -29,10 +30,12 @@ fun Activity.showThemedPopupMenu(anchor: View, entries: List<Pair<String, () -> 
     }
     val density = resources.displayMetrics.density
     popup.setBackgroundDrawable(
-        GradientDrawable().apply {
-            cornerRadius = POPUP_CORNER_DP * density
-            setColor(themeColor(ThemeSlot.MENU_BACKGROUND))
-        }
+        withDialogBorder(
+            GradientDrawable().apply {
+                cornerRadius = POPUP_CORNER_DP * density
+                setColor(themeColor(ThemeSlot.MENU_BACKGROUND))
+            }
+        )
     )
     popup.elevation = POPUP_ELEVATION_DP * density
     popup.showAsDropDown(anchor)
