@@ -10,7 +10,7 @@ A fork of [Fossify Messages](https://github.com/FossifyOrg/Messages) with **majo
 
 Installs **side-by-side** with Fossify Messages (app id `shiroikuma.messeji`).
 
-**📥 Latest release: [`1.9.1+044`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
+**📥 Latest release: [`1.9.1+047`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
 
 </div>
 
@@ -24,7 +24,7 @@ Under the search bar sits a row of paper filing tabs: **自分 · 個人 · 仕�
 
 ## 📡 SMS over Jami — a SIM-less phone with pseudo-SIMs
 
-Leave the SIMs in a phone at home and carry one without any: through 白い熊 自由作業盤 and Jami, the carried phone gets up to ten **pseudo-SIMs** that sit in the SIM selector beside real ones, each with its own name, badge and colours. Messages arriving on them are stored, threaded, notified and filed exactly like real SMS — unread until you have seen them — and a reply, inline from the notification included, goes back the way the conversation came. Sends report sent, delivered or failed like a real SIM's.
+Leave the SIMs in a phone at home and carry one without any: through 白い熊 自由作業盤 and Jami, the carried phone gets up to ten **pseudo-SIMs** that sit in the SIM selector beside real ones, each with its own name, badge and colours. Messages arriving on them are stored, threaded, notified and filed exactly like real SMS — unread until you have seen them — and a reply, inline from the notification included, goes back the way the conversation came. Sends report sent, delivered or failed like a real SIM's. Each line can carry its own phone numbers, so 白い熊 リン電話 can answer a ringing or missed call with an SMS from the very line the call came in on.
 
 ---
 
@@ -108,7 +108,7 @@ The theme color picker adds an **alpha/transparency slider** (the stock one is o
 
 ## 🔓 No “fake version” nag
 
-Built against a patched Fossify Commons that removes the anti-tamper/sideloading check entirely (it misfires on any renamed fork), and fixes Commons’ hard-coded `org.fossify.*` package assumptions — including reading the Contacts app’s shared private contacts.
+Built against a patched Fossify Commons that removes the anti-tamper/sideloading check entirely (it misfires on any renamed fork), and fixes Commons’ hard-coded `org.fossify.*` package assumptions — including reading 白い熊 連絡先’s private contacts, so their names show on conversations and in search.
 
 ## Built on Fossify Messages
 
