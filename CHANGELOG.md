@@ -4,6 +4,24 @@ This file carries **both** histories. The fork's own releases come first, newest
 from the second `# Changelog` heading downwards is Fossify's original changelog, kept byte-for-byte
 as upstream writes it so that a rebase merges it cleanly instead of conflicting.
 
+## 白い熊 メッセージ 1.9.1+047 — 2026-11-02
+
+Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `6.1.6-sk10`** to build.
+
+## 📡 SMS bridge (contract 1, rev 3)
+
+- **Lines carry their phone numbers (DIDs):** `set_transports` takes an optional `dids` list, one comma-separated entry per pseudo-SIM, and `get_transports` returns it. A number listed under two lines is refused, naming the number.
+- **`send_message` sends from a pseudo-SIM:** `from_did` picks the line by one of its numbers (an unknown number is refused with `no line for DID …`), or a pseudo-SIM `sub_id` names it directly. The message is queued exactly as the compose screen queues it — in the thread, `queued`, handed to the peer — and the answer is `id=out:<n>`, `state=queued`. If `from_did` and `sub_id` name different lines the send is refused.
+- **白い熊 リン電話 may reply by SMS:** `shiroikuma.rindenwa` joins the pinned callers (package, uid and signing certificate checked), limited to `send_message` and `get_status`. Callers can now be limited to particular methods.
+
+## 👥 Contacts
+
+- **Private contacts of 白い熊 連絡先 are visible:** built against Commons `6.1.6-sk10`, which reads `shiroikuma.renrakusaki`'s contacts provider first, so those people's names show on conversations and in search.
+
+## 💬 Conversation
+
+- **Fixed: an SMS arriving while its conversation was open stayed out of sight** below the bottom edge. The list now scrolls to the new message when it was at its end; if you have scrolled up to read older messages, it stays put.
+
 ## 白い熊 メッセージ 1.9.1+044 — 2026-11-01
 
 Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `6.1.6-sk9`** to build.
