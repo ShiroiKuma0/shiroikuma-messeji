@@ -629,10 +629,18 @@ class ThreadActivity : SimpleActivity() {
                 val layoutManager = binding.threadMessagesList.layoutManager as LinearLayoutManager
                 val lastPosition = itemCount - 1
                 val lastVisiblePosition = layoutManager.findLastVisibleItemPosition()
+                // Fork: follow a new message in when the list was at (or one item short of) its end.
+                // Stock required the last item to be hidden (difference exactly 1), so with the
+                // conversation scrolled to the bottom — difference 0 — a message arriving while the
+                // thread was open was appended below the visible edge and never shown.
+                val wasAtBottom = lastPosition < 0 || lastVisiblePosition >= lastPosition - 1
                 val shouldScrollToBottom =
-                    currentList.lastOrNull() != latestThreadItems.lastOrNull() &&
-                            lastPosition - lastVisiblePosition == 1
-                updateMessages(latestThreadItems, if (shouldScrollToBottom) lastPosition else -1)
+                    currentList.lastOrNull() != latestThreadItems.lastOrNull() && wasAtBottom
+                updateMessages(
+                    newMessages = latestThreadItems,
+                    scrollPosition = if (shouldScrollToBottom) latestThreadItems.lastIndex else -1,
+                    smoothScroll = lastPosition >= 0,
+                )
             }
         }
 
