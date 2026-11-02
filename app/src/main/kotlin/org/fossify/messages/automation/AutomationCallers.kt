@@ -26,8 +26,8 @@ import java.security.MessageDigest
  *
  * ## What is actually checked, in order
  *
- * 1. **An exact name** from [CALLERS]. Two callers exist and both are known here; a third is a
- *    one-line change.
+ * 1. **An exact name** from [CALLERS]. A new caller is a one-line change; one that needs only a
+ *    few methods is also listed in [SCOPES].
  * 2. **The uid agrees.** `getCallingPackage()` reflects the caller's declared attribution, and
  *    packages sharing a uid are not distinguished by it, so it is confirmed against the uid the
  *    kernel reports.
@@ -48,6 +48,17 @@ object AutomationCallers {
     private val CALLERS = mapOf(
         "shiroikuma.oyokanri" to "9c585f4d118cb97ff653f949a8872875548403b9083ce6b9baa2e8f0c55ac6cc",
         "shiroikuma.jiyusagyoban" to "efd0d352192651593a92288ecdc64fc87262ec8648c24ed8f51a5587d46ac602",
+        // rindenwa (the Linphone fork): its call screen and missed calls reply to a caller by SMS from
+        // the line the call came in on — `send_message` with `from_did`. Scoped below.
+        "shiroikuma.rindenwa" to "55f83339c1b8856c02a2c76283bb67df4865685f41fc85f0792dd81ea372242b",
+    )
+
+    /**
+     * Callers that may use only some methods. A caller absent here may call every method; one present
+     * here is refused anything else, by name, before the method runs.
+     */
+    private val SCOPES = mapOf(
+        "shiroikuma.rindenwa" to setOf("send_message", "get_status"),
     )
 
     /**
@@ -83,7 +94,7 @@ object AutomationCallers {
     // Each refusal is its own early return: the check that failed IS the answer, and collapsing them
     // would cost the caller the one thing it needs to act on.
     @Suppress("ReturnCount")
-    fun verify(context: Context, declared: String?): Verdict {
+    fun verify(context: Context, declared: String?, method: String): Verdict {
         val name = declared?.takeIf { it.isNotEmpty() }
             ?: return Verdict.Refused("ERROR:caller unknown")
         val pin = CALLERS[name] ?: return Verdict.Refused("ERROR:caller not permitted: $name")
@@ -101,6 +112,9 @@ object AutomationCallers {
         // habit is worth keeping and costs nothing.
         if (!MessageDigest.isEqual(signature.toByteArray(), pin.toByteArray())) {
             return Verdict.Refused("ERROR:caller signature mismatch: $name")
+        }
+        SCOPES[name]?.let { allowed ->
+            if (method !in allowed) return Verdict.Refused("ERROR:method $method not permitted for $name")
         }
         return Verdict.Allowed
     }

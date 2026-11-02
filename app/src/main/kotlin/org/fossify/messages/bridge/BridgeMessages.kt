@@ -124,9 +124,10 @@ object BridgeMessages {
     fun queueOutgoing(
         context: Context, text: String, addresses: List<String>, subId: Int,
         attachments: List<Attachment>, resendId: Long?,
-    ) {
+    ): List<Long> {
         val peer = Bridge.transportPeer(context)
         val store = BridgeStore.get(context)
+        val seqs = ArrayList<Long>()
         for (address in addresses) {
             val threadId = context.getThreadId(address)
             val ref = if (attachments.isEmpty()) {
@@ -145,6 +146,7 @@ object BridgeMessages {
                 "mms:$id"
             }
             val seq = store.addOutbound(ref, subId, address, Bridge.STATE_QUEUED)
+            seqs.add(seq)
             Bridge.hint(context, peer, Bridge.ACTION_OUTGOING) {
                 putExtra(Bridge.EXTRA_ID, "out:$seq")
                 putExtra(Bridge.EXTRA_SUB_ID, subId.toString())
@@ -152,6 +154,7 @@ object BridgeMessages {
         }
         refreshMessages()
         refreshConversations()
+        return seqs
     }
 
     /** An OUTBOX row for a real-SIM gateway send (service phones). */

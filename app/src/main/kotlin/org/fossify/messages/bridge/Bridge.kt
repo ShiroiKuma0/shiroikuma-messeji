@@ -43,8 +43,11 @@ object Bridge {
     /** A badge is cut to this many characters; up to three render inside the card everywhere. */
     const val BADGE_MAX_CHARS = 3
 
-    /** Additive revisions within [CONTRACT]; 2 = badge text/border colours and ten transports. */
-    const val CONTRACT_REV = 2
+    /**
+     * Additive revisions within [CONTRACT]; 2 = badge text/border colours and ten transports;
+     * 3 = per-transport DIDs and `send_message` on a pseudo-SIM (`from_did`, or a transport `sub_id`).
+     */
+    const val CONTRACT_REV = 3
 
     const val ACTION_OUTGOING = "shiroikuma.messeji.bridge.OUTGOING"
     const val ACTION_RECEIVED = "shiroikuma.messeji.bridge.RECEIVED"
@@ -77,6 +80,8 @@ object Bridge {
         val color: Int?,
         val textColor: Int? = null,
         val borderColor: Int? = null,
+        /** The E.164 numbers (SIP DIDs) this line answers on, so a reply can be sent "from" one. */
+        val dids: List<String> = emptyList(),
     )
 
     fun transports(context: Context): List<Transport> = runCatching {
@@ -91,6 +96,7 @@ object Bridge {
                 color = if (o.has("color")) o.getInt("color") else null,
                 textColor = if (o.has("text_color")) o.getInt("text_color") else null,
                 borderColor = if (o.has("border_color")) o.getInt("border_color") else null,
+                dids = o.optJSONArray("dids")?.let { d -> (0 until d.length()).map { d.getString(it) } }.orEmpty(),
             )
         }
     }.getOrDefault(emptyList())
@@ -107,12 +113,20 @@ object Bridge {
                 t.color?.let { put("color", it) }
                 t.textColor?.let { put("text_color", it) }
                 t.borderColor?.let { put("border_color", it) }
+                if (t.dids.isNotEmpty()) put("dids", JSONArray(t.dids))
             })
         }
         context.config.setBridgeStrings(
             PREF_TRANSPORTS to array.toString(),
             PREF_TRANSPORT_PEER to if (list.isEmpty()) null else peer,
         )
+    }
+
+    /** The transport whose DIDs include [did] (exact match after trimming), or null. */
+    fun transportForDid(context: Context, did: String): Transport? {
+        val wanted = did.trim()
+        if (wanted.isEmpty()) return null
+        return transports(context).firstOrNull { wanted in it.dids }
     }
 
     fun transportPeer(context: Context): String? =

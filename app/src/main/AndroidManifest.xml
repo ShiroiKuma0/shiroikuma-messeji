@@ -47,6 +47,8 @@
              and we read its signing certificate, so nothing here may rest on that. -->
         <package android:name="shiroikuma.oyokanri" />
         <package android:name="shiroikuma.jiyusagyoban" />
+        <!-- rindenwa replies to a caller by SMS (send_message with from_did); we read its certificate. -->
+        <package android:name="shiroikuma.rindenwa" />
     </queries>
 
     <uses-feature android:name="android.hardware.telephony" />
