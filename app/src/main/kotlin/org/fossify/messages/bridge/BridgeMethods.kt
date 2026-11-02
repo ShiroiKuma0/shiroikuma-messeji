@@ -145,6 +145,10 @@ object BridgeMethods {
         val colors = e.strings("colors")
         val textColors = e.strings("text_colors")
         val borderColors = e.strings("border_colors")
+        // One entry per transport, each a comma-separated list of E.164 DIDs (possibly empty).
+        val didLists = e.strings("dids").map { entry ->
+            entry.split(',').map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        }
         if (ids.size > Bridge.MAX_TRANSPORTS) throw BridgeError("at most ${Bridge.MAX_TRANSPORTS} transports")
         val list = ids.mapIndexed { i, raw ->
             val subId = raw.trim().toIntOrNull() ?: throw BridgeError("bad sub_id: $raw")
@@ -159,9 +163,14 @@ object BridgeMethods {
                 color = Bridge.parseColor(colors.getOrNull(i)),
                 textColor = Bridge.parseColor(textColors.getOrNull(i)),
                 borderColor = Bridge.parseColor(borderColors.getOrNull(i)),
+                dids = didLists.getOrNull(i).orEmpty(),
             )
         }
         if (list.map { it.subId }.toSet().size != list.size) throw BridgeError("duplicate sub_id")
+        // A DID answers on exactly one line, or a reply "from" it would have to guess.
+        list.flatMap { t -> t.dids.map { it to t.subId } }.groupBy({ it.first }, { it.second })
+            .entries.firstOrNull { it.value.size > 1 }
+            ?.let { (did, subs) -> throw BridgeError("DID $did is listed under more than one transport (${subs.joinToString(",")})") }
         Bridge.setTransports(context, list, caller)
         return getTransports(context)
     }
@@ -176,6 +185,7 @@ object BridgeMethods {
             putStringArray("colors", list.map { Bridge.colorString(it.color) }.toTypedArray())
             putStringArray("text_colors", list.map { Bridge.colorString(it.textColor) }.toTypedArray())
             putStringArray("border_colors", list.map { Bridge.colorString(it.borderColor) }.toTypedArray())
+            putStringArray("dids", list.map { it.dids.joinToString(",") }.toTypedArray())
         }
     }
 
@@ -305,9 +315,28 @@ object BridgeMethods {
         }
     }
 
+    /**
+     * Send from a real SIM (`sub_id`, the service phones' gateway) or from a pseudo-SIM: `from_did`
+     * names the line by one of its DIDs, or `sub_id` names a transport directly. A pseudo-SIM send is
+     * exactly what the compose screen does on that transport — OUTBOX row, `queued`, OUTGOING hint
+     * to the transport peer — and answers `id=out:<seq>`, `state=queued`.
+     *
+     * When both `from_did` and `sub_id` are given they must name the same line; a disagreement is an
+     * error rather than a silent pick, since either one winning could send from the wrong number.
+     */
     @SuppressLint("MissingPermission")
     private fun sendMessage(context: Context, e: Bundle): Bundle {
-        val subId = subIdOf(e)
+        val fromDid = e.str("from_did")?.trim().orEmpty()
+        val subId = if (fromDid.isNotEmpty()) {
+            val line = Bridge.transportForDid(context, fromDid) ?: throw BridgeError("no line for DID $fromDid")
+            e.str("sub_id")?.trim()?.toIntOrNull()?.let { given ->
+                if (given != line.subId) throw BridgeError("sub_id $given disagrees with from_did $fromDid (line ${line.subId})")
+            }
+            line.subId
+        } else {
+            subIdOf(e)
+        }
+        if (Bridge.isPseudo(subId)) return sendOnTransport(context, e, subId)
         val subs = context.subscriptionManagerCompat().activeSubscriptionInfoList.orEmpty()
         if (subs.none { it.subscriptionId == subId }) {
             throw BridgeError("no active SIM with sub_id $subId (have ${subs.joinToString(",") { it.subscriptionId.toString() }})")
@@ -359,6 +388,23 @@ object BridgeMethods {
             throw BridgeError("MMS send failed: ${error.message}")
         }
         return ok { putString("id", "out:$seq") }
+    }
+
+    private fun sendOnTransport(context: Context, e: Bundle, subId: Int): Bundle {
+        if (Bridge.transport(context, subId) == null) throw BridgeError("no such transport: $subId")
+        // Passed through as the compose path would take it: no country code is invented.
+        val to = e.str("to")?.trim().orEmpty().ifEmpty { throw BridgeError("to missing") }
+        val body = e.str("body").orEmpty()
+        if (e.strings("part_uris").isNotEmpty()) throw BridgeError("parts are not supported on a pseudo-SIM send")
+        if (body.isEmpty()) throw BridgeError("nothing to send: no body")
+        val seq = BridgeMessages.queueOutgoing(context, body, listOf(to), subId, emptyList(), resendId = null).single()
+        val row = BridgeStore.get(context).outbound(seq)
+        return ok {
+            putString("id", "out:$seq")
+            putString("state", Bridge.STATE_QUEUED)
+            putString("sub_id", subId.toString())
+            putString("msg_ref", row?.msgRef.orEmpty())
+        }
     }
 
     private fun getStatus(context: Context, id: String?): Bundle {

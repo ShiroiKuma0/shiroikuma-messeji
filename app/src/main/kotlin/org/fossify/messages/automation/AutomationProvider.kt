@@ -75,7 +75,7 @@ class AutomationProvider : ContentProvider() {
         val ctx = context ?: return fail("ERROR:not ready")
 
         // WHO, before WHAT. A caller we cannot identify gets the same answer whatever it asked for.
-        when (val verdict = AutomationCallers.verify(ctx, callingPackage)) {
+        when (val verdict = AutomationCallers.verify(ctx, callingPackage, method)) {
             is AutomationCallers.Verdict.Refused -> {
                 Log.i(TAG, "$method refused: ${verdict.why}")
                 return fail(verdict.why)
