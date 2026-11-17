@@ -134,6 +134,7 @@
     <string name="theme_search_menu">Menu icon</string>
     <string name="theme_menu_background">Menu background</string>
     <string name="theme_menu_text">Menu text</string>
+    <string name="theme_menu_warning">Menu: destructive actions</string>
     <string name="theme_settings_title">Header</string>
     <string name="theme_settings_back">Back arrow</string>
     <string name="theme_settings_button_left">設 (UI page)</string>

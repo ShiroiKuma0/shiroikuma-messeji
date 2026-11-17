@@ -15,6 +15,7 @@ import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.withDialogBorder
 import org.fossify.messages.helpers.DIALOG_BORDER_WIDTH_DEFAULT
+import org.fossify.messages.helpers.EXIM_WARN_COLOR
 import org.fossify.messages.R
 import org.fossify.messages.helpers.PALETTE_BLACK
 import org.fossify.messages.helpers.PALETTE_YELLOW
@@ -124,6 +125,7 @@ enum class ThemeSlot(
     SEARCH_MENU_ICON("theme_search_menu", ThemeGroup.SEARCH, R.string.theme_search_menu),
     MENU_BACKGROUND("theme_menu_background", ThemeGroup.SEARCH, R.string.theme_menu_background),
     MENU_TEXT("theme_menu_text", ThemeGroup.SEARCH, R.string.theme_menu_text),
+    MENU_WARNING("theme_menu_warning", ThemeGroup.SEARCH, R.string.theme_menu_warning),
 
     // Toolbar 設定 launcher — two adjacent characters, each with its own font / weight / size / colour.
     // Left (設) opens the 白い熊 メッセージ UI page; right (定) opens the regular Settings screen.
@@ -164,6 +166,8 @@ private fun Context.themeDefault(slot: ThemeSlot): Int = when (slot) {
     // Overflow menu popup: background follows the app background, text follows the app text colour
     ThemeSlot.MENU_BACKGROUND -> themeColor(ThemeSlot.BACKGROUND)
     ThemeSlot.MENU_TEXT -> themeColor(ThemeSlot.TEXT)
+    // Destructive menu rows (delete, empty): frame, icon and label
+    ThemeSlot.MENU_WARNING -> EXIM_WARN_COLOR
 
     // Toolbar 設定 launcher characters inherit the menu-icon colour by default
     ThemeSlot.SETTINGS_BUTTON_LEFT -> themeColor(ThemeSlot.SEARCH_MENU_ICON)

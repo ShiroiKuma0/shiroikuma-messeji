@@ -220,6 +220,7 @@
     <string name="theme_search_menu">メニューアイコン</string>
     <string name="theme_menu_background">メニューの背景</string>
     <string name="theme_menu_text">メニューの文字</string>
+    <string name="theme_menu_warning">メニューの削除系操作</string>
     <string name="theme_settings_title">ヘッダー</string>
     <string name="theme_settings_back">戻る矢印</string>
     <string name="theme_settings_button_left">設（UIページ）</string>
