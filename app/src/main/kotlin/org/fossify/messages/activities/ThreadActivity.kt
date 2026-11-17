@@ -150,6 +150,7 @@ import org.fossify.messages.extensions.markThreadMessagesUnread
 import org.fossify.messages.extensions.messagesDB
 import org.fossify.messages.extensions.moveMessageToRecycleBin
 import org.fossify.messages.extensions.onScroll
+import org.fossify.messages.extensions.pillBackground
 import org.fossify.messages.extensions.removeDiacriticsIfNeeded
 import org.fossify.messages.extensions.renameConversation
 import org.fossify.messages.extensions.restoreAllMessagesFromRecycleBinForConversation
@@ -158,6 +159,8 @@ import org.fossify.messages.extensions.saveSmsDraft
 import org.fossify.messages.extensions.shouldUnarchive
 import org.fossify.messages.extensions.showWithAnimation
 import org.fossify.messages.extensions.subscriptionManagerCompat
+import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.themeColor
 import org.fossify.messages.extensions.toArrayList
 import org.fossify.messages.extensions.toSortedMessages
 import org.fossify.messages.extensions.updateConversationArchivedStatus
@@ -1228,6 +1231,7 @@ class ThreadActivity : SimpleActivity() {
             val isCurrent = index == currentSIMCardIndex
             row.simChoiceLabel.setTextColor(if (isCurrent) getProperPrimaryColor() else textColor)
             row.simChoiceLabel.setTypeface(null, if (isCurrent) Typeface.BOLD else Typeface.NORMAL)
+            row.root.background = pillBackground(themeColor(ThemeSlot.MENU_TEXT))
             row.root.setOnClickListener {
                 popup.dismiss()
                 onPick(index)

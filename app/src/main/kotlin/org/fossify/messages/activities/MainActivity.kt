@@ -56,6 +56,7 @@ import org.fossify.commons.models.FAQItem
 import org.fossify.commons.models.Release
 import org.fossify.messages.BuildConfig
 import org.fossify.messages.R
+import org.fossify.commons.R as CommonsR
 import org.fossify.messages.adapters.ConversationsAdapter
 import org.fossify.messages.helpers.ConversationSwipeCallback
 import org.fossify.messages.adapters.SearchResultsAdapter
@@ -75,6 +76,7 @@ import org.fossify.messages.extensions.themeColor
 import org.fossify.messages.helpers.SEARCHED_MESSAGE_ID
 import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.helpers.THREAD_TITLE
+import org.fossify.messages.extensions.MenuEntry
 import org.fossify.messages.extensions.showThemedPopupMenu
 import org.fossify.messages.helpers.Filing
 import org.fossify.messages.models.Conversation
@@ -265,15 +267,18 @@ class MainActivity : SimpleActivity() {
     private fun showOverflowMenu() {
         val toolbar = binding.mainMenu.requireToolbar()
         val anchor = toolbar.findViewById<View>(R.id.more) ?: toolbar
-        val entries = buildList<Pair<String, () -> Unit>> {
+        val entries = buildList {
             if (config.useRecycleBin) {
-                add(getString(org.fossify.commons.R.string.show_the_recycle_bin) to ::launchRecycleBin)
+                val bin = getString(CommonsR.string.show_the_recycle_bin)
+                add(MenuEntry(bin, CommonsR.drawable.ic_delete_vector, opens = true, action = ::launchRecycleBin))
             }
             if (config.isArchiveAvailable) {
-                add(getString(R.string.show_archived_conversations) to ::launchArchivedConversations)
+                val archived = getString(R.string.show_archived_conversations)
+                add(MenuEntry(archived, R.drawable.ic_archive_vector, opens = true, action = ::launchArchivedConversations))
             }
-            add(getString(org.fossify.commons.R.string.settings) to ::launchSettings)
-            add(getString(org.fossify.commons.R.string.about) to ::launchAbout)
+            val settings = getString(CommonsR.string.settings)
+            add(MenuEntry(settings, CommonsR.drawable.ic_settings_cog_vector, opens = true, action = ::launchSettings))
+            add(MenuEntry(getString(CommonsR.string.about), CommonsR.drawable.ic_info_vector, opens = true, action = ::launchAbout))
         }
 
         showThemedPopupMenu(anchor, entries)

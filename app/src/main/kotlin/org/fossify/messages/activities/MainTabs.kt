@@ -15,6 +15,7 @@ import org.fossify.messages.R
 import org.fossify.messages.adapters.SearchResultsAdapter
 import org.fossify.messages.databinding.ActivityMainBinding
 import org.fossify.messages.dialogs.TabNameDialog
+import org.fossify.messages.extensions.MenuEntry
 import org.fossify.messages.extensions.ThemeSlot
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.conversationsDB
@@ -30,6 +31,7 @@ import org.fossify.messages.models.Message
 import org.fossify.messages.models.SearchResult
 import org.fossify.messages.views.DayHeaderDecoration
 import org.fossify.messages.views.FolderTabItem
+import org.fossify.commons.R as CommonsR
 
 /**
  * The conversation list's 白い熊 filing tabs: the folder tab bar with its unread counts, the long-press
@@ -117,29 +119,35 @@ class MainTabs(
 
     // A long-press released without dragging: 新しいタブ always; rename / delete on the user's own tabs.
     private fun showMenu(id: Int, anchor: View) {
-        val entries = ArrayList<Pair<String, () -> Unit>>()
-        entries.add(activity.getString(R.string.new_tab) to {
+        val entries = ArrayList<MenuEntry>()
+        entries.add(MenuEntry(activity.getString(R.string.new_tab), CommonsR.drawable.ic_plus_vector, opens = true) {
             askName(R.string.new_tab, "") { name -> config.filingSelectedTab = Filing.createTab(activity, name).id }
         })
         val inTab = conversationsOf(id)
         val unread = inTab.filter { !it.read }
         if (unread.isNotEmpty()) {
-            entries.add(activity.getString(R.string.mark_all_as_read) to { markAllRead(unread) })
+            entries.add(MenuEntry(activity.getString(R.string.mark_all_as_read), R.drawable.ic_check_double_vector) {
+                markAllRead(unread)
+            })
         }
         val read = inTab.filter { it.read }
         if (read.isNotEmpty()) {
-            entries.add(activity.getString(R.string.mark_all_as_unread) to { markAllUnread(read) })
+            entries.add(MenuEntry(activity.getString(R.string.mark_all_as_unread), CommonsR.drawable.ic_mail_vector) {
+                markAllUnread(read)
+            })
         }
         val title = tabTitle(id)
         if (title.isNotEmpty()) {
-            entries.add(activity.getString(R.string.look_up_tab_in_dictionary) to { lookUpInDictionary(title) })
+            val label = activity.getString(R.string.look_up_tab_in_dictionary)
+            entries.add(MenuEntry(label, CommonsR.drawable.ic_search_vector, opens = true) { lookUpInDictionary(title) })
         }
         if (id > 0) {
             val name = Filing.tabName(activity, id).orEmpty()
-            entries.add(activity.getString(R.string.rename_tab) to {
+            entries.add(MenuEntry(activity.getString(R.string.rename_tab), CommonsR.drawable.ic_rename_vector, opens = true) {
                 askName(R.string.rename_tab, name) { Filing.renameTab(activity, id, it) }
             })
-            entries.add(activity.getString(R.string.delete_tab) to {
+            val delete = activity.getString(R.string.delete_tab)
+            entries.add(MenuEntry(delete, CommonsR.drawable.ic_delete_vector, destructive = true) {
                 ConfirmationDialog(activity, activity.getString(R.string.delete_tab_confirmation, name)) {
                     Filing.deleteTab(activity, id)
                     onChanged()
