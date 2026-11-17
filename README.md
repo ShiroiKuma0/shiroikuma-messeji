@@ -6,11 +6,11 @@
 
 **A black-and-pure-yellow SMS/MMS app with per-element theming, per-element fonts, and Sino-Japanese time & imperial-era dates.**
 
-A fork of [Fossify Messages](https://github.com/FossifyOrg/Messages) with **major additions**: filing tabs that file every conversation (自分 · 個人 · 仕事 · 買物 · 認証 …) with one-tap filing of unknown senders, an SMS-over-Jami bridge that turns a SIM-less phone into one with pseudo-SIMs, a SIM menu with drawn SIM-card badges, a 送信済み list and per-tab search, day headers in the style of 白い熊 電話, a granular per-element Theme & Colors system (black `#000000` / pure yellow `#FFFF00` by default), per-element font family/weight/size, full category export/import (messages included), headless backup driven from 白い熊 自由作業盤, a verified data door that lets 白い熊 応用管理 restore this app *with its messages* onto a wiped phone, swipe-left / swipe-right actions on the conversation list with undo-delete, an alpha-capable color picker, Japanese kanji clock readings and 令和 imperial-era dates, a 設定 toolbar launcher, and a fully black/yellow chrome — menus, action bar, dialogs, and toasts included.
+A fork of [Fossify Messages](https://github.com/FossifyOrg/Messages) with **major additions**: filing tabs that file every conversation (自分 · 個人 · 仕事 · 買物 · 認証 …) with one-tap filing of unknown senders, an SMS-over-Jami bridge that turns a SIM-less phone into one with pseudo-SIMs, a SIM menu with drawn SIM-card badges, a 送信済み list and per-tab search, day headers in the style of 白い熊 電話, a granular per-element Theme & Colors system (black `#000000` / pure yellow `#FFFF00` by default), per-element font family/weight/size, full category export/import (messages included), headless backup driven from 白い熊 自由作業盤, a verified data door that lets 白い熊 応用管理 restore this app *with its messages* onto a wiped phone, swipe-left / swipe-right actions on the conversation list with undo-delete, an alpha-capable color picker, Japanese kanji clock readings and 令和 imperial-era dates, a 設定 toolbar launcher, and a fully black/yellow chrome — pill menus with icons, action bar, dialogs, and toasts included.
 
 Installs **side-by-side** with Fossify Messages (app id `shiroikuma.messeji`).
 
-**📥 Latest release: [`1.9.1+047`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
+**📥 Latest release: [`1.9.1+048`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
 
 </div>
 

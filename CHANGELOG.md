@@ -4,6 +4,30 @@ This file carries **both** histories. The fork's own releases come first, newest
 from the second `# Changelog` heading downwards is Fossify's original changelog, kept byte-for-byte
 as upstream writes it so that a rebase merges it cleanly instead of conflicting.
 
+## 白い熊 メッセージ 1.9.1+048 — 2026-11-17
+
+Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `6.1.6-sk10`** to build.
+
+## 📋 Menus — every action is an outlined pill
+
+- **Every menu row that does something is a full-width outlined pill** with its icon inside at the left, so a menu shows at a glance which lines can be pressed. Rows that open a screen, a dialog or a picker end in a **›**.
+- **Covered:** the toolbar and selection-bar overflow menus of the conversation list, the conversation, the archive, the recycle bin and the blocked keywords; the per-keyword popup; the tab long-press menu; the main ⋮ menu.
+- **Every row has an icon** — the overflow-only actions (mark as read / unread, add number to contact, copy number, rename, conversation details, block number, restore, forward, select text, add person, import / export blocked keywords) gained one.
+- **Destructive rows are drawn in a warning colour** — delete, empty archive, empty recycle bin, delete tab — frame, icon and label, still unfilled.
+- **New colour: “Menu: destructive actions”** on the 白い熊 メッセージ UI page (default `#FF5252`).
+- **The “Move to tab” picker** is a column of pills without icons, as a list of pure choices.
+- **The SIM menu's rows are pills**; the current SIM stays bold.
+- **A menu no longer scrolls while the screen has room:** opened from a row low on the screen, it is shifted up by what is missing below it.
+- A checkable menu row would stay plain and carry the outlined switch instead of a checkbox; group dividers are a clear darker-yellow line as wide as the pills. (No menu uses either yet.)
+
+## ⚙️ 白い熊 メッセージ UI page — pressable rows are pills
+
+- **A thick “Settings ›” pill at the top of the page** opens the app's own settings.
+- **Export / Import** is the thick pill of its section, with the last-export status beneath it.
+- **All files access** is a thin pill with its granted / needed state beneath.
+- **Regenerate** (automation token) is a thin pill.
+- Rows with a switch, a colour swatch, a slider or a value picker are unchanged.
+
 ## 白い熊 メッセージ 1.9.1+047 — 2026-11-02
 
 Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `6.1.6-sk10`** to build.
