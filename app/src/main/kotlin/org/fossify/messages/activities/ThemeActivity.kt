@@ -11,6 +11,7 @@ import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
+import android.graphics.Typeface
 import android.widget.ImageView
 import android.widget.SeekBar
 import android.widget.TextView
@@ -30,6 +31,7 @@ import org.fossify.commons.helpers.isRPlus
 import org.fossify.commons.models.RadioItem
 import org.fossify.messages.R
 import org.fossify.messages.databinding.ActivityThemeBinding
+import org.fossify.messages.databinding.ItemThemeActionBinding
 import org.fossify.messages.databinding.ItemThemeColorBinding
 import org.fossify.messages.databinding.ItemThemeSectionBinding
 import org.fossify.messages.databinding.ItemThemeSubgroupBinding
@@ -49,6 +51,7 @@ import org.fossify.messages.extensions.ThemeSlot
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.fontDisplayName
 import org.fossify.messages.extensions.importFont
+import org.fossify.messages.extensions.pillBackground
 import org.fossify.messages.extensions.resetThemeColor
 import org.fossify.messages.extensions.setThemeColor
 import org.fossify.messages.extensions.showFontSample
@@ -135,6 +138,10 @@ class ThemeActivity : SimpleActivity() {
 
         val primaryColor = getProperPrimaryColor()
 
+        // the link to the app's own settings: the page's first, thick pill
+        addActionRow(getString(org.fossify.commons.R.string.settings), main = true, opens = true, indentLevel = -1) {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
         addEximportSection(primaryColor)
         addFormatSection(primaryColor)
         addSwipeSection(primaryColor)
@@ -181,10 +188,12 @@ class ThemeActivity : SimpleActivity() {
     private fun addEximportSection(primaryColor: Int) {
         addSectionHeader(getString(R.string.eim_section), primaryColor, isFirst = true)
         val (status, isWarning) = SettingsEximport.lastExportStatus(this)
-        addValueRow(
-            labelRes = R.string.eim_row_label,
-            value = status,
-            valueColor = if (isWarning) EXIM_WARN_COLOR else null,
+        addActionRow(
+            label = getString(R.string.eim_row_label),
+            description = status,
+            descriptionColor = if (isWarning) EXIM_WARN_COLOR else null,
+            main = true,
+            opens = true,
         ) { openExportImport() }
 
         // Automation sits directly below the export row it drives — the placement every sister app
@@ -250,7 +259,9 @@ class ThemeActivity : SimpleActivity() {
         if (isRPlus()) {
             val granted = Environment.isExternalStorageManager()
             val state = getString(if (granted) R.string.all_files_access_granted else R.string.all_files_access_needed)
-            addValueRow(R.string.all_files_access, state, indentLevel = 2) { openAllFilesAccessSettings() }
+            addActionRow(getString(R.string.all_files_access), state, opens = true, indentLevel = 2) {
+                openAllFilesAccessSettings()
+            }
         }
     }
 
@@ -266,6 +277,8 @@ class ThemeActivity : SimpleActivity() {
         row.themeTokenValue.setTextColor(getProperTextColor())
         row.themeTokenRegenerate.text = getString(R.string.automation_token_regenerate)
         row.themeTokenRegenerate.setTextColor(getProperPrimaryColor())
+        // acts in place after its warning: a regular pill, no ›
+        row.themeTokenRegenerate.background = pillBackground(getProperPrimaryColor())
         row.root.setOnClickListener {
             // Not commons' copyToClipboard: that one toasts the value itself, which would put the
             // full secret back on screen right after we deliberately abbreviated it.
@@ -391,6 +404,38 @@ class ThemeActivity : SimpleActivity() {
         row.themeValue.setTextColor(valueColor ?: getProperTextColor())
         row.themeValue.text = value
         row.root.setOnClickListener { onClick(row.themeValue) }
+        indentRow(row.root, indentLevel)
+        binding.themeHolder.addView(row.root)
+    }
+
+    /**
+     * A row that does something when tapped, as an outlined pill hugging its label: [main] is the
+     * thick, bold pill of its section's main action, [opens] adds the › of a row that opens a screen,
+     * a panel or a picker. The [description] sits beneath the pill and is not part of the touch target.
+     */
+    @Suppress("LongParameterList")
+    private fun addActionRow(
+        label: String,
+        description: String? = null,
+        descriptionColor: Int? = null,
+        main: Boolean = false,
+        opens: Boolean = false,
+        indentLevel: Int = 1,
+        onClick: () -> Unit,
+    ) {
+        val accent = getProperPrimaryColor()
+        val row = ItemThemeActionBinding.inflate(layoutInflater, binding.themeHolder, false)
+        row.themeActionLabel.text = label
+        row.themeActionLabel.setTextColor(accent)
+        row.themeActionLabel.setTypeface(row.themeActionLabel.typeface, if (main) Typeface.BOLD else Typeface.NORMAL)
+        row.themeActionChevron.setTextColor(accent)
+        row.themeActionChevron.setTypeface(null, if (main) Typeface.BOLD else Typeface.NORMAL)
+        row.themeActionChevron.beGoneIf(!opens)
+        row.themeActionPill.background = pillBackground(accent, main)
+        row.themeActionPill.setOnClickListener { onClick() }
+        row.themeActionDescription.beGoneIf(description == null)
+        row.themeActionDescription.text = description
+        row.themeActionDescription.setTextColor(descriptionColor ?: getProperTextColor().adjustAlpha(DESCRIPTION_ALPHA))
         indentRow(row.root, indentLevel)
         binding.themeHolder.addView(row.root)
     }
