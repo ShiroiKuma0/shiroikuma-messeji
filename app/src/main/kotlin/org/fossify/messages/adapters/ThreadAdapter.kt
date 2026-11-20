@@ -47,6 +47,7 @@ import org.fossify.commons.extensions.shareTextIntent
 import org.fossify.commons.extensions.showErrorToast
 import org.fossify.commons.extensions.usableScreenSize
 import org.fossify.commons.helpers.SimpleContactsHelper
+import org.fossify.commons.models.SimpleContact
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.commons.views.MyRecyclerView
 import org.fossify.messages.R
@@ -113,6 +114,26 @@ class ThreadAdapter(
         (activity.subscriptionManagerCompat().activeSubscriptionInfoList?.size ?: 0) > 1 ||
             Bridge.transports(activity).isNotEmpty()
     private val maxChatBubbleWidth = (activity.usableScreenSize.x * 0.8f).toInt()
+
+    // Fork: pictures of private contacts (連絡先). A message carries only the system contact's picture,
+    // so a sender stored privately falls back to this list at bind time.
+    private var privateContacts: List<SimpleContact> = emptyList()
+    private val privatePhotoByNumber = HashMap<String, String>()
+
+    fun setPrivateContacts(contacts: List<SimpleContact>) {
+        val photos = contacts.filter { it.photoUri.isNotEmpty() }
+        if (photos == privateContacts) return
+        privateContacts = photos
+        privatePhotoByNumber.clear()
+        notifyItemRangeChanged(0, itemCount)
+    }
+
+    private fun senderPhotoUri(message: Message): String = message.senderPhotoUri.ifEmpty {
+        if (privateContacts.isEmpty()) return@ifEmpty ""
+        privatePhotoByNumber.getOrPut(message.senderPhoneNumber) {
+            privateContacts.firstOrNull { it.doesHavePhoneNumber(message.senderPhoneNumber) }?.photoUri.orEmpty()
+        }
+    }
 
     companion object {
         private const val MAX_MEDIA_HEIGHT_RATIO = 3
@@ -483,7 +504,8 @@ class ThreadAdapter(
                 applyThemeFont(ThemeSlot.THREAD_RECEIVED_TEXT)
             }
 
-            if (message.senderPhotoUri.isEmpty()) {
+            val senderPhotoUri = senderPhotoUri(message)
+            if (senderPhotoUri.isEmpty()) {
                 // sender without a picture — show the 人 icon as-is
                 Glide.with(activity).clear(threadMessageSenderPhoto)
                 threadMessageSenderPhoto.setImageResource(R.drawable.ic_unknown_contact)
@@ -497,7 +519,7 @@ class ThreadAdapter(
                     .centerCrop()
 
                 Glide.with(activity)
-                    .load(message.senderPhotoUri)
+                    .load(senderPhotoUri)
                     .placeholder(placeholder)
                     .apply(options)
                     .apply(RequestOptions.circleCropTransform())

@@ -63,6 +63,7 @@ import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.extensions.addBlockedNumber
 import org.fossify.commons.extensions.addLockedLabelIfNeeded
 import org.fossify.commons.extensions.applyColorFilter
+import org.fossify.commons.extensions.getColoredDrawableWithColor
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
 import org.fossify.commons.extensions.beVisibleIf
@@ -299,6 +300,7 @@ class ThreadActivity : SimpleActivity() {
             navigationIcon = NavigationIcon.Arrow,
             topBarColor = getProperBackgroundColor()
         )
+        applyHeaderColor()
 
         isActivityVisible = true
         applySimSelectorSize() // fork: pick up a size changed on the UI settings page
@@ -367,6 +369,23 @@ class ThreadActivity : SimpleActivity() {
                 saveSmsDraft(draftMessage, threadId)
             } else {
                 deleteSmsDraft(threadId)
+            }
+        }
+    }
+
+    // Fork: everything in the thread header is in the accent colour — name, number line, back arrow,
+    // call button and overflow dots. Stock paints them in the background's contrast colour (white).
+    private fun applyHeaderColor() {
+        val accent = themeColor(ThemeSlot.PRIMARY)
+        binding.threadToolbar.apply {
+            setTitleTextColor(accent)
+            setSubtitleTextColor(accent)
+            navigationIcon?.applyColorFilter(accent)
+            overflowIcon = resources.getColoredDrawableWithColor(
+                org.fossify.commons.R.drawable.ic_three_dots_vector, accent
+            )
+            for (i in 0 until menu.size()) {
+                menu.getItem(i).icon?.setTint(accent)
             }
         }
     }
@@ -625,10 +644,12 @@ class ThreadActivity : SimpleActivity() {
     private fun setupAdapter() {
         val latestThreadItems = getThreadItems()
 
+        val privateContactsSnapshot = privateContacts.toList()
         runOnUiThread {
             threadItems = latestThreadItems
             refreshMenuItems()
             getOrCreateThreadAdapter().apply {
+                setPrivateContacts(privateContactsSnapshot)
                 val layoutManager = binding.threadMessagesList.layoutManager as LinearLayoutManager
                 val lastPosition = itemCount - 1
                 val lastVisiblePosition = layoutManager.findLastVisibleItemPosition()
@@ -1087,11 +1108,22 @@ class ThreadActivity : SimpleActivity() {
 
     private fun setupThreadTitle() {
         val title = conversation?.title
-        binding.threadToolbar.title = if (!title.isNullOrEmpty()) {
+        val shownTitle = if (!title.isNullOrEmpty()) {
             title
         } else {
             participants.getThreadTitle()
         }
+        binding.threadToolbar.title = shownTitle
+
+        // Fork: the number(s) the thread is with, under the name — a contact with several numbers
+        // otherwise never says which one this conversation runs on. Left out when the title already
+        // is the number.
+        val numbers = participants.getAddresses().filter { it.isNotBlank() }.distinct()
+            .ifEmpty { listOfNotNull(conversation?.phoneNumber?.takeIf { it.isNotBlank() }) }
+        val subtitle = numbers.joinToString(", ")
+        val titleIsTheNumber = shownTitle.none { it.isLetter() } &&
+            shownTitle.filter { it.isDigit() } == subtitle.filter { it.isDigit() }
+        binding.threadToolbar.subtitle = subtitle.takeIf { it.isNotEmpty() && !titleIsTheNumber }
     }
 
     @SuppressLint("MissingPermission")
