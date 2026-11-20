@@ -4,6 +4,22 @@ This file carries **both** histories. The fork's own releases come first, newest
 from the second `# Changelog` heading downwards is Fossify's original changelog, kept byte-for-byte
 as upstream writes it so that a rebase merges it cleanly instead of conflicting.
 
+## 白い熊 メッセージ 1.9.1+050 — 2026-11-20
+
+Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `6.1.6-sk10`** to build.
+
+## 👤 Private contacts show their picture
+
+- **A contact stored privately in 白い熊 連絡先 now shows its picture**, in the conversation list and beside its received messages in a conversation. Until now such a contact got its name but always the 人 placeholder: both places asked only the system contacts for a picture.
+- The picture comes from the address 白い熊 連絡先 hands out for each private contact, so Messēji must be allowed under that app's “Private contacts” setting — the same permission that already makes the names appear.
+
+## 🔢 The conversation header shows the number
+
+- **The number the conversation is with stands as a second line under the name**, so a contact with several numbers says which one this conversation runs on. A group conversation lists all its numbers.
+- The line is left out when the title already is the number (an unknown sender).
+- **The header grows to fit both lines** instead of keeping a fixed height.
+- **Everything in the header is in the accent colour** — name, number, back arrow, call button and overflow dots — where stock painted them white.
+
 ## 白い熊 メッセージ 1.9.1+048 — 2026-11-17
 
 Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `6.1.6-sk10`** to build.
