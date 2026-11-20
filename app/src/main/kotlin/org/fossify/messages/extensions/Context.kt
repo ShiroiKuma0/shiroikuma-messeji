@@ -420,10 +420,16 @@ fun Context.getConversations(
 
             val names = getThreadContactNames(phoneNumbers, privateContacts)
             val title = TextUtils.join(", ", names.toTypedArray())
-            val photoUri =
-                if (phoneNumbers.size == 1) simpleContactHelper.getPhotoUriFromPhoneNumber(
-                    phoneNumbers.first()
-                ) else ""
+            // Fork: a private contact (連絡先) has no system picture — fall back to the one its provider
+            // hands out, the same way the name does. Without it a private contact showed the 人 icon.
+            val photoUri = if (phoneNumbers.size == 1) {
+                val number = phoneNumbers.first()
+                simpleContactHelper.getPhotoUriFromPhoneNumber(number).ifEmpty {
+                    privateContacts.firstOrNull { it.doesHavePhoneNumber(number) }?.photoUri.orEmpty()
+                }
+            } else {
+                ""
+            }
             val isGroupConversation = phoneNumbers.size > 1
             // Fork: the unread rows themselves decide. The threads table's READ column lags behind a
             // fresh insert on the GRL-LX9 (EMUI updates it seconds later), so a message stored and
