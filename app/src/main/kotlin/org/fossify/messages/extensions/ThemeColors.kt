@@ -8,6 +8,7 @@ import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.view.Menu
 import androidx.annotation.StringRes
+import androidx.core.graphics.ColorUtils
 import org.fossify.commons.extensions.adjustAlpha
 import org.fossify.commons.extensions.getContrastColor
 import org.fossify.commons.extensions.getProperBackgroundColor
@@ -25,6 +26,16 @@ import org.fossify.messages.helpers.THEME_UNSET
 private const val SECONDARY_TEXT_ALPHA = 0.6f
 private const val SEARCH_HINT_ALPHA = 0.5f
 private const val DIALOG_CORNER_DP = 16f
+private const val SWITCH_OFF_BLEND = 0.55f // a switch that is off: this far from the background to the accent
+private const val SETTINGS_NOTE_DIM_GOLD = 0xFFC8C800.toInt()
+private const val ROUTE_RED = 0xFFFF0000.toInt()
+private const val ROUTE_BLUE = 0xFF2962FF.toInt()
+private const val MENU_GREEN = 0xFF00FF00.toInt()
+private const val MENU_BLUE = 0xFF4D94FF.toInt() // pure blue vanishes as a thin glyph on black
+private const val MENU_CYAN = 0xFF00FFFF.toInt()
+private const val MENU_ORANGE = 0xFFFF8000.toInt()
+private const val MENU_MAGENTA = 0xFFFF00FF.toInt()
+private const val THREAD_DAY_DIVIDER_BLEND = 0.5f // the day divider: halfway from the background to the accent
 
 // Granular, per-element theming for 白い熊 メッセージ.
 //
@@ -40,7 +51,6 @@ enum class ThemeSection(@StringRes val labelRes: Int) {
     CONVERSATIONS(R.string.theme_section_conversations),
     THREAD(R.string.theme_section_thread),
     SEARCH(R.string.theme_section_search),
-    SETTINGS_BUTTON(R.string.theme_section_settings_button),
     SETTINGS(R.string.theme_section_settings),
 }
 
@@ -52,8 +62,9 @@ enum class ThemeGroup(val section: ThemeSection, @StringRes val labelRes: Int) {
     THREAD_RECEIVED(ThemeSection.THREAD, R.string.theme_group_thread_received),
     THREAD_SENT(ThemeSection.THREAD, R.string.theme_group_thread_sent),
     THREAD_META(ThemeSection.THREAD, R.string.theme_group_thread_meta),
+    ROUTES(ThemeSection.THREAD, R.string.call_routes),
     SEARCH(ThemeSection.SEARCH, R.string.theme_section_search),
-    SETTINGS_BUTTON(ThemeSection.SETTINGS_BUTTON, R.string.theme_section_settings_button),
+    MENUS(ThemeSection.SEARCH, R.string.theme_group_menus),
     SETTINGS(ThemeSection.SETTINGS, R.string.theme_section_settings),
 }
 
@@ -70,6 +81,10 @@ enum class ThemeSlot(
     PRIMARY("theme_primary", ThemeGroup.FOUNDATION, R.string.theme_primary, isFoundation = true),
     TEXT("theme_text", ThemeGroup.FOUNDATION, R.string.theme_text, isFoundation = true),
     TEXT_SECONDARY("theme_text_secondary", ThemeGroup.FOUNDATION, R.string.theme_text_secondary),
+
+    // The dim gold of explanations and of the rule beside them; a switch that is off (opaque, never faded)
+    SETTINGS_NOTE("theme_settings_note", ThemeGroup.FOUNDATION, R.string.theme_settings_note),
+    SWITCH_OFF("theme_switch_off", ThemeGroup.FOUNDATION, R.string.theme_switch_off),
 
     // Conversation list
     CONVERSATION_NAME(
@@ -102,12 +117,16 @@ enum class ThemeSlot(
     THREAD_RECEIVED_BUBBLE(
         "theme_thread_received_bubble", ThemeGroup.THREAD_RECEIVED, R.string.theme_thread_received_bubble
     ),
+    THREAD_RECEIVED_FRAME(
+        "theme_thread_received_frame", ThemeGroup.THREAD_RECEIVED, R.string.theme_thread_received_frame
+    ),
     THREAD_RECEIVED_TEXT(
         "theme_thread_received_text", ThemeGroup.THREAD_RECEIVED, R.string.theme_thread_received_text, hasFont = true
     ),
 
     // Message thread — sent bubbles
     THREAD_SENT_BUBBLE("theme_thread_sent_bubble", ThemeGroup.THREAD_SENT, R.string.theme_thread_sent_bubble),
+    THREAD_SENT_FRAME("theme_thread_sent_frame", ThemeGroup.THREAD_SENT, R.string.theme_thread_sent_frame),
     THREAD_SENT_TEXT(
         "theme_thread_sent_text", ThemeGroup.THREAD_SENT, R.string.theme_thread_sent_text, hasFont = true
     ),
@@ -115,6 +134,18 @@ enum class ThemeSlot(
     // Message thread — status & time
     THREAD_DATE("theme_thread_date", ThemeGroup.THREAD_META, R.string.theme_thread_date, hasFont = true),
     THREAD_STATUS("theme_thread_status", ThemeGroup.THREAD_META, R.string.theme_thread_status, hasFont = true),
+    THREAD_DAY_DATE(
+        "theme_thread_day_date", ThemeGroup.THREAD_META, R.string.theme_thread_day_date, hasFont = true
+    ),
+    THREAD_DAY_DIVIDER("theme_thread_day_divider", ThemeGroup.THREAD_META, R.string.theme_thread_day_divider),
+
+    // Call routes: the badges on the conversation's call button and in the route picker. A 臨 account
+    // wears its own colours from 臨電話 when it sends them; these two are the fallback.
+    ROUTE_SIM1("theme_route_sim1", ThemeGroup.ROUTES, R.string.route_sim1_color),
+    ROUTE_SIM2("theme_route_sim2", ThemeGroup.ROUTES, R.string.route_sim2_color),
+    ROUTE_SIM_TEXT("theme_route_sim_text", ThemeGroup.ROUTES, R.string.route_sim_text_color),
+    ROUTE_RIN("theme_route_rin", ThemeGroup.ROUTES, R.string.route_rin_color),
+    ROUTE_RIN_TEXT("theme_route_rin_text", ThemeGroup.ROUTES, R.string.route_rin_text_color),
 
     // Search bar
     SEARCH_FILL("theme_search_fill", ThemeGroup.SEARCH, R.string.theme_search_fill),
@@ -123,18 +154,18 @@ enum class ThemeSlot(
     SEARCH_ICON("theme_search_icon", ThemeGroup.SEARCH, R.string.theme_search_icon),
     SEARCH_BORDER("theme_search_border", ThemeGroup.SEARCH, R.string.theme_search_border),
     SEARCH_MENU_ICON("theme_search_menu", ThemeGroup.SEARCH, R.string.theme_search_menu),
-    MENU_BACKGROUND("theme_menu_background", ThemeGroup.SEARCH, R.string.theme_menu_background),
-    MENU_TEXT("theme_menu_text", ThemeGroup.SEARCH, R.string.theme_menu_text),
-    MENU_WARNING("theme_menu_warning", ThemeGroup.SEARCH, R.string.theme_menu_warning),
+    MENU_BACKGROUND("theme_menu_background", ThemeGroup.MENUS, R.string.theme_menu_background),
+    MENU_TEXT("theme_menu_text", ThemeGroup.MENUS, R.string.theme_menu_text),
+    MENU_WARNING("theme_menu_warning", ThemeGroup.MENUS, R.string.theme_menu_warning),
 
-    // Toolbar 設定 launcher — two adjacent characters, each with its own font / weight / size / colour.
-    // Left (設) opens the 白い熊 メッセージ UI page; right (定) opens the regular Settings screen.
-    SETTINGS_BUTTON_LEFT(
-        "theme_settings_button_left", ThemeGroup.SETTINGS_BUTTON, R.string.theme_settings_button_left, hasFont = true
-    ),
-    SETTINGS_BUTTON_RIGHT(
-        "theme_settings_button_right", ThemeGroup.SETTINGS_BUTTON, R.string.theme_settings_button_right, hasFont = true
-    ),
+    // What a row does, told by the colour of its icon — in menus, panels and on the UI page alike.
+    // Deleting rows use MENU_WARNING.
+    MENU_ICON_CALL("theme_menu_icon_call", ThemeGroup.MENUS, R.string.menu_icon_call),
+    MENU_ICON_MESSAGE("theme_menu_icon_message", ThemeGroup.MENUS, R.string.menu_icon_message),
+    MENU_ICON_CONTACT("theme_menu_icon_contact", ThemeGroup.MENUS, R.string.menu_icon_contact),
+    MENU_ICON_SHARE("theme_menu_icon_share", ThemeGroup.MENUS, R.string.menu_icon_share),
+    MENU_ICON_VIEW("theme_menu_icon_view", ThemeGroup.MENUS, R.string.menu_icon_view),
+    MENU_ICON_BLOCK("theme_menu_icon_block", ThemeGroup.MENUS, R.string.menu_icon_block),
 
     // Settings screen chrome
     SETTINGS_TITLE("theme_settings_title", ThemeGroup.SETTINGS, R.string.theme_settings_title),
@@ -155,6 +186,10 @@ private fun Context.themeDefault(slot: ThemeSlot): Int = when (slot) {
     ThemeSlot.PRIMARY -> getProperPrimaryColor()
     ThemeSlot.TEXT -> getProperTextColor()
     ThemeSlot.TEXT_SECONDARY -> themeColor(ThemeSlot.TEXT).adjustAlpha(SECONDARY_TEXT_ALPHA)
+    ThemeSlot.SETTINGS_NOTE -> SETTINGS_NOTE_DIM_GOLD
+    ThemeSlot.SWITCH_OFF -> ColorUtils.blendARGB(
+        themeColor(ThemeSlot.BACKGROUND), themeColor(ThemeSlot.PRIMARY), SWITCH_OFF_BLEND
+    )
 
     // Search bar: black fill, yellow text/icon/border by inheriting foundation
     ThemeSlot.SEARCH_FILL -> themeColor(ThemeSlot.BACKGROUND)
@@ -168,10 +203,12 @@ private fun Context.themeDefault(slot: ThemeSlot): Int = when (slot) {
     ThemeSlot.MENU_TEXT -> themeColor(ThemeSlot.TEXT)
     // Destructive menu rows (delete, empty): frame, icon and label
     ThemeSlot.MENU_WARNING -> EXIM_WARN_COLOR
-
-    // Toolbar 設定 launcher characters inherit the menu-icon colour by default
-    ThemeSlot.SETTINGS_BUTTON_LEFT -> themeColor(ThemeSlot.SEARCH_MENU_ICON)
-    ThemeSlot.SETTINGS_BUTTON_RIGHT -> themeColor(ThemeSlot.SEARCH_MENU_ICON)
+    ThemeSlot.MENU_ICON_CALL -> MENU_GREEN
+    ThemeSlot.MENU_ICON_MESSAGE -> MENU_BLUE
+    ThemeSlot.MENU_ICON_CONTACT -> MENU_CYAN
+    ThemeSlot.MENU_ICON_SHARE -> MENU_ORANGE
+    ThemeSlot.MENU_ICON_VIEW -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.MENU_ICON_BLOCK -> MENU_MAGENTA
 
     // Settings screen: the toolbar sits on the primary colour, so title/arrow contrast it by default
     ThemeSlot.SETTINGS_TITLE -> themeColor(ThemeSlot.PRIMARY).getContrastColor()
@@ -188,14 +225,25 @@ private fun Context.themeDefault(slot: ThemeSlot): Int = when (slot) {
     ThemeSlot.CONVERSATION_DAY_DIVIDER -> themeColor(ThemeSlot.PRIMARY)
     ThemeSlot.CONVERSATION_DATE_UNDERLINE -> themeColor(ThemeSlot.PRIMARY)
 
-    // Message thread: sent bubble follows primary (contrast text), received bubble keeps the
-    // subtle elevated surface; both texts inherit foundation by default.
-    ThemeSlot.THREAD_RECEIVED_BUBBLE -> resources.getColor(org.fossify.commons.R.color.activated_item_foreground, theme)
+    // Message thread: bubbles are traced, never filled — the frame follows primary, the inside the
+    // background, and both texts inherit foundation by default.
+    ThemeSlot.THREAD_RECEIVED_BUBBLE -> themeColor(ThemeSlot.BACKGROUND)
+    ThemeSlot.THREAD_RECEIVED_FRAME -> themeColor(ThemeSlot.PRIMARY)
     ThemeSlot.THREAD_RECEIVED_TEXT -> themeColor(ThemeSlot.TEXT)
-    ThemeSlot.THREAD_SENT_BUBBLE -> themeColor(ThemeSlot.PRIMARY)
-    ThemeSlot.THREAD_SENT_TEXT -> themeColor(ThemeSlot.THREAD_SENT_BUBBLE).getContrastColor()
+    ThemeSlot.THREAD_SENT_BUBBLE -> themeColor(ThemeSlot.BACKGROUND)
+    ThemeSlot.THREAD_SENT_FRAME -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.THREAD_SENT_TEXT -> themeColor(ThemeSlot.TEXT)
     ThemeSlot.THREAD_DATE -> themeColor(ThemeSlot.TEXT)
     ThemeSlot.THREAD_STATUS -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.ROUTE_SIM1 -> ROUTE_RED
+    ThemeSlot.ROUTE_SIM2 -> ROUTE_BLUE
+    ThemeSlot.ROUTE_SIM_TEXT -> PALETTE_YELLOW
+    ThemeSlot.ROUTE_RIN -> PALETTE_YELLOW
+    ThemeSlot.ROUTE_RIN_TEXT -> ROUTE_BLUE
+    ThemeSlot.THREAD_DAY_DATE -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.THREAD_DAY_DIVIDER -> ColorUtils.blendARGB(
+        themeColor(ThemeSlot.BACKGROUND), themeColor(ThemeSlot.PRIMARY), THREAD_DAY_DIVIDER_BLEND
+    )
 }
 
 /**
@@ -234,6 +282,7 @@ fun Context.setThemeColor(slot: ThemeSlot, color: Int) {
 
         else -> config.setThemeOverride(slot.key, color)
     }
+    syncFamilyLook()
 }
 
 /** Revert a slot to its default (palette for the editable foundation colors, inherited otherwise). */
@@ -243,6 +292,19 @@ fun Context.resetThemeColor(slot: ThemeSlot) {
         ThemeSlot.PRIMARY, ThemeSlot.TEXT -> setThemeColor(slot, PALETTE_YELLOW)
         else -> config.clearThemeOverride(slot.key)
     }
+    syncFamilyLook()
+}
+
+/**
+ * The black-yellow look Commons draws for us (sk12–sk17): dialog buttons as outlined pills, the
+ * outlined switch, the outlined floating button. Commons keeps its own copies of two of our roles —
+ * the red of a destructive button and the colour of a switch that is off — so they are written
+ * through here, on every launch and after every colour change.
+ */
+fun Context.syncFamilyLook() {
+    config.pillDialogButtons = true
+    config.dialogWarningColor = themeColor(ThemeSlot.MENU_WARNING)
+    config.switchOffColor = themeColor(ThemeSlot.SWITCH_OFF)
 }
 
 /** One-time seed of the default black/yellow look across the whole app (via the stock colors). */

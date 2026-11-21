@@ -1,17 +1,11 @@
 package org.fossify.messages.models
 
 /**
- * Thread item representations for the main thread recyclerview. [Message] is also a [ThreadItem]
+ * Thread item representations for the main thread recyclerview. [Message] is also a [ThreadItem].
+ * Fork: the only other row is the day heading — time, SIM badge and delivery status live in each
+ * bubble's footer, so there are no separate status rows.
  */
 sealed class ThreadItem {
-    data class ThreadDateTime(
-        val date: Int,
-        val simID: String,
-        val simColor: Int? = null,
-        val simTextColor: Int? = null,
-        val simBorderColor: Int? = null,
-    ) : ThreadItem()
-    data class ThreadError(val messageId: Long, val messageText: String) : ThreadItem()
-    data class ThreadSent(val messageId: Long, val delivered: Boolean) : ThreadItem()
-    data class ThreadSending(val messageId: Long) : ThreadItem()
+    /** The heading above the first message of a day; [date] is that message's time in seconds. */
+    data class ThreadDateTime(val date: Int) : ThreadItem()
 }

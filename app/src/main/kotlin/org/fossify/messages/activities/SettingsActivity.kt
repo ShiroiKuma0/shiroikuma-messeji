@@ -406,7 +406,8 @@ class SettingsActivity : SimpleActivity() {
                     message = "",
                     messageId = R.string.empty_recycle_bin_messages_confirmation,
                     positive = org.fossify.commons.R.string.yes,
-                    negative = org.fossify.commons.R.string.no
+                    negative = org.fossify.commons.R.string.no,
+                    destructive = true,
                 ) {
                     ensureBackgroundThread {
                         emptyMessagesRecycleBin()

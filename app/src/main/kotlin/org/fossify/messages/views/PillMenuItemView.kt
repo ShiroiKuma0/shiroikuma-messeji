@@ -144,7 +144,9 @@ class PillMenuItemView @JvmOverloads constructor(
             if (child is CheckBox) {
                 styleSwitch(child)
             } else if (child.id == androidx.appcompat.R.id.icon && child is ImageView) {
-                styleIcon(child, color)
+                // the icon alone carries the row's role colour; a disabled row dims it like the rest
+                val role = MenuPills.iconColor(context, item.itemId)
+                styleIcon(child, if (item.isEnabled) role else ColorUtils.setAlphaComponent(role, MenuPills.DISABLED_ALPHA))
             }
         }
     }
@@ -169,7 +171,7 @@ class PillMenuItemView @JvmOverloads constructor(
         box.tag = true
     }
 
-    // Clear of the round end of the pill, and in the colour of its row.
+    // Clear of the round end of the pill, and in the colour of what its row does.
     private fun styleIcon(icon: ImageView, color: Int) {
         (icon.layoutParams as? MarginLayoutParams)?.let { params ->
             if (params.marginStart != dp(ICON_START_DP)) {

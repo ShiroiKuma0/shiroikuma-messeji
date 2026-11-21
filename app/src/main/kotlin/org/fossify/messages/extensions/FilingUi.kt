@@ -29,6 +29,8 @@ class MenuEntry(
     @DrawableRes val icon: Int? = null,
     val opens: Boolean = false,
     val destructive: Boolean = false,
+    /** What the row does, shown by its icon's colour: one of the MENU_ICON_* roles (plain viewing by default). */
+    val role: ThemeSlot = ThemeSlot.MENU_ICON_VIEW,
     val action: () -> Unit,
 )
 
@@ -56,7 +58,8 @@ fun Activity.showThemedPopupMenu(anchor: View, entries: List<MenuEntry>) {
         item.overflowMenuLabel.setTextColor(color)
         item.overflowMenuIcon.beGoneIf(!withIcons)
         entry.icon?.let { item.overflowMenuIcon.setImageResource(it) }
-        item.overflowMenuIcon.imageTintList = ColorStateList.valueOf(color)
+        // one coloured thing per row: the icon tells what the row does, frame and label stay in the row's colour
+        item.overflowMenuIcon.imageTintList = ColorStateList.valueOf(if (entry.destructive) warning else themeColor(entry.role))
         item.overflowMenuChevron.beGoneIf(!entry.opens)
         item.overflowMenuChevron.imageTintList = ColorStateList.valueOf(color)
         item.root.background = pillBackground(color)

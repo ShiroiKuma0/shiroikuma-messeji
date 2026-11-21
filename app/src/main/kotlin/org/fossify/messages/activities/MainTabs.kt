@@ -126,13 +126,13 @@ class MainTabs(
         val inTab = conversationsOf(id)
         val unread = inTab.filter { !it.read }
         if (unread.isNotEmpty()) {
-            entries.add(MenuEntry(activity.getString(R.string.mark_all_as_read), R.drawable.ic_check_double_vector) {
+            entries.add(MenuEntry(activity.getString(R.string.mark_all_as_read), R.drawable.ic_check_double_vector, role = ThemeSlot.MENU_ICON_MESSAGE) {
                 markAllRead(unread)
             })
         }
         val read = inTab.filter { it.read }
         if (read.isNotEmpty()) {
-            entries.add(MenuEntry(activity.getString(R.string.mark_all_as_unread), CommonsR.drawable.ic_mail_vector) {
+            entries.add(MenuEntry(activity.getString(R.string.mark_all_as_unread), CommonsR.drawable.ic_mail_vector, role = ThemeSlot.MENU_ICON_MESSAGE) {
                 markAllUnread(read)
             })
         }
@@ -148,7 +148,7 @@ class MainTabs(
             })
             val delete = activity.getString(R.string.delete_tab)
             entries.add(MenuEntry(delete, CommonsR.drawable.ic_delete_vector, destructive = true) {
-                ConfirmationDialog(activity, activity.getString(R.string.delete_tab_confirmation, name)) {
+                ConfirmationDialog(activity, activity.getString(R.string.delete_tab_confirmation, name), destructive = true) {
                     Filing.deleteTab(activity, id)
                     onChanged()
                 }

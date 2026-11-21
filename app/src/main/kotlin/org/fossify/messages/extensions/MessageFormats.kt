@@ -22,6 +22,18 @@ enum class MessageTimeFormat(@StringRes val labelRes: Int) {
 
 fun messageTimeFormatOf(index: Int) = MessageTimeFormat.entries.getOrElse(index) { MessageTimeFormat.JAPANESE }
 
+/** The local calendar day of an epoch-millis time, as a sortable key. */
+fun Long.dayCode(): String = android.text.format.DateFormat.format("yyyyMMdd", this).toString()
+
+/** A day heading: 今日, 昨日, then the date alone in the configured (和暦 or stock) form. */
+fun Long.dayHeaderLabel(context: Context): String = when {
+    DateUtils.isToday(this) -> context.getString(R.string.day_header_today)
+    dayCode() == (System.currentTimeMillis() - DateUtils.DAY_IN_MILLIS).dayCode() ->
+        context.getString(R.string.day_header_yesterday)
+    context.config.useImperialDate -> toImperialDateString()
+    else -> formatDateOrTime(context, hideTimeOnOtherDays = true, showCurrentYear = false)
+}
+
 // Drop-in replacement for commons' Long.formatDateOrTime that keeps the same today→time /
 // earlier→date branching but swaps in our configurable Japanese clock + imperial-era formats.
 fun Long.formatMessageDateOrTime(
@@ -54,3 +66,15 @@ private fun Long.formatMessageDatePart(context: Context, showCurrentYear: Boolea
         // Reuse commons for the stock date; hideTimeOnOtherDays = true makes it return the date alone.
         formatDateOrTime(context, hideTimeOnOtherDays = true, showCurrentYear = showCurrentYear)
     }
+
+/**
+ * A phone number as 白い熊 reads it: grouped the way its country writes it, the groups joined by
+ * dashes — +420-737-461-999. A string that is no number (a sender name, a short code) stays as it is.
+ */
+fun String.formatPhoneNumberDashed(): String {
+    if (count { it.isDigit() } < MIN_FORMATTED_DIGITS || any { it.isLetter() }) return this
+    val formatted = android.telephony.PhoneNumberUtils.formatNumber(this, Locale.getDefault().country) ?: return this
+    return formatted.trim().replace(Regex("[\\s()]+"), "-").trim('-')
+}
+
+private const val MIN_FORMATTED_DIGITS = 7

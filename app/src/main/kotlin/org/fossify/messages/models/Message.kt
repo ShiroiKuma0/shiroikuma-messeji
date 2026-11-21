@@ -66,7 +66,11 @@ data class Message(
                 old.senderPhoneNumber == new.senderPhoneNumber &&
                 old.senderName == new.senderName &&
                 old.senderPhotoUri == new.senderPhotoUri &&
-                old.isScheduled == new.isScheduled
+                old.isScheduled == new.isScheduled &&
+                // Fork: the bubble's footer and frame show these
+                old.type == new.type &&
+                old.status == new.status &&
+                old.subscriptionId == new.subscriptionId
         }
     }
 }

@@ -211,9 +211,20 @@ import org.fossify.messages.bridge.Bridge
 import org.fossify.messages.models.SIMCard
 import org.fossify.messages.models.ThreadItem
 import org.fossify.messages.models.ThreadItem.ThreadDateTime
-import org.fossify.messages.models.ThreadItem.ThreadError
-import org.fossify.messages.models.ThreadItem.ThreadSending
-import org.fossify.messages.models.ThreadItem.ThreadSent
+import org.fossify.messages.views.ComposeBarBackground
+import org.fossify.messages.helpers.MenuPills
+import org.fossify.messages.helpers.ROUTE_OFF
+import org.fossify.messages.helpers.Rindenwa
+import org.fossify.messages.helpers.callByRoute
+import org.fossify.messages.helpers.effectiveRouteOf
+import org.fossify.messages.helpers.ownRouteOf
+import org.fossify.messages.helpers.routeBadgeStyle
+import org.fossify.messages.helpers.setOwnRoute
+import org.fossify.messages.dialogs.pickCallRoute
+import org.fossify.messages.extensions.formatPhoneNumberDashed
+import androidx.appcompat.widget.PopupMenu
+import org.fossify.messages.extensions.alignThreadTextSizes
+import org.fossify.messages.extensions.dayCode
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -258,10 +269,13 @@ class ThreadActivity : SimpleActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        alignThreadTextSizes()
         setContentView(binding.root)
         setupOptionsMenu()
         refreshMenuItems()
         setupEdgeToEdge(
+            // the header floats over the list, so the list's holder itself keeps clear of the status bar
+            padTopSystem = listOf(binding.threadHolder),
             padBottomImeAndSystem = listOf(
                 binding.messageHolder.root,
                 binding.shortCodeHolder.root
@@ -280,7 +294,9 @@ class ThreadActivity : SimpleActivity() {
         threadId = intent.getLongExtra(THREAD_ID, 0L)
         intent.getStringExtra(THREAD_TITLE)?.let {
             binding.threadToolbar.title = it
+            binding.threadHeaderTitle.text = it
         }
+        setupFloatingHeader()
         isRecycleBin = intent.getBooleanExtra(IS_RECYCLE_BIN, false)
         isLaunchedFromShortcut = intent.getBooleanExtra(IS_LAUNCHED_FROM_SHORTCUT, false)
 
@@ -328,7 +344,13 @@ class ThreadActivity : SimpleActivity() {
         }
 
         val bottomBarColor = getBottomBarColor()
-        binding.messageHolder.root.setBackgroundColor(bottomBarColor)
+        // Fork: the compose bar is a tinted band under a thin darker-accent line, its text field a squared box;
+        // the same line closes the header at the top.
+        val background = themeColor(ThemeSlot.BACKGROUND)
+        val accent = themeColor(ThemeSlot.PRIMARY)
+        val line = MenuPills.divider(this)
+        binding.messageHolder.root.background = ComposeBarBackground(this, background, accent, line)
+        binding.messageHolder.threadTypeMessage.background = ComposeBarBackground.fieldBox(this, background, line)
         binding.shortCodeHolder.root.setBackgroundColor(bottomBarColor)
 
         // reflect any per-element color/font changes made in Settings
@@ -373,20 +395,109 @@ class ThreadActivity : SimpleActivity() {
         }
     }
 
-    // Fork: everything in the thread header is in the accent colour — name, number line, back arrow,
-    // call button and overflow dots. Stock paints them in the background's contrast colour (white).
+    // Fork: the floating header's parts — outlined in the accent on the background colour, so the
+    // conversation scrolling beneath never shows through them. Everything in it is in the accent.
     private fun applyHeaderColor() {
         val accent = themeColor(ThemeSlot.PRIMARY)
-        binding.threadToolbar.apply {
-            setTitleTextColor(accent)
-            setSubtitleTextColor(accent)
-            navigationIcon?.applyColorFilter(accent)
-            overflowIcon = resources.getColoredDrawableWithColor(
-                org.fossify.commons.R.drawable.ic_three_dots_vector, accent
-            )
+        val background = themeColor(ThemeSlot.BACKGROUND)
+        val density = resources.displayMetrics.density
+        fun plate() = GradientDrawable().apply {
+            cornerRadius = HEADER_RADIUS_DP * density
+            setColor(background)
+            setStroke((HEADER_FRAME_DP * density).toInt().coerceAtLeast(1), accent)
+        }
+        binding.apply {
+            listOf(threadHeaderBack, threadHeaderPlate, threadHeaderCall, threadHeaderMore).forEach { it.background = plate() }
+            listOf(threadHeaderBack, threadHeaderCallIcon, threadHeaderMore).forEach { it.applyColorFilter(accent) }
+            threadHeaderTitle.setTextColor(accent)
+            threadHeaderNumber.setTextColor(accent)
+        }
+        showCallRoute()
+    }
+
+    private fun setupFloatingHeader() {
+        binding.threadHeaderBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
+        binding.threadHeaderMore.setOnClickListener { showHeaderMenu() }
+        // a long-press on ⋮ opens the 白い熊 メッセージ UI page, as on the main screen
+        binding.threadHeaderMore.setOnLongClickListener {
+            startActivity(Intent(this, ThemeActivity::class.java))
+            true
+        }
+        binding.threadHeaderCall.setOnClickListener {
+            if (participants.isNotEmpty()) dialNumber()
+        }
+        binding.threadHeaderCall.setOnLongClickListener {
+            pickContactRoute()
+            true
+        }
+    }
+
+    // The conversation's menu, dropped from the header's ⋮: the toolbar's own items in their current
+    // state. The call item is left out — it is the button beside it.
+    private fun showHeaderMenu() {
+        if (participants.isEmpty()) return
+        refreshMenuItems()
+        val source = binding.threadToolbar.menu
+        PopupMenu(this, binding.threadHeaderMore).apply {
+            menuInflater.inflate(R.menu.menu_thread, menu)
             for (i in 0 until menu.size()) {
-                menu.getItem(i).icon?.setTint(accent)
+                val item = menu.getItem(i)
+                val original = source.findItem(item.itemId)
+                item.isVisible = original?.isVisible == true && item.itemId != R.id.dial_number
+                item.title = original?.title ?: item.title
             }
+            setOnMenuItemClickListener { handleMenuItemAction(it) }
+            show()
+        }
+    }
+
+    // ---- The call button: by the contact's call route (helpers/Rindenwa.kt) ----
+
+    private var callRoute = ROUTE_OFF
+
+    private fun callNumber(): String? = participants.firstOrNull()?.phoneNumbers?.firstOrNull()?.normalizedNumber
+
+    /** Works out the route a tap would use and shows its badge in front of the phone icon. */
+    private fun refreshCallRoute() {
+        val number = callNumber()
+        val shown = participants.size == 1 && !isSpecialNumber() && !isRecycleBin && !number.isNullOrEmpty()
+        binding.threadHeaderCall.beVisibleIf(shown)
+        if (!shown) return
+        ensureBackgroundThread {
+            if (Rindenwa.isInstalled(this)) Rindenwa.refreshAccounts(this)
+            val route = effectiveRouteOf(number!!)
+            runOnUiThread {
+                callRoute = route
+                showCallRoute()
+            }
+        }
+    }
+
+    private fun showCallRoute() {
+        val style = routeBadgeStyle(callRoute)
+        binding.threadHeaderRoute.beVisibleIf(style != null)
+        if (style != null) {
+            val height = (HEADER_BADGE_DP * resources.displayMetrics.density).toInt()
+            showSimBadge(
+                icon = binding.threadHeaderRouteIcon,
+                label = binding.threadHeaderRouteText,
+                style = style,
+                cardHeightPx = height,
+                textSizePx = height * HEADER_BADGE_TEXT_SHARE,
+            )
+        }
+    }
+
+    /** A long-press on the call button: choose the route this contact is called by from now on. */
+    private fun pickContactRoute() {
+        val number = callNumber() ?: return
+        pickCallRoute(
+            title = getString(R.string.route_for_contact),
+            current = ownRouteOf(number),
+            noneLabel = getString(R.string.route_use_default),
+        ) { route ->
+            setOwnRoute(number, route)
+            refreshCallRoute()
         }
     }
 
@@ -737,9 +848,10 @@ class ThreadActivity : SimpleActivity() {
     private fun handleItemClick(any: Any) {
         when {
             any is Message && any.isScheduled -> showScheduledMessageInfo(any)
-            any is ThreadError -> {
-                binding.messageHolder.threadTypeMessage.setText(any.messageText)
-                messageToResend = any.messageId
+            // Fork: a failed bubble is its own "tap to retry" — there is no separate error row.
+            any is Message && any.type == Telephony.Sms.MESSAGE_TYPE_FAILED -> {
+                binding.messageHolder.threadTypeMessage.setText(any.body)
+                messageToResend = any.id
             }
         }
     }
@@ -917,7 +1029,13 @@ class ThreadActivity : SimpleActivity() {
             threadCharacterCounter.beVisibleIf(config.showCharacterCounter)
             threadCharacterCounter.setTextSize(TypedValue.COMPLEX_UNIT_PX, getTextSize())
 
-            threadTypeMessage.setTextSize(TypedValue.COMPLEX_UNIT_PX, getTextSize())
+            // Fork: what 白い熊 types is as big as the messages above it
+            val messageSp = config.getFontSize(ThemeSlot.THREAD_SENT_TEXT.key)
+            if (messageSp > 0) {
+                threadTypeMessage.setTextSize(TypedValue.COMPLEX_UNIT_SP, messageSp.toFloat())
+            } else {
+                threadTypeMessage.setTextSize(TypedValue.COMPLEX_UNIT_PX, getTextSize())
+            }
             threadSendMessage.setOnClickListener {
                 sendMessage()
             }
@@ -1114,16 +1232,21 @@ class ThreadActivity : SimpleActivity() {
             participants.getThreadTitle()
         }
         binding.threadToolbar.title = shownTitle
+        binding.threadHeaderTitle.text = shownTitle
 
         // Fork: the number(s) the thread is with, under the name — a contact with several numbers
         // otherwise never says which one this conversation runs on. Left out when the title already
         // is the number.
         val numbers = participants.getAddresses().filter { it.isNotBlank() }.distinct()
             .ifEmpty { listOfNotNull(conversation?.phoneNumber?.takeIf { it.isNotBlank() }) }
-        val subtitle = numbers.joinToString(", ")
+        val subtitle = numbers.joinToString(", ") { it.formatPhoneNumberDashed() }
         val titleIsTheNumber = shownTitle.none { it.isLetter() } &&
             shownTitle.filter { it.isDigit() } == subtitle.filter { it.isDigit() }
         binding.threadToolbar.subtitle = subtitle.takeIf { it.isNotEmpty() && !titleIsTheNumber }
+        binding.threadHeaderNumber.text = subtitle
+        binding.threadHeaderNumber.beVisibleIf(subtitle.isNotEmpty() && !titleIsTheNumber)
+        if (titleIsTheNumber) binding.threadHeaderTitle.text = subtitle
+        refreshCallRoute()
     }
 
     @SuppressLint("MissingPermission")
@@ -1334,7 +1457,7 @@ class ThreadActivity : SimpleActivity() {
 
     private fun askConfirmDelete() {
         val confirmationMessage = R.string.delete_whole_conversation_confirmation
-        ConfirmationDialog(this, getString(confirmationMessage)) {
+        ConfirmationDialog(this, getString(confirmationMessage), destructive = true) {
             ensureBackgroundThread {
                 if (isRecycleBin) {
                     emptyMessagesRecycleBinForConversation(threadId)
@@ -1383,7 +1506,7 @@ class ThreadActivity : SimpleActivity() {
 
     private fun dialNumber() {
         val phoneNumber = participants.first().phoneNumbers.first().normalizedNumber
-        dialNumber(phoneNumber)
+        callByRoute(phoneNumber, participants.first().name, callRoute)
     }
 
     private fun copyNumberToClipboard() {
@@ -1479,17 +1602,6 @@ class ThreadActivity : SimpleActivity() {
         }
     }
 
-    private fun shouldShowThreadDateTime(
-        message: Message,
-        prevDateTime: Int,
-        prevSIMId: Int,
-    ): Boolean {
-        val isSentFromDifferentKnownSIM =
-            prevSIMId != -1 && message.subscriptionId != -1 && prevSIMId != message.subscriptionId
-        return message.date - prevDateTime > MIN_DATE_TIME_DIFF_SECS || isSentFromDifferentKnownSIM
-    }
-
-    @SuppressLint("MissingPermission")
     private fun getThreadItems(): List<ThreadItem> {
         if (isFinishing) {
             return emptyList()
@@ -1497,53 +1609,17 @@ class ThreadActivity : SimpleActivity() {
 
         val messageSnapshot = messages.toSortedMessages()
         val items = ArrayList<ThreadItem>()
-
-        val subscriptionIdToSimId = HashMap<Int, String>()
-        subscriptionIdToSimId[-1] = "?"
-        val simCount = subscriptionManagerCompat().activeSubscriptionInfoList?.size ?: 0
-        subscriptionManagerCompat().activeSubscriptionInfoList?.forEachIndexed { index, subscriptionInfo ->
-            subscriptionIdToSimId[subscriptionInfo.subscriptionId] = "${index + 1}"
-        }
-        // Fork: a transport's messages are labelled with its badge and coloured like it.
-        val subscriptionIdToColor = HashMap<Int, Int>()
-        val subscriptionIdToTransport = HashMap<Int, Bridge.Transport>()
-        Bridge.transports(this).forEachIndexed { index, transport ->
-            subscriptionIdToSimId[transport.subId] = transport.badge.ifEmpty { "${simCount + index + 1}" }
-            transport.color?.let { subscriptionIdToColor[transport.subId] = it }
-            subscriptionIdToTransport[transport.subId] = transport
-        }
-
-        var prevDateTime = 0
-        var prevSIMId = -2
+        var prevDay = ""
         var hadUnreadItems = false
-        val cnt = messageSnapshot.size
-        for (i in 0 until cnt) {
-            val message = messageSnapshot.getOrNull(i) ?: continue
-            // do not show the date/time above every message, only if the difference between the 2 messages is at least MIN_DATE_TIME_DIFF_SECS,
-            // or if the message is sent from a different SIM
-            if (shouldShowThreadDateTime(message, prevDateTime, prevSIMId)) {
-                val simCardID = subscriptionIdToSimId[message.subscriptionId] ?: "?"
-                val transport = subscriptionIdToTransport[message.subscriptionId]
-                items.add(
-                    ThreadDateTime(
-                        date = message.date,
-                        simID = simCardID,
-                        simColor = subscriptionIdToColor[message.subscriptionId],
-                        simTextColor = transport?.textColor,
-                        simBorderColor = transport?.borderColor,
-                    )
-                )
-                prevDateTime = message.date
+        for (message in messageSnapshot) {
+            // Fork: one heading per day. Each bubble carries its own time, SIM badge and delivery
+            // status in its footer, so there are no separate date or status rows.
+            val day = message.millis().dayCode()
+            if (day != prevDay) {
+                items.add(ThreadDateTime(message.date))
+                prevDay = day
             }
             items.add(message)
-
-            if (message.type == Telephony.Sms.MESSAGE_TYPE_FAILED) {
-                items.add(ThreadError(message.id, message.body))
-            }
-
-            if (message.type == Telephony.Sms.MESSAGE_TYPE_OUTBOX) {
-                items.add(ThreadSending(message.id))
-            }
 
             // Fork: only while the conversation is on screen. A ThreadActivity left in the back stack
             // or behind another app still rebuilds on every new message, and used to mark it read
@@ -1553,16 +1629,6 @@ class ThreadActivity : SimpleActivity() {
                 markMessageRead(message.id, message.isMMS)
                 conversationsDB.markRead(threadId)
             }
-
-            if (i == cnt - 1 && (message.type == Telephony.Sms.MESSAGE_TYPE_SENT)) {
-                items.add(
-                    ThreadSent(
-                        messageId = message.id,
-                        delivered = message.status == Telephony.Sms.STATUS_COMPLETE
-                    )
-                )
-            }
-            prevSIMId = message.subscriptionId
         }
 
         if (hadUnreadItems) {
@@ -2095,7 +2161,7 @@ class ThreadActivity : SimpleActivity() {
         val stringId = if (isMmsMessage(text)) {
             R.string.mms
         } else {
-            R.string.sms
+            R.string.send_label
         }
         binding.messageHolder.threadSendMessage.setText(stringId)
     }
@@ -2247,29 +2313,27 @@ class ThreadActivity : SimpleActivity() {
         .toArrayList()
 
     private fun setupAttachmentPickerView() = binding.messageHolder.attachmentPicker.apply {
-        val buttonColors = arrayOf(
-            org.fossify.commons.R.color.md_red_500,
-            org.fossify.commons.R.color.md_brown_500,
-            org.fossify.commons.R.color.md_pink_500,
-            org.fossify.commons.R.color.md_purple_500,
-            org.fossify.commons.R.color.md_teal_500,
-            org.fossify.commons.R.color.md_green_500,
-            org.fossify.commons.R.color.md_indigo_500,
-            org.fossify.commons.R.color.md_blue_500
-        ).map { ResourcesCompat.getColor(resources, it, theme) }
-        arrayOf(
-            choosePhotoIcon,
-            chooseVideoIcon,
-            takePhotoIcon,
-            recordVideoIcon,
-            recordAudioIcon,
-            pickFileIcon,
-            pickContactIcon,
-            scheduleMessageIcon
-        ).forEachIndexed { index, icon ->
-            val iconColor = buttonColors[index]
-            icon.background.applyColorFilter(iconColor)
-            icon.applyColorFilter(iconColor.getContrastColor())
+        // Fork: each icon in the colour of what its tile does, inside an outlined ring — never a filled
+        // disc in a decorative colour.
+        val share = themeColor(ThemeSlot.MENU_ICON_SHARE)
+        val background = themeColor(ThemeSlot.BACKGROUND)
+        val ringWidth = (ATTACHMENT_RING_DP * resources.displayMetrics.density).toInt().coerceAtLeast(1)
+        listOf(
+            choosePhotoIcon to share,
+            chooseVideoIcon to share,
+            takePhotoIcon to share,
+            recordVideoIcon to share,
+            recordAudioIcon to share,
+            pickFileIcon to share,
+            pickContactIcon to themeColor(ThemeSlot.MENU_ICON_CONTACT),
+            scheduleMessageIcon to themeColor(ThemeSlot.MENU_ICON_MESSAGE),
+        ).forEach { (icon, color) ->
+            icon.background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(background)
+                setStroke(ringWidth, color)
+            }
+            icon.applyColorFilter(color)
         }
 
         val textColor = getProperTextColor()
@@ -2377,10 +2441,14 @@ class ThreadActivity : SimpleActivity() {
     }
 
     companion object {
+        private const val HEADER_RADIUS_DP = 100f
+        private const val HEADER_FRAME_DP = 1.25f
+        private const val HEADER_BADGE_DP = 30f
+        private const val HEADER_BADGE_TEXT_SHARE = 0.6f
+        private const val ATTACHMENT_RING_DP = 1.25f
         private const val TYPE_EDIT = 14
         private const val TYPE_SEND = 15
         private const val TYPE_DELETE = 16
-        private const val MIN_DATE_TIME_DIFF_SECS = 300
         private const val SCROLL_TO_BOTTOM_FAB_LIMIT = 20
         private const val PREFETCH_THRESHOLD = 45
         private const val SIM_MENU_CORNER_DP = 16f
