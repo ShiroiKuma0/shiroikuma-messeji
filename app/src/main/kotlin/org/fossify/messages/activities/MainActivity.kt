@@ -215,7 +215,6 @@ class MainActivity : SimpleActivity() {
         binding.mainMenu.requireToolbar().inflateMenu(R.menu.menu_main)
         binding.mainMenu.toggleHideOnScroll(true)
         binding.mainMenu.setupMenu()
-        setupSettingsButton()
 
         binding.mainMenu.onSearchOpenListener = {
             binding.mainMenu.post { styleSearchBar() }
@@ -270,12 +269,14 @@ class MainActivity : SimpleActivity() {
         val entries = buildList {
             if (config.useRecycleBin) {
                 val bin = getString(CommonsR.string.show_the_recycle_bin)
-                add(MenuEntry(bin, CommonsR.drawable.ic_delete_vector, opens = true, action = ::launchRecycleBin))
+                add(MenuEntry(bin, CommonsR.drawable.ic_delete_vector, opens = true, role = ThemeSlot.MENU_ICON_BLOCK, action = ::launchRecycleBin))
             }
             if (config.isArchiveAvailable) {
                 val archived = getString(R.string.show_archived_conversations)
                 add(MenuEntry(archived, R.drawable.ic_archive_vector, opens = true, action = ::launchArchivedConversations))
             }
+            val uiPage = getString(R.string.shiroikuma_ui_category)
+            add(MenuEntry(uiPage, R.drawable.ic_palette_vector, opens = true, action = ::launchUiPage))
             val settings = getString(CommonsR.string.settings)
             add(MenuEntry(settings, CommonsR.drawable.ic_settings_cog_vector, opens = true, action = ::launchSettings))
             add(MenuEntry(getString(CommonsR.string.about), CommonsR.drawable.ic_info_vector, opens = true, action = ::launchAbout))
@@ -303,32 +304,7 @@ class MainActivity : SimpleActivity() {
     private fun updateMenuColors() {
         binding.mainMenu.updateColors()
         styleSearchBar()
-        styleSettingsButton()
     }
-
-    // The 設定 toolbar launcher: 設 (left) opens the 白い熊 メッセージ UI page, 定 (right) opens
-    // the regular Settings screen. Each character is an independent text element (own font /
-    // weight / size / colour) configured on the UI page.
-    private fun setupSettingsButton() {
-        settingsButtonChar(R.id.settings_button_left)?.setOnClickListener { launchUiPage() }
-        settingsButtonChar(R.id.settings_button_right)?.setOnClickListener { launchSettings() }
-        styleSettingsButton()
-    }
-
-    private fun styleSettingsButton() {
-        settingsButtonChar(R.id.settings_button_left)?.apply {
-            setTextColor(themeColor(ThemeSlot.SETTINGS_BUTTON_LEFT))
-            applyThemeFont(ThemeSlot.SETTINGS_BUTTON_LEFT)
-        }
-        settingsButtonChar(R.id.settings_button_right)?.apply {
-            setTextColor(themeColor(ThemeSlot.SETTINGS_BUTTON_RIGHT))
-            applyThemeFont(ThemeSlot.SETTINGS_BUTTON_RIGHT)
-        }
-    }
-
-    private fun settingsButtonChar(id: Int): TextView? =
-        binding.mainMenu.requireToolbar().menu.findItem(R.id.settings_button)
-            ?.actionView?.findViewById(id)
 
     // Apply the granular search-bar theme on top of the commons defaults (must run after updateColors).
     private fun styleSearchBar() {

@@ -9,14 +9,19 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.LayerDrawable
+import android.provider.Telephony
 import android.util.TypedValue
+import android.view.Gravity
 import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.RelativeLayout
 import androidx.appcompat.content.res.AppCompatResources
-import androidx.constraintlayout.widget.ConstraintSet
+import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.DiffUtil
@@ -38,9 +43,6 @@ import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
 import org.fossify.commons.extensions.beVisibleIf
 import org.fossify.commons.extensions.copyToClipboard
-import org.fossify.messages.extensions.formatMessageDateOrTime
-import org.fossify.commons.extensions.getContrastColor
-import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getTextSize
 import org.fossify.commons.extensions.getTimeFormat
 import org.fossify.commons.extensions.shareTextIntent
@@ -61,9 +63,6 @@ import org.fossify.messages.databinding.ItemAttachmentAudioBinding
 import org.fossify.messages.databinding.ItemAttachmentVcardBinding
 import org.fossify.messages.databinding.ItemMessageBinding
 import org.fossify.messages.databinding.ItemThreadDateTimeBinding
-import org.fossify.messages.databinding.ItemThreadErrorBinding
-import org.fossify.messages.databinding.ItemThreadSendingBinding
-import org.fossify.messages.databinding.ItemThreadSuccessBinding
 import org.fossify.messages.dialogs.DeleteConfirmationDialog
 import org.fossify.messages.dialogs.MessageDetailsDialog
 import org.fossify.messages.dialogs.SelectTextDialog
@@ -71,12 +70,16 @@ import org.fossify.messages.extensions.ThemeSlot
 import org.fossify.messages.extensions.applyThemeFont
 import org.fossify.messages.extensions.colorMenuTitles
 import org.fossify.messages.extensions.config
+import org.fossify.messages.extensions.dayHeaderLabel
+import org.fossify.messages.extensions.formatMessageTimeOfDay
 import org.fossify.messages.extensions.getContactFromAddress
 import org.fossify.messages.extensions.isImageMimeType
 import org.fossify.messages.extensions.isPlayableAudioMimeType
 import org.fossify.messages.extensions.isVCardMimeType
 import org.fossify.messages.extensions.isVideoMimeType
 import org.fossify.messages.extensions.launchViewIntent
+import org.fossify.messages.extensions.ownAvatarPath
+import org.fossify.messages.extensions.ownProfilePhotoUri
 import org.fossify.messages.extensions.startContactDetailsIntent
 import org.fossify.messages.extensions.subscriptionManagerCompat
 import org.fossify.messages.extensions.themeColor
@@ -85,9 +88,6 @@ import org.fossify.messages.helpers.SimBadgeStyle
 import org.fossify.messages.helpers.THREAD_DATE_TIME
 import org.fossify.messages.helpers.THREAD_RECEIVED_MESSAGE
 import org.fossify.messages.helpers.THREAD_SENT_MESSAGE
-import org.fossify.messages.helpers.THREAD_SENT_MESSAGE_ERROR
-import org.fossify.messages.helpers.THREAD_SENT_MESSAGE_SENDING
-import org.fossify.messages.helpers.THREAD_SENT_MESSAGE_SENT
 import org.fossify.messages.helpers.generateStableId
 import org.fossify.messages.helpers.setupAudio
 import org.fossify.messages.helpers.setupDocumentPreview
@@ -97,9 +97,6 @@ import org.fossify.messages.models.Attachment
 import org.fossify.messages.models.Message
 import org.fossify.messages.models.ThreadItem
 import org.fossify.messages.models.ThreadItem.ThreadDateTime
-import org.fossify.messages.models.ThreadItem.ThreadError
-import org.fossify.messages.models.ThreadItem.ThreadSending
-import org.fossify.messages.models.ThreadItem.ThreadSent
 import org.joda.time.DateTime
 
 class ThreadAdapter(
@@ -116,7 +113,56 @@ class ThreadAdapter(
     private val hasMultipleSIMCards =
         (activity.subscriptionManagerCompat().activeSubscriptionInfoList?.size ?: 0) > 1 ||
             Bridge.transports(activity).isNotEmpty()
-    private val maxChatBubbleWidth = (activity.usableScreenSize.x * 0.8f).toInt()
+    private val density = activity.resources.displayMetrics.density
+
+    // Fork: the bubble geometry. A bubble starts half an avatar in from its sender's edge of the
+    // list (the avatar straddles that edge of the frame) and leaves FAR_SIDE_SHARE of the line free
+    // on the other side; media inside it gets what is left between its paddings.
+    private val lineWidth = activity.usableScreenSize.x - 2 * dp(HOLDER_PAD_DP)
+    private val farMargin = (lineWidth * FAR_SIDE_SHARE).toInt()
+    private val farPadding = dp(BUBBLE_PAD_H_DP)
+    private var avatarDp = AVATAR_DP
+    private var nearMargin = 0
+    private var nearPadding = 0
+    private var maxChatBubbleWidth = 0
+
+    // The avatar's size is set on the UI page; everything that hangs on it follows.
+    private fun readAvatarSize() {
+        avatarDp = activity.config.threadAvatarSize.toFloat()
+        nearMargin = dp(AVATAR_HALO_DP + avatarDp / 2)
+        nearPadding = dp(avatarDp / 2 + AVATAR_GAP_DP)
+        maxChatBubbleWidth = lineWidth - nearMargin - farMargin - nearPadding - farPadding
+    }
+
+    private fun dp(value: Float) = (value * density).toInt()
+
+    // Fork: how each SIM's or transport's badge looks, by subscription id (-1 = unknown, "?").
+    private var simStyles: Map<Int, SimBadgeStyle>? = null
+
+    @SuppressLint("MissingPermission")
+    private fun simStyle(subscriptionId: Int): SimBadgeStyle {
+        val styles = simStyles ?: HashMap<Int, SimBadgeStyle>().also { map ->
+            val fill = activity.themeColor(ThemeSlot.THREAD_DATE)
+            map[-1] = SimBadgeStyle("?", fill)
+            val sims = activity.subscriptionManagerCompat().activeSubscriptionInfoList.orEmpty()
+            sims.forEachIndexed { index, info -> map[info.subscriptionId] = SimBadgeStyle("${index + 1}", fill) }
+            // a transport's messages are labelled with its badge and coloured like it
+            Bridge.transports(activity).forEachIndexed { index, transport ->
+                map[transport.subId] = SimBadgeStyle(
+                    text = transport.badge.ifEmpty { "${sims.size + index + 1}" },
+                    fill = transport.color ?: fill,
+                    textColor = transport.textColor,
+                    border = transport.borderColor,
+                )
+            }
+            simStyles = map
+        }
+        return styles[subscriptionId] ?: styles.getValue(-1)
+    }
+
+    // Fork: 白い熊's own picture for the sent bubbles — the one picked on the UI page, else the device
+    // owner's profile photo, else the 人 icon.
+    private var ownPhotoUri = ""
 
     // Fork: pictures of private contacts (連絡先). A message carries only the system contact's picture,
     // so a sender stored privately falls back to this list at bind time.
@@ -140,15 +186,48 @@ class ThreadAdapter(
 
     companion object {
         private const val MAX_MEDIA_HEIGHT_RATIO = 3
-        private const val SIM_BITS = 21
-        private const val SIM_MASK = (1L shl SIM_BITS) - 1
-        private const val SIM_BADGE_TEXT_SHARE = 0.62f // badge text size, as a share of the date line height
+        private const val SIM_BADGE_TEXT_SHARE = 0.62f // badge text size, as a share of the footer line height
+        private const val FOOTER_TEXT_SHARE = 0.74f // footer text size, as a share of the message text size
+        private const val DAY_HEADER_SP = 17f
+        private const val HOLDER_PAD_DP = 6f // item_message's horizontal padding
+        private const val AVATAR_DP = 56f // the default; the UI page sets the real one
+        private const val AVATAR_TOP_DP = 8f // the avatar starts this far below the bubble's top edge
+        private const val AVATAR_RING_PAD_DP = 5f // the picture's inset in its view: halo plus ring
+        private const val AVATAR_HALO_DP = 4f // background-coloured ring that parts the avatar from the frame
+        private const val AVATAR_RING_DP = 1.25f
+        private const val AVATAR_RING_BLEND = 0.55f // ring colour: this far from the background to the frame
+        private const val AVATAR_GAP_DP = 10f // between the avatar and the text beside it
+        private const val BUBBLE_PAD_H_DP = 16f
+        private const val BUBBLE_PAD_V_DP = 11f
+        private const val BUBBLE_RADIUS_DP = 22f
+        private const val FRAME_RECEIVED_DP = 3f
+        private const val FRAME_SENT_DP = 1.25f
+        private const val FRAME_PENDING_DP = 1.5f // dashed: still sending or scheduled; solid red: failed
+        private const val DASH_DP = 9f
+        private const val DASH_GAP_DP = 6f
+        private const val FAR_SIDE_SHARE = 0.12f
+        private const val FOOTER_GAP_DP = 6f
     }
 
     init {
         setupDragListener(true)
         setHasStableIds(true)
         (recyclerView.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
+        readAvatarSize()
+        ownPhotoUri = activity.ownAvatarPath()
+        if (ownPhotoUri.isEmpty()) {
+            ensureBackgroundThread {
+                val uri = activity.ownProfilePhotoUri()
+                if (uri.isNotEmpty()) {
+                    activity.runOnUiThread {
+                        if (ownPhotoUri.isEmpty()) {
+                            ownPhotoUri = uri
+                            notifyItemRangeChanged(0, itemCount)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     override fun getActionMenuId() = R.menu.cab_thread
@@ -246,9 +325,6 @@ class ThreadAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = when (viewType) {
             THREAD_DATE_TIME -> ItemThreadDateTimeBinding.inflate(layoutInflater, parent, false)
-            THREAD_SENT_MESSAGE_ERROR -> ItemThreadErrorBinding.inflate(layoutInflater, parent, false)
-            THREAD_SENT_MESSAGE_SENT -> ItemThreadSuccessBinding.inflate(layoutInflater, parent, false)
-            THREAD_SENT_MESSAGE_SENDING -> ItemThreadSendingBinding.inflate(layoutInflater, parent, false)
             else -> ItemMessageBinding.inflate(layoutInflater, parent, false)
         }
 
@@ -257,14 +333,11 @@ class ThreadAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = getItem(position)
-        val isClickable = item is ThreadError || item is Message
+        val isClickable = item is Message
         val isLongClickable = item is Message
         holder.bindView(item, isClickable, isLongClickable) { itemView, _ ->
             when (item) {
-                is ThreadDateTime -> setupDateTime(itemView, item)
-                is ThreadError -> setupThreadError(itemView)
-                is ThreadSent -> setupThreadSuccess(itemView, item.delivered)
-                is ThreadSending -> setupThreadSending(itemView)
+                is ThreadDateTime -> bindDayHeader(itemView, item.date, first = position == 0)
                 is Message -> setupView(holder, itemView, item)
             }
         }
@@ -274,23 +347,13 @@ class ThreadAdapter(
     override fun getItemId(position: Int): Long {
         return when (val item = getItem(position)) {
             is Message -> item.getStableId()
-            is ThreadDateTime -> {
-                val sim = (item.simID.hashCode().toLong() and SIM_MASK)
-                val key = (item.date.toLong() shl SIM_BITS) or sim
-                generateStableId(THREAD_DATE_TIME, key)
-            }
-            is ThreadError -> generateStableId(THREAD_SENT_MESSAGE_ERROR, item.messageId)
-            is ThreadSending -> generateStableId(THREAD_SENT_MESSAGE_SENDING, item.messageId)
-            is ThreadSent -> generateStableId(THREAD_SENT_MESSAGE_SENT, item.messageId)
+            is ThreadDateTime -> generateStableId(THREAD_DATE_TIME, item.date.toLong())
         }
     }
 
     override fun getItemViewType(position: Int): Int {
         return when (val item = getItem(position)) {
             is ThreadDateTime -> THREAD_DATE_TIME
-            is ThreadError -> THREAD_SENT_MESSAGE_ERROR
-            is ThreadSent -> THREAD_SENT_MESSAGE_SENT
-            is ThreadSending -> THREAD_SENT_MESSAGE_SENDING
             is Message -> if (item.isReceivedMessage()) THREAD_RECEIVED_MESSAGE else THREAD_SENT_MESSAGE
         }
     }
@@ -439,6 +502,7 @@ class ThreadAdapter(
 
     private fun setupView(holder: ViewHolder, view: View, message: Message) {
         ItemMessageBinding.bind(view).apply {
+            val received = message.isReceivedMessage()
             threadMessageHolder.isSelected = selectedKeys.contains(message.getSelectionKey())
             threadMessageBody.apply {
                 text = message.body
@@ -454,15 +518,19 @@ class ThreadAdapter(
                 }
             }
 
-            if (message.isReceivedMessage()) {
-                setupReceivedMessageView(messageBinding = this, message = message)
-            } else {
-                setupSentMessageView(messageBinding = this, message = message)
+            val state = bubbleState(message)
+            val frameColor = when {
+                state == BubbleState.FAILED -> activity.themeColor(ThemeSlot.MENU_WARNING)
+                received -> activity.themeColor(ThemeSlot.THREAD_RECEIVED_FRAME)
+                else -> activity.themeColor(ThemeSlot.THREAD_SENT_FRAME)
             }
+            setupBubble(binding = this, message = message, state = state, frameColor = frameColor)
+            setupFooter(binding = this, message = message, state = state)
+            setupAvatar(binding = this, message = message, frameColor = frameColor)
 
             threadMessageAttachmentsHolder.removeAllViews()
             if (message.attachment?.attachments?.isNotEmpty() == true) {
-                threadMessageAttachmentsHolder.beVisible()
+                threadMessageAttachmentsFrame.beVisible()
                 for (attachment in message.attachment.attachments) {
                     val mimetype = attachment.mimetype
                     when {
@@ -476,100 +544,212 @@ class ThreadAdapter(
                     threadMessagePlayOutline.beVisibleIf(mimetype.startsWith("video/"))
                 }
             } else {
-                threadMessageAttachmentsHolder.beGone()
+                threadMessageAttachmentsFrame.beGone()
                 threadMessagePlayOutline.beGone()
             }
         }
     }
 
-    private fun setupReceivedMessageView(messageBinding: ItemMessageBinding, message: Message) {
-        messageBinding.apply {
-            with(ConstraintSet()) {
-                clone(threadMessageHolder)
-                clear(threadMessageWrapper.id, ConstraintSet.END)
-                connect(threadMessageWrapper.id, ConstraintSet.START, ConstraintSet.PARENT_ID, ConstraintSet.START)
-                applyTo(threadMessageHolder)
-            }
+    private enum class BubbleState { RECEIVED, SENT, DELIVERED, PENDING, FAILED, OTHER }
 
-            threadMessageSenderPhoto.beVisible()
-            threadMessageSenderPhoto.setOnClickListener {
-                val contact = message.getSender()!!
-                activity.getContactFromAddress(contact.phoneNumbers.first().normalizedNumber) {
-                    if (it != null) {
-                        activity.startContactDetailsIntent(it)
-                    }
+    private fun bubbleState(message: Message) = when {
+        message.isReceivedMessage() -> BubbleState.RECEIVED
+        message.isScheduled -> BubbleState.PENDING
+        else -> when (message.type) {
+            Telephony.Sms.MESSAGE_TYPE_FAILED -> BubbleState.FAILED
+            Telephony.Sms.MESSAGE_TYPE_OUTBOX, Telephony.Sms.MESSAGE_TYPE_QUEUED -> BubbleState.PENDING
+            Telephony.Sms.MESSAGE_TYPE_SENT ->
+                if (message.status == Telephony.Sms.STATUS_COMPLETE) BubbleState.DELIVERED else BubbleState.SENT
+            else -> BubbleState.OTHER
+        }
+    }
+
+    /**
+     * Fork: the bubble is a frame, never a fill — thick for received, thin for sent, dashed while a
+     * message is still sending or scheduled, red when it failed. It hugs its sender's side of the
+     * list, half an avatar in, and its text keeps clear of the avatar that straddles that edge.
+     */
+    private fun setupBubble(binding: ItemMessageBinding, message: Message, state: BubbleState, frameColor: Int) {
+        val received = state == BubbleState.RECEIVED
+        binding.threadMessageBubble.apply {
+            updateLayoutParams<FrameLayout.LayoutParams> {
+                gravity = (if (received) Gravity.START else Gravity.END) or Gravity.TOP
+                marginStart = if (received) nearMargin else farMargin
+                marginEnd = if (received) farMargin else nearMargin
+            }
+            val vertical = dp(BUBBLE_PAD_V_DP)
+            // tall enough for the avatar on its edge
+            minimumHeight = dp(avatarDp + 2 * AVATAR_TOP_DP)
+            setPaddingRelative(
+                if (received) nearPadding else farPadding, vertical, if (received) farPadding else nearPadding, vertical
+            )
+            background = GradientDrawable().apply {
+                cornerRadius = BUBBLE_RADIUS_DP * density
+                setColor(activity.themeColor(if (received) ThemeSlot.THREAD_RECEIVED_BUBBLE else ThemeSlot.THREAD_SENT_BUBBLE))
+                when (state) {
+                    BubbleState.RECEIVED -> setStroke(dp(FRAME_RECEIVED_DP), frameColor)
+                    BubbleState.PENDING ->
+                        setStroke(dp(FRAME_PENDING_DP), frameColor, DASH_DP * density, DASH_GAP_DP * density)
+                    BubbleState.FAILED -> setStroke(dp(FRAME_PENDING_DP), frameColor)
+                    else -> setStroke(maxOf(1, (FRAME_SENT_DP * density).toInt()), frameColor)
                 }
             }
+        }
 
-            threadMessageBody.apply {
-                background = AppCompatResources.getDrawable(activity, R.drawable.item_received_background)
-                background.applyColorFilter(activity.themeColor(ThemeSlot.THREAD_RECEIVED_BUBBLE))
+        binding.threadMessageBody.apply {
+            if (received) {
                 setTextColor(activity.themeColor(ThemeSlot.THREAD_RECEIVED_TEXT))
                 setLinkTextColor(activity.themeColor(ThemeSlot.PRIMARY))
                 applyThemeFont(ThemeSlot.THREAD_RECEIVED_TEXT)
-            }
-
-            val senderPhotoUri = senderPhotoUri(message)
-            if (senderPhotoUri.isEmpty()) {
-                // sender without a picture — show the 人 icon as-is
-                Glide.with(activity).clear(threadMessageSenderPhoto)
-                threadMessageSenderPhoto.setImageResource(R.drawable.ic_unknown_contact)
-            } else if (!activity.isFinishing && !activity.isDestroyed) {
-                val contactLetterIcon = SimpleContactsHelper(activity).getContactLetterIcon(message.senderName)
-                val placeholder = contactLetterIcon.toDrawable(activity.resources)
-
-                val options = RequestOptions()
-                    .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
-                    .error(placeholder)
-                    .centerCrop()
-
-                Glide.with(activity)
-                    .load(senderPhotoUri)
-                    .placeholder(placeholder)
-                    .apply(options)
-                    .apply(RequestOptions.circleCropTransform())
-                    .into(threadMessageSenderPhoto)
+            } else {
+                val textColor = activity.themeColor(ThemeSlot.THREAD_SENT_TEXT)
+                setTextColor(textColor)
+                setLinkTextColor(textColor)
+                applyThemeFont(ThemeSlot.THREAD_SENT_TEXT, if (message.isScheduled) Typeface.ITALIC else Typeface.NORMAL)
             }
         }
     }
 
-    private fun setupSentMessageView(messageBinding: ItemMessageBinding, message: Message) {
-        messageBinding.apply {
-            with(ConstraintSet()) {
-                clone(threadMessageHolder)
-                clear(threadMessageWrapper.id, ConstraintSet.START)
-                connect(threadMessageWrapper.id, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END)
-                applyTo(threadMessageHolder)
+    /**
+     * Fork: the footer inside the bubble. Received: SIM badge, then the time, at the start. Sent:
+     * the time (or "Sending…" / "Not sent"), the SIM badge, then the delivery mark, at the end.
+     */
+    private fun setupFooter(binding: ItemMessageBinding, message: Message, state: BubbleState) = binding.apply {
+        val received = state == BubbleState.RECEIVED
+        val failed = state == BubbleState.FAILED
+        threadMessageTime.apply {
+            // its own size when one is set on the UI page, else a share of this bubble's message text
+            setTextSize(TypedValue.COMPLEX_UNIT_PX, threadMessageBody.textSize * FOOTER_TEXT_SHARE)
+            applyThemeFont(ThemeSlot.THREAD_DATE)
+            text = when {
+                failed -> activity.getString(R.string.message_not_sent_touch_retry)
+                state == BubbleState.PENDING && !message.isScheduled -> activity.getString(R.string.sending)
+                else -> message.millis().formatMessageTimeOfDay(activity)
             }
+            setTextColor(activity.themeColor(if (failed) ThemeSlot.MENU_WARNING else ThemeSlot.THREAD_DATE))
+        }
+        val lineHeight = threadMessageTime.lineHeight
 
-            val bubbleColor = activity.themeColor(ThemeSlot.THREAD_SENT_BUBBLE)
-            val contrastColor = activity.themeColor(ThemeSlot.THREAD_SENT_TEXT)
+        threadSimBadge.beVisibleIf(hasMultipleSIMCards)
+        if (hasMultipleSIMCards) {
+            showSimBadge(
+                icon = threadSimIcon,
+                label = threadSimNumber,
+                style = simStyle(message.subscriptionId),
+                cardHeightPx = lineHeight,
+                textSizePx = lineHeight * SIM_BADGE_TEXT_SHARE,
+            )
+        }
 
-            threadMessageBody.apply {
-                updateLayoutParams<RelativeLayout.LayoutParams> {
-                    removeRule(RelativeLayout.END_OF)
-                    addRule(RelativeLayout.ALIGN_PARENT_END)
-                }
+        val statusIcon = when (state) {
+            BubbleState.DELIVERED -> R.drawable.ic_check_double_vector
+            BubbleState.SENT -> org.fossify.commons.R.drawable.ic_check_vector
+            BubbleState.PENDING -> org.fossify.commons.R.drawable.ic_clock_vector
+            else -> null
+        }
+        threadMessageStatus.beVisibleIf(statusIcon != null)
+        if (statusIcon != null) {
+            threadMessageStatus.setImageResource(statusIcon)
+            threadMessageStatus.applyColorFilter(activity.themeColor(ThemeSlot.THREAD_STATUS))
+            threadMessageStatus.updateLayoutParams<LinearLayout.LayoutParams> {
+                width = lineHeight
+                height = lineHeight
+            }
+        }
 
-                background = AppCompatResources.getDrawable(activity, R.drawable.item_sent_background)
-                background.applyColorFilter(bubbleColor)
-                setTextColor(contrastColor)
-                setLinkTextColor(contrastColor)
+        val order = if (received) {
+            listOf(threadSimBadge, threadMessageTime, threadMessageStatus)
+        } else {
+            listOf(threadMessageTime, threadSimBadge, threadMessageStatus)
+        }
+        if (threadMessageFooter.getChildAt(0) !== order.first()) {
+            threadMessageFooter.removeAllViews()
+            order.forEach { threadMessageFooter.addView(it) }
+        }
+        var leading = true
+        order.forEach { child ->
+            val shown = child.visibility != View.GONE
+            child.updateLayoutParams<LinearLayout.LayoutParams> {
+                marginStart = if (leading || !shown) 0 else dp(FOOTER_GAP_DP)
+            }
+            if (shown) leading = false
+        }
+        threadMessageFooter.updateLayoutParams<LinearLayout.LayoutParams> {
+            gravity = if (received) Gravity.START else Gravity.END
+        }
+    }
 
-                if (message.isScheduled) {
-                    applyThemeFont(ThemeSlot.THREAD_SENT_TEXT, Typeface.ITALIC)
-                    val scheduledDrawable = AppCompatResources.getDrawable(activity, org.fossify.commons.R.drawable.ic_clock_vector)?.apply {
-                        applyColorFilter(contrastColor)
-                        val size = lineHeight
-                        setBounds(0, 0, size, size)
+    /**
+     * Fork: the avatar sits half in, half out on its sender's side edge of the bubble — the
+     * contact's on the left of a received one, 白い熊's own on the right of a sent one. A ring in the
+     * background colour parts it from the frame it crosses.
+     */
+    private fun setupAvatar(binding: ItemMessageBinding, message: Message, frameColor: Int) {
+        val received = message.isReceivedMessage()
+        val background = activity.themeColor(ThemeSlot.BACKGROUND)
+        binding.threadMessageSenderPhoto.apply {
+            updateLayoutParams<FrameLayout.LayoutParams> {
+                gravity = (if (received) Gravity.START else Gravity.END) or Gravity.TOP
+                width = dp(avatarDp + 2 * AVATAR_HALO_DP)
+                height = width
+                topMargin = dp(AVATAR_TOP_DP - AVATAR_HALO_DP)
+            }
+            dp(AVATAR_RING_PAD_DP).let { setPadding(it, it, it, it) }
+            val halo = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(background)
+            }
+            val ring = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(background)
+                setStroke(
+                    maxOf(1, (AVATAR_RING_DP * density).toInt()),
+                    ColorUtils.blendARGB(background, frameColor, AVATAR_RING_BLEND)
+                )
+            }
+            val inset = dp(AVATAR_HALO_DP)
+            this.background = LayerDrawable(arrayOf(halo, ring)).apply { setLayerInset(1, inset, inset, inset, inset) }
+
+            if (received) {
+                setOnClickListener {
+                    val contact = message.getSender() ?: return@setOnClickListener
+                    val number = contact.phoneNumbers.firstOrNull()?.normalizedNumber ?: return@setOnClickListener
+                    activity.getContactFromAddress(number) {
+                        if (it != null) {
+                            activity.startContactDetailsIntent(it)
+                        }
                     }
-
-                    setCompoundDrawables(null, null, scheduledDrawable, null)
-                } else {
-                    applyThemeFont(ThemeSlot.THREAD_SENT_TEXT)
-                    setCompoundDrawables(null, null, null, null)
                 }
+                loadAvatar(this, senderPhotoUri(message), message.senderName, frameColor)
+            } else {
+                setOnClickListener(null)
+                isClickable = false
+                loadAvatar(this, ownPhotoUri, activity.getString(R.string.me), frameColor)
             }
+        }
+    }
+
+    private fun loadAvatar(view: ImageView, photoUri: String, name: String, glyphColor: Int) {
+        if (photoUri.isEmpty()) {
+            // Nobody's picture: the brush-stroke 人 alone, without the black square of the stock
+            // image (which covered the ring), cut so its three tips touch the ring.
+            Glide.with(activity).clear(view)
+            view.setImageResource(R.drawable.ic_unknown_contact_round)
+            view.applyColorFilter(glyphColor)
+        } else if (!activity.isFinishing && !activity.isDestroyed) {
+            view.clearColorFilter()
+            val placeholder = SimpleContactsHelper(activity).getContactLetterIcon(name).toDrawable(activity.resources)
+            val options = RequestOptions()
+                .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+                .error(placeholder)
+                .centerCrop()
+
+            Glide.with(activity)
+                .load(photoUri)
+                .placeholder(placeholder)
+                .apply(options)
+                .apply(RequestOptions.circleCropTransform())
+                .into(view)
         }
     }
 
@@ -681,64 +861,31 @@ class ThreadAdapter(
         parent.addView(attachmentView)
     }
 
-    private fun setupDateTime(view: View, dateTime: ThreadDateTime) {
+    /**
+     * Fork: the day heading — a thin full-width divider, then the date in bold with a text-wide
+     * underline. The [first] heading of the list sits under the header's own line and needs no divider.
+     */
+    private fun bindDayHeader(view: View, dateSeconds: Int, first: Boolean) {
         ItemThreadDateTimeBinding.bind(view).apply {
+            val color = activity.themeColor(ThemeSlot.THREAD_DAY_DATE)
             threadDateTime.apply {
-                text = (dateTime.date * 1000L).formatMessageDateOrTime(
-                    context = context,
-                    hideTimeOnOtherDays = false,
-                    showCurrentYear = false
-                )
-                setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
+                text = (dateSeconds * 1000L).dayHeaderLabel(activity)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, DAY_HEADER_SP)
+                applyThemeFont(ThemeSlot.THREAD_DAY_DATE, Typeface.BOLD)
+                setTextColor(color)
             }
-            val dateColor = activity.themeColor(ThemeSlot.THREAD_DATE)
-            threadDateTime.setTextColor(dateColor)
-            threadDateTime.applyThemeFont(ThemeSlot.THREAD_DATE)
-
-            threadSimIcon.beVisibleIf(hasMultipleSIMCards)
-            threadSimNumber.beVisibleIf(hasMultipleSIMCards)
-            if (hasMultipleSIMCards) {
-                // Fork: a card as tall as the date line, widening for a 2–3 character transport badge.
-                val lineHeight = threadDateTime.lineHeight
-                showSimBadge(
-                    icon = threadSimIcon,
-                    label = threadSimNumber,
-                    style = SimBadgeStyle(
-                        text = dateTime.simID,
-                        fill = dateTime.simColor ?: dateColor,
-                        textColor = dateTime.simTextColor,
-                        border = dateTime.simBorderColor,
-                    ),
-                    cardHeightPx = lineHeight,
-                    textSizePx = lineHeight * SIM_BADGE_TEXT_SHARE,
-                )
-            }
-        }
-    }
-
-    private fun setupThreadSuccess(view: View, isDelivered: Boolean) {
-        ItemThreadSuccessBinding.bind(view).apply {
-            threadSuccess.setImageResource(if (isDelivered) R.drawable.ic_check_double_vector else org.fossify.commons.R.drawable.ic_check_vector)
-            threadSuccess.applyColorFilter(activity.themeColor(ThemeSlot.THREAD_STATUS))
-        }
-    }
-
-    private fun setupThreadError(view: View) {
-        val binding = ItemThreadErrorBinding.bind(view)
-        binding.threadError.setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize - 4)
-    }
-
-    private fun setupThreadSending(view: View) {
-        ItemThreadSendingBinding.bind(view).threadSending.apply {
-            setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
-            setTextColor(activity.themeColor(ThemeSlot.THREAD_STATUS))
-            applyThemeFont(ThemeSlot.THREAD_STATUS)
+            threadDayUnderline.setBackgroundColor(color)
+            threadDayDivider.setBackgroundColor(activity.themeColor(ThemeSlot.THREAD_DAY_DIVIDER))
+            threadDayDivider.visibility = if (first) View.INVISIBLE else View.VISIBLE
         }
     }
 
     // Re-bind every message so per-element theme/font changes from Settings take effect immediately.
     @SuppressLint("NotifyDataSetChanged")
     fun refreshTheme() {
+        simStyles = null
+        readAvatarSize()
+        activity.ownAvatarPath().let { if (it.isNotEmpty() || ownPhotoUri.startsWith(activity.filesDir.path)) ownPhotoUri = it }
         notifyDataSetChanged()
     }
 
@@ -760,25 +907,15 @@ private class ThreadItemDiffCallback : DiffUtil.ItemCallback<ThreadItem>() {
     override fun areItemsTheSame(oldItem: ThreadItem, newItem: ThreadItem): Boolean {
         if (oldItem::class.java != newItem::class.java) return false
         return when (oldItem) {
-            is ThreadError -> oldItem.messageId == (newItem as ThreadError).messageId
-            is ThreadSent -> oldItem.messageId == (newItem as ThreadSent).messageId
-            is ThreadSending -> oldItem.messageId == (newItem as ThreadSending).messageId
             is Message -> Message.areItemsTheSame(oldItem, newItem as Message)
-            is ThreadDateTime -> {
-                val new = newItem as ThreadDateTime
-                oldItem.date == new.date && oldItem.simID == new.simID && oldItem.simColor == new.simColor &&
-                    oldItem.simTextColor == new.simTextColor && oldItem.simBorderColor == new.simBorderColor
-            }
+            is ThreadDateTime -> oldItem.date == (newItem as ThreadDateTime).date
         }
     }
 
     override fun areContentsTheSame(oldItem: ThreadItem, newItem: ThreadItem): Boolean {
         if (oldItem::class.java != newItem::class.java) return false
         return when (oldItem) {
-            is ThreadSending -> true
             is ThreadDateTime -> oldItem == newItem
-            is ThreadError -> oldItem.messageText == (newItem as ThreadError).messageText
-            is ThreadSent -> oldItem.delivered == (newItem as ThreadSent).delivered
             is Message -> Message.areContentsTheSame(oldItem, newItem as Message)
         }
     }

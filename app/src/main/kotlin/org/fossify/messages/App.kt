@@ -11,6 +11,7 @@ import org.fossify.commons.helpers.PERMISSION_READ_CONTACTS
 import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.extensions.migratePureYellowIfNeeded
 import org.fossify.messages.extensions.seedDialogStyleIfNeeded
+import org.fossify.messages.extensions.syncFamilyLook
 import org.fossify.messages.extensions.rescheduleAllScheduledMessages
 import org.fossify.messages.extensions.seedBlackYellowThemeIfNeeded
 import org.fossify.messages.helpers.MessagingCache
@@ -26,6 +27,8 @@ class App : FossifyApp() {
         migratePureYellowIfNeeded()
         // Frame every dialog in yellow (Commons' opt-in dialog border), once.
         seedDialogStyleIfNeeded()
+        // Pill dialog buttons, outlined switches and floating button from Commons, in our colour roles.
+        syncFamilyLook()
         if (hasPermission(PERMISSION_READ_CONTACTS)) {
             listOf(
                 ContactsContract.Contacts.CONTENT_URI,

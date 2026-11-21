@@ -27,7 +27,6 @@ import org.fossify.messages.helpers.SettingsEximport
 private const val RIPPLE_ALPHA = 0x33000000
 private const val PROGRESS_STEP = 20
 private const val RGB_MASK = 0x00FFFFFF
-private const val DESC_ALPHA = 0.85f
 private const val STATUS_ALPHA = 0.8f
 private const val WINDOW_CORNER_DP = 8f
 private const val WINDOW_STROKE_DP = 2
@@ -98,8 +97,7 @@ class ExportImportDialog(
             }
         )
         content.addView(
-            text(activity.getString(R.string.eim_desc), 13f, textColor).apply {
-                alpha = DESC_ALPHA
+            text(activity.getString(R.string.eim_desc), 13f, activity.themeColor(ThemeSlot.SETTINGS_NOTE)).apply {
                 setPadding(0, dp(6), 0, dp(10))
             }
         )

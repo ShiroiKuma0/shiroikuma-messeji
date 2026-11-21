@@ -101,7 +101,8 @@ class ArchivedConversationsActivity : SimpleActivity() {
             message = "",
             messageId = R.string.empty_archive_confirmation,
             positive = org.fossify.commons.R.string.yes,
-            negative = org.fossify.commons.R.string.no
+            negative = org.fossify.commons.R.string.no,
+            destructive = true,
         ) {
             removeAllArchivedConversations {
                 loadArchivedConversations()

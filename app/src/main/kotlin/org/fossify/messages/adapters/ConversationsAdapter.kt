@@ -166,7 +166,7 @@ class ConversationsAdapter(
             // the row goes back in place while asking, so a "No" leaves the list exactly as it was
             val items = resources.getQuantityString(R.plurals.delete_conversations, 1, 1)
             val question = String.format(resources.getString(org.fossify.commons.R.string.deletion_confirmation), items)
-            ConfirmationDialog(activity, question) {
+            ConfirmationDialog(activity, question, destructive = true) {
                 removeSwiped(conversation) { activity.deleteConversation(it.threadId) }
             }
             return false
@@ -297,7 +297,7 @@ class ConversationsAdapter(
         val baseString = org.fossify.commons.R.string.deletion_confirmation
         val question = String.format(resources.getString(baseString), items)
 
-        ConfirmationDialog(activity, question) {
+        ConfirmationDialog(activity, question, destructive = true) {
             ensureBackgroundThread {
                 deleteConversations()
             }

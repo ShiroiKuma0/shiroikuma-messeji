@@ -9,7 +9,8 @@
     <org.fossify.commons.views.MyAppBarLayout
         android:id="@+id/thread_appbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:visibility="gone">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/thread_toolbar"
@@ -30,14 +31,12 @@
         android:scrollbars="none"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <include
-            layout="@layout/divider"
-            app:layout_constraintTop_toTopOf="parent" />
 
         <RelativeLayout
             android:id="@+id/thread_add_contacts"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="64dp"
             android:visibility="gone"
             app:layout_constraintTop_toTopOf="parent"
             tools:visibility="visible">
@@ -124,7 +123,7 @@
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
                 android:overScrollMode="ifContentScrolls"
-                android:paddingTop="@dimen/big_margin"
+                android:paddingTop="70dp"
                 android:paddingBottom="@dimen/medium_margin"
                 android:scrollbars="none"
                 app:layoutManager="org.fossify.commons.views.MyLinearLayoutManager"
@@ -133,6 +132,116 @@
                 tools:listitem="@layout/item_message" />
 
         </com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller>
+
+        <!-- Fork: the floating header. No bar: a ring for back, a pill for the name and number, a
+             pill for the call button with its route badge, a ring for the menu — the conversation
+             scrolls beneath and stays visible between them, up to the top. -->
+        <ImageView
+            android:id="@+id/thread_header_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:contentDescription="@string/thread_header_back"
+            android:padding="12dp"
+            android:src="@drawable/ic_arrow_left_vector"
+            app:layout_constraintBottom_toBottomOf="@+id/thread_header_plate"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/thread_header_plate" />
+
+        <LinearLayout
+            android:id="@+id/thread_header_plate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginEnd="8dp"
+            android:gravity="center_vertical"
+            android:minHeight="52dp"
+            android:orientation="vertical"
+            android:paddingStart="20dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="4dp"
+            app:layout_constrainedWidth="true"
+            app:layout_constraintEnd_toStartOf="@+id/thread_header_call"
+            app:layout_constraintHorizontal_bias="0"
+            app:layout_constraintStart_toEndOf="@+id/thread_header_back"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/thread_header_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="21sp"
+                tools:text="Name" />
+
+            <TextView
+                android:id="@+id/thread_header_number"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textSize="15sp"
+                tools:text="+420-000-000-000" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/thread_header_call"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="@string/thread_header_call"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            app:layout_constraintBottom_toBottomOf="@+id/thread_header_plate"
+            app:layout_constraintEnd_toStartOf="@+id/thread_header_more"
+            app:layout_constraintTop_toTopOf="@+id/thread_header_plate">
+
+            <FrameLayout
+                android:id="@+id/thread_header_route"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp">
+
+                <ImageView
+                    android:id="@+id/thread_header_route_icon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:importantForAccessibility="no" />
+
+                <TextView
+                    android:id="@+id/thread_header_route_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:maxLines="1" />
+            </FrameLayout>
+
+            <ImageView
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:id="@+id/thread_header_call_icon"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_phone_vector" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/thread_header_more"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="@string/thread_header_more"
+            android:padding="12dp"
+            android:src="@drawable/ic_three_dots_vector"
+            app:layout_constraintBottom_toBottomOf="@+id/thread_header_plate"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/thread_header_plate" />
 
         <org.fossify.commons.views.MyFloatingActionButton
             android:id="@+id/scroll_to_bottom_fab"

@@ -185,6 +185,59 @@ class Config(context: Context) : BaseConfig(context) {
         set(value) = prefs.edit().putInt(TAB_TEXT_SCALE, value).apply()
 
     // Compose-bar SIM selector size; ordinal into SimSelectorSize (default: as tall as the send button).
+    // The picture shown beside 白い熊's own bubbles: a file in the app's own storage, "" = none picked.
+    var ownAvatarPath: String
+        get() = prefs.getString(OWN_AVATAR_PATH, "")!!
+        set(value) = prefs.edit().putString(OWN_AVATAR_PATH, value).apply()
+
+    // ---- Call routes (see helpers/Rindenwa.kt) ----
+    var defaultCallRoute: String
+        get() = prefs.getString(DEFAULT_CALL_ROUTE, ROUTE_OFF) ?: ROUTE_OFF
+        set(value) = prefs.edit().putString(DEFAULT_CALL_ROUTE, value).apply()
+
+    var rinAccountsCache: String
+        get() = prefs.getString(RIN_ACCOUNTS_CACHE, "") ?: ""
+        set(value) = prefs.edit().putString(RIN_ACCOUNTS_CACHE, value).apply()
+
+    fun getSimSlot(number: String): Int = prefs.getInt(SIM_SLOT_PREFIX + number, 0)
+
+    fun setSimSlot(number: String, slot: Int) = prefs.edit().apply {
+        if (slot == 1 || slot == 2) putInt(SIM_SLOT_PREFIX + number, slot) else remove(SIM_SLOT_PREFIX + number)
+    }.apply()
+
+    fun getRinIsDefault(number: String): Boolean = prefs.getBoolean(RIN_DEFAULT_ROUTE_PREFIX + number, false)
+
+    fun setRinIsDefault(number: String, on: Boolean) = prefs.edit().apply {
+        if (on) putBoolean(RIN_DEFAULT_ROUTE_PREFIX + number, true) else remove(RIN_DEFAULT_ROUTE_PREFIX + number)
+    }.apply()
+
+    fun getRinAccount(number: String): Int = prefs.getInt(RIN_ACCOUNT_PREFIX + number, RIN_ACCOUNT_SELECTED)
+
+    fun setRinAccount(number: String, account: Int) = prefs.edit().apply {
+        if (account >= 0) putInt(RIN_ACCOUNT_PREFIX + number, account) else remove(RIN_ACCOUNT_PREFIX + number)
+    }.apply()
+
+    var threadAvatarSize: Int
+        get() = prefs.getInt(THREAD_AVATAR_SIZE, THREAD_AVATAR_DEFAULT_DP)
+        set(value) = prefs.edit().putInt(THREAD_AVATAR_SIZE, value).apply()
+
+    var threadSizesBumped: Boolean
+        get() = prefs.getBoolean(THREAD_SIZES_BUMPED, false)
+        set(value) = prefs.edit().putBoolean(THREAD_SIZES_BUMPED, value).apply()
+
+    // The UI page's arrangement. In this file on purpose: it travels in the settings export.
+    var uiSectionOrder: String
+        get() = prefs.getString(UI_SECTION_ORDER, "") ?: ""
+        set(value) = prefs.edit().putString(UI_SECTION_ORDER, value).apply()
+
+    var uiSectionsOpen: Set<String>
+        get() = prefs.getStringSet(UI_SECTIONS_OPEN, null)?.toSet() ?: emptySet()
+        set(value) = prefs.edit().remove(UI_SECTIONS_OPEN).putStringSet(UI_SECTIONS_OPEN, value).apply()
+
+    var threadSizesAligned: Boolean
+        get() = prefs.getBoolean(THREAD_SIZES_ALIGNED, false)
+        set(value) = prefs.edit().putBoolean(THREAD_SIZES_ALIGNED, value).apply()
+
     var simSelectorSize: Int
         get() = prefs.getInt(SIM_SELECTOR_SIZE, SimSelectorSize.FULL.ordinal)
         set(value) = prefs.edit().putInt(SIM_SELECTOR_SIZE, value).apply()

@@ -4,17 +4,16 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
-import android.text.format.DateUtils
 import android.util.TypedValue
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
-import org.fossify.commons.extensions.formatDateOrTime
 import org.fossify.messages.R
 import org.fossify.messages.extensions.ThemeSlot
 import org.fossify.messages.extensions.config
+import org.fossify.messages.extensions.dayCode
+import org.fossify.messages.extensions.dayHeaderLabel
 import org.fossify.messages.extensions.themeColor
 import org.fossify.messages.extensions.themeTypeface
-import org.fossify.messages.extensions.toImperialDateString
 
 /**
  * Day headers between list rows — 今日, 昨日, then 令和八年十月二十九日（木曜日）— drawn exactly like
@@ -44,12 +43,12 @@ class DayHeaderDecoration(
     fun refresh() {
         val config = context.config
         val slot = ThemeSlot.CONVERSATION_DAY_DATE.key
-        // No font of its own yet → borrow the 設 launcher character's, the same brush 電話 uses for both.
+        // No font of its own yet → the one the removed 設 launcher character had (the brush 電話 uses for both).
         var family = config.getFontFamily(slot)
         var weight = config.getFontWeight(slot)
         if (family.isEmpty() && weight == 0) {
-            family = config.getFontFamily(ThemeSlot.SETTINGS_BUTTON_LEFT.key)
-            weight = config.getFontWeight(ThemeSlot.SETTINGS_BUTTON_LEFT.key)
+            family = config.getFontFamily(LEGACY_LAUNCHER_FONT_KEY)
+            weight = config.getFontWeight(LEGACY_LAUNCHER_FONT_KEY)
         }
         textPaint.typeface = context.themeTypeface(family, weight)
         val sizeSp = config.getFontSize(slot)
@@ -108,22 +107,14 @@ class DayHeaderDecoration(
         canvas.drawRect(left, lineTop, left + textPaint.measureText(text), lineTop + dp(UNDERLINE_DP), underlinePaint)
     }
 
-    private fun label(millis: Long?): String {
-        val now = System.currentTimeMillis()
-        return when {
-            millis == null -> context.getString(R.string.day_header_pinned)
-            DateUtils.isToday(millis) -> context.getString(R.string.day_header_today)
-            dayCode(millis) == dayCode(now - DateUtils.DAY_IN_MILLIS) ->
-                context.getString(R.string.day_header_yesterday)
-            context.config.useImperialDate -> millis.toImperialDateString()
-            else -> millis.formatDateOrTime(context, hideTimeOnOtherDays = true, showCurrentYear = false)
-        }
-    }
+    private fun label(millis: Long?): String =
+        millis?.dayHeaderLabel(context) ?: context.getString(R.string.day_header_pinned)
 
-    private fun dayCode(millis: Long): String = android.text.format.DateFormat.format("yyyyMMdd", millis).toString()
+    private fun dayCode(millis: Long): String = millis.dayCode()
 
     private companion object {
         const val PINNED = "pinned"
+        const val LEGACY_LAUNCHER_FONT_KEY = "theme_settings_button_left" // stored key of the removed slot
         const val DEFAULT_SIZE_SP = 27f // 白い熊's 電話 day-date size
         const val DIVIDER_DP = 2f
         const val MARGIN_H_DP = 16f

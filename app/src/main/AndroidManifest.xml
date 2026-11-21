@@ -38,6 +38,11 @@
     <queries>
         <!-- 白い熊 辞書: a filing tab's long-press menu looks its name up there (辞書で引く). -->
         <package android:name="shiroikuma.jisho" />
+        <!-- 白い熊 臨電話: a conversation's call button dials through its call door
+             (content://shiroikuma.rindenwa.calls). -->
+        <package android:name="shiroikuma.rindenwa" />
+        <!-- 白い熊 連絡先: the SIM it holds for a number (its /sim_slot door). -->
+        <package android:name="shiroikuma.renrakusaki" />
         <package android:name="org.fossify.contacts.debug" />
         <package android:name="org.fossify.contacts" />
         <!-- The two automation callers. Without them setPackage() on our reply and progress

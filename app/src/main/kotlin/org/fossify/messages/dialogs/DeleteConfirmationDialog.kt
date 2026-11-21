@@ -24,7 +24,8 @@ class DeleteConfirmationDialog(
             .setPositiveButton(org.fossify.commons.R.string.yes) { _, _ -> dialogConfirmed() }
             .setNegativeButton(org.fossify.commons.R.string.no, null)
             .apply {
-                activity.setupDialogStuff(binding.root, this) { alertDialog ->
+                // the Yes deletes: drawn in the warning colour
+                activity.setupDialogStuff(binding.root, this, destructiveButton = AlertDialog.BUTTON_POSITIVE) { alertDialog ->
                     dialog = alertDialog
                 }
             }

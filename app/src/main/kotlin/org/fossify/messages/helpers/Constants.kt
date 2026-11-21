@@ -64,6 +64,30 @@ const val TAB_TEXT_SCALE = "tab_text_scale"
 const val TAB_TEXT_SCALE_DEFAULT = 150
 val TAB_TEXT_SCALE_CHOICES = listOf(100, 125, 150, 175, 200)
 // Compose bar (白い熊 メッセージ UI page)
+// Call routes, as in 白い熊 連絡先: the same strings and the same per-number keys.
+const val RINDENWA_PACKAGE = "shiroikuma.rindenwa"
+const val RINDENWA_CALLS_AUTHORITY = "shiroikuma.rindenwa.calls"
+val RENRAKUSAKI_AUTHORITIES = listOf("shiroikuma.renrakusaki.contactsprovider", "shiroikuma.renrakusaki.debug.contactsprovider")
+const val ROUTE_SIM1 = "sim1"
+const val ROUTE_SIM2 = "sim2"
+const val ROUTE_RIN = "rin"
+const val ROUTE_RIN_PREFIX = "rin:"
+const val ROUTE_OFF = "off"
+const val RIN_ACCOUNT_SELECTED = -1                    // "the account selected in 臨電話"
+const val SIM_SLOT_PREFIX = "sim_slot_"                // Int per number: 1 or 2
+const val RIN_DEFAULT_ROUTE_PREFIX = "rin_default_route_" // Boolean per number: its route is 臨電話
+const val RIN_ACCOUNT_PREFIX = "rin_account_"          // Int per number: its own 臨 account
+const val RIN_ACCOUNTS_CACHE = "rin_accounts_cache"    // String, Rindenwa's last account list (JSON)
+const val DEFAULT_CALL_ROUTE = "default_call_route"    // String, the route of a number that has none of its own
+const val UI_SECTION_ORDER = "ui_section_order"        // String, the UI page's section keys in 白い熊's order, comma-separated
+const val UI_SECTIONS_OPEN = "ui_sections_open"        // Set<String>, the keys of the unfolded sections
+const val THREAD_AVATAR_SIZE = "thread_avatar_size"    // Int dp, the avatars beside a conversation's bubbles
+const val THREAD_AVATAR_DEFAULT_DP = 56
+const val THREAD_AVATAR_MIN_DP = 32
+const val THREAD_AVATAR_MAX_DP = 96
+const val THREAD_SIZES_BUMPED = "thread_sizes_bumped"  // Boolean, the one-time 1.9.1+053 message text size step ran
+const val OWN_AVATAR_PATH = "own_avatar_path"          // String, the picture 白い熊 picked for the sent bubbles; "" = none
+const val THREAD_SIZES_ALIGNED = "thread_sizes_aligned" // Boolean, the one-time 1.9.1+052 message text size alignment ran
 const val SIM_SELECTOR_SIZE = "sim_selector_size"     // Int, ordinal into SimSelectorSize; default: full row height
 // 白い熊 filing tabs (helpers/Filing.kt)
 const val FILING_TABS = "filing_tabs" // JSON [{id,name}] in display order

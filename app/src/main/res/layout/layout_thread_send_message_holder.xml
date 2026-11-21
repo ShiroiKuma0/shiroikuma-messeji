@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/message_holder"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:paddingTop="12dp">
 
     <RelativeLayout
         android:id="@+id/scheduled_message_holder"
@@ -113,6 +114,11 @@
         android:inputType="textCapSentences|textMultiLine"
         android:minHeight="@dimen/normal_icon_size"
         android:maxLines="8"
+        android:layout_marginBottom="10dp"
+        android:paddingStart="12dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="10dp"
         app:layout_constraintBottom_toTopOf="@+id/attachment_picker_divider"
         app:layout_constraintEnd_toStartOf="@id/thread_select_sim_icon"
         app:layout_constraintStart_toEndOf="@+id/thread_add_attachment" />
@@ -166,8 +172,11 @@
 
     <org.fossify.commons.views.MyButton
         android:id="@+id/thread_send_message"
-        android:layout_width="@dimen/normal_icon_size"
-        android:layout_height="@dimen/normal_icon_size"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="@dimen/normal_icon_size"
+        android:minHeight="@dimen/normal_icon_size"
+        android:paddingHorizontal="@dimen/small_margin"
         android:layout_marginEnd="@dimen/small_margin"
         android:alpha="0.4"
         android:background="?selectableItemBackgroundBorderless"
@@ -175,7 +184,8 @@
         android:contentDescription="@string/ok"
         android:drawableTop="@drawable/ic_send_vector"
         android:paddingVertical="@dimen/small_margin"
-        android:text="@string/sms"
+        android:text="@string/send_label"
+        android:textAllCaps="false"
         android:textSize="@dimen/smaller_text_size"
         app:layout_constraintBottom_toBottomOf="@+id/thread_type_message"
         app:layout_constraintEnd_toEndOf="parent"
