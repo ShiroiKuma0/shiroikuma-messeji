@@ -10,7 +10,7 @@ A fork of [Fossify Messages](https://github.com/FossifyOrg/Messages) with **majo
 
 Installs **side-by-side** with Fossify Messages (app id `shiroikuma.messeji`).
 
-**📥 Latest release: [`1.9.1+050`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
+**📥 Latest release: [`1.9.1+064`](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases/latest)** — [all releases & APK downloads »](https://github.com/ShiroiKuma0/shiroikuma-messeji/releases)
 
 </div>
 
@@ -42,7 +42,7 @@ The conversation list and the 送信済み list are split by day — **今日**,
 
 ## 🎨 Granular per-element theming, black & pure yellow
 
-Every visible element — search bar, conversation list, message bubbles (received / sent / status & time), headers, menus, back arrows — has its own color slot on the **白い熊 メッセージ UI** page, with two-tier inheritance: foundation slots (background / primary / text) drive everything until you override a specific element. The app seeds a black background with pure-yellow (`#FFFF00`) text and accents on first launch, and the whole chrome follows: overflow menu, contextual action bar and its menu, popup menus, every dialog (date and time pickers included), the undo bar, and even toasts raised in the background render black with a yellow frame.
+Every visible element — search bar, conversation list, message bubbles, the conversation header, compose bar, buttons, dialogs, switches, menus, lists, system bars — has its own colour role on the **白い熊 メッセージ UI** page, in a section named after its surface. No colour is fixed in a layout: each role defaults to black or pure yellow (`#FFFF00`) and is changed with a tap on its swatch, and “Reset all colours” puts everything back. The whole chrome follows: overflow menu, contextual action bar, popup menus, every dialog (the date and time pickers are drawn by the app in the same roles), the undo bar, and even toasts raised in the background.
 
 ---
 
@@ -88,9 +88,9 @@ Today’s messages show a Sino-Japanese clock reading (午前八時); older ones
 
 ---
 
-## 設定 One-tap settings from the toolbar
+## 💬 A redrawn conversation, with call routes
 
-A tightly-set 設定 pair lives in the main toolbar: tap 設 to open the 白い熊 メッセージ UI page, 定 for the regular Settings screen. Each glyph is its own themeable text element. Long-pressing the ⋮ overflow icon jumps straight to the UI page too.
+Every message is a traced bubble with its own footer — time, SIM badge, delivery mark — and the avatar on its side edge; a dashed frame means still sending, a red one failed (tap to send again). The header floats over the list: rings for back and ⋮, a pill for name and number, and a call pill that carries the badge of the route it will use. A tap calls through that route — a SIM or a concrete account of 白い熊 臨電話 — and a long-press picks it; the route is shared with 白い熊 連絡先. Your own picture for the right side is chosen on the UI page and positioned in its circle before it is set. Long-pressing ⋮ jumps straight to the UI page.
 
 ---
 

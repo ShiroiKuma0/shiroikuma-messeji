@@ -4,6 +4,69 @@ This file carries **both** histories. The fork's own releases come first, newest
 from the second `# Changelog` heading downwards is Fossify's original changelog, kept byte-for-byte
 as upstream writes it so that a rebase merges it cleanly instead of conflicting.
 
+## 白い熊 メッセージ 1.9.1+064 — 2026-11-21
+
+Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `6.1.6-sk19`** to build. Covers builds +051 to +064.
+
+## 💬 The conversation, redrawn
+
+- **Every message is a traced bubble with its own footer**: the time, the SIM or bridge badge and a delivery mark.
+- **The avatar sits on the bubble's side edge**, theirs with a thick frame and yours with a thin one.
+- **A dashed frame marks a message that is still sending or is scheduled; a red frame marks a failed one.** A tap on a failed message sends it again.
+- **One bold, underlined day heading per day** replaces the per-message date lines and the floating date.
+- **An unknown contact shows the 人 glyph fitted to the ring**, without the stock black square.
+- **Sizes are set on the UI page**: message text, the time and badge line, and the avatars.
+
+## 🧑 Your own picture
+
+- **A picture of your own for the right side of a conversation**, chosen under “Conversation bubbles” on the UI page.
+- **The picked image is positioned before it is set**: it opens under a round window where a drag moves it and a pinch zooms it, and it can never leave the circle uncovered. Nothing is stored until OK.
+- **The UI page shows the avatar whole**, large and in its ring. With no picture chosen it shows what the conversation shows: the phone's own profile picture, or 人.
+- Photos are turned upright from their EXIF data.
+
+## 🎈 A floating conversation header
+
+- **Back and ⋮ are rings, name and number a pill, the call button a pill**; the messages scroll beneath them.
+- **The number is grouped with dashes.**
+- **A long-press on ⋮ opens the UI page.**
+
+## 📞 Call routes
+
+- **A tap on the call pill calls through the contact's route**: a SIM, or one concrete account of 白い熊 臨電話. A long-press picks the route.
+- **The route's badge stands in front of the phone icon**, so the pill says how the call will go.
+- **The route is shared with 白い熊 連絡先** (1.6.0+133 or newer): a route picked in either app is the route in both. Without that app, or with an older one, Messēji keeps its own.
+- **Order of precedence:** the contact's route, then the SIM 白い熊 連絡先 holds for the number, then “Phone icon uses” on the UI page.
+- **“Phone icon uses”** offers the concrete SIMs and the concrete 臨電話 accounts. When 臨電話 refuses to list its accounts, the picker says so.
+
+## ✍️ Compose bar
+
+- **A tinted band under a thin line, with a squared field.**
+- **The send button reads “Send” (送信).**
+
+## 🎨 Every colour is a role, set on the UI page
+
+- **No colour is fixed in a layout any more.** Every colour reference left the XML; each surface takes its colour from a named role with a black or pure-yellow (`#FFFF00`) default, and each role has its own swatch on the UI page.
+- **New sections on the UI page:** New conversation, Text, Buttons, Dialogs, Switches, Menus, Lists, Bars and system — beside Foundation, Conversation list, Message thread, Search bar and Settings screen.
+- **Roles that were not settable before**, among others: headings, links, placeholders, input fields and the cursor; button frame, text and warning; the round + button; dialog ground, frame, title, text and note; switch on and off; checkbox and radio; menu frame and divider; list text, dividers and the fast scroller; status bar, navigation bar, tabs, progress, the notification accent; the conversation header, avatar halo and glyph, compose bar, attachments, the scheduled banner, the SIM chooser, selected-contact chips, the undo bar and the swipe background.
+- **Roles shared with the other 白い熊 apps come from the commons**, so one store holds them; earlier per-element choices are carried over once.
+- **“Reset all colours”** under Maintenance, behind a red confirmation.
+- **The stock “Customize colors” screen is gone**, together with the stock theme system behind it.
+- **Scheduling a message uses a date picker and a time picker drawn in the theme's roles**, in place of the platform's.
+- Three things stay in XML because they are drawn before any code runs or cannot be otherwise: the window background at start, the launcher icons, and the placeholder fill of icon vectors (tinted from a role in code).
+
+## ⚙️ 白い熊 メッセージ UI page
+
+- **A folding accordion**: every section folds, all folded at first; fold state and order are remembered and travel in the export.
+- **A chip index at the top**: a tap unfolds a section and scrolls to it, a long-press drags it to reorder the sections. “Reset section order” puts them back.
+- **Rows carry icons coloured by what they do**; explanations are dim gold with a left rule.
+
+## 🔧 Smaller changes
+
+- **Dialogs that delete have a red main button.**
+- **Menu icons are coloured by role** (call green, message blue, contact cyan, share orange, block magenta, delete red).
+- **The ⋮ in the search bar is drawn at full height**; its dots used to touch and read as one short blob.
+- **設定 left the search bar**; the settings are reached from the ⋮ menu and from the pill at the top of the UI page.
+
 ## 白い熊 メッセージ 1.9.1+050 — 2026-11-20
 
 Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `6.1.6-sk10`** to build.
