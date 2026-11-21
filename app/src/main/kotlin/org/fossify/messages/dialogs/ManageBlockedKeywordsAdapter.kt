@@ -13,6 +13,8 @@ import org.fossify.commons.views.MyRecyclerView
 import org.fossify.messages.R
 import org.fossify.messages.databinding.ItemManageBlockedKeywordBinding
 import org.fossify.messages.extensions.config
+import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.themeColor
 
 class ManageBlockedKeywordsAdapter(
     activity: BaseSimpleActivity, var blockedKeywords: ArrayList<String>, val listener: RefreshRecyclerViewListener?,
@@ -81,7 +83,7 @@ class ManageBlockedKeywordsAdapter(
 
             overflowMenuIcon.drawable.apply {
                 mutate()
-                setTint(activity.getProperTextColor())
+                setTint(activity.themeColor(ThemeSlot.LIST_ICON))
             }
 
             overflowMenuIcon.setOnClickListener {

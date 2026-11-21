@@ -100,9 +100,9 @@ class MainTabs(
         binding.folderTabs.setTabs(
             items = items,
             selectedId = selected,
-            ink = activity.themeColor(ThemeSlot.PRIMARY),
+            ink = activity.themeColor(ThemeSlot.TAB_INK),
             textScale = config.tabTextScale / 100f,
-            background = activity.themeColor(ThemeSlot.BACKGROUND),
+            background = activity.themeColor(ThemeSlot.TAB_GROUND),
             onSelect = { id ->
                 if (id != config.filingSelectedTab) {
                     config.filingSelectedTab = id

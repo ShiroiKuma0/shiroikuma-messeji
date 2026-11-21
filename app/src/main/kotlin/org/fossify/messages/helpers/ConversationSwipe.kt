@@ -155,8 +155,8 @@ class ConversationSwipeCallback(private val adapter: ConversationsAdapter) :
         }
 
         val conversation = adapter.currentList.getOrNull(viewHolder.bindingAdapterPosition)
-        val fill = context.themeColor(ThemeSlot.PRIMARY)
-        val ink = fill.getContrastColor()
+        val fill = context.themeColor(ThemeSlot.SWIPE_FILL)
+        val ink = context.themeColor(ThemeSlot.SWIPE_INK)
 
         fillPaint.color = fill
         if (abs(dX) < armDistance) {

@@ -28,6 +28,13 @@ import org.fossify.messages.databinding.ItemAttachmentVcardPreviewBinding
 import org.fossify.messages.extensions.*
 import org.fossify.messages.helpers.*
 import org.fossify.messages.models.AttachmentSelection
+import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.themeColor
+import org.fossify.messages.extensions.frameBox
+import org.fossify.commons.extensions.rippleDrawable
+import org.fossify.commons.extensions.circleDrawable
+
+private const val FRAME_RIPPLE_RADIUS_DP = 8f
 
 class AttachmentsAdapter(
     val activity: BaseSimpleActivity,
@@ -38,7 +45,8 @@ class AttachmentsAdapter(
 
     private val config = activity.config
     private val resources = activity.resources
-    private val primaryColor = activity.getProperPrimaryColor()
+    private val previewGround = activity.themeColor(ThemeSlot.ATTACH_PREVIEW_GROUND)
+    private val previewIcon = activity.themeColor(ThemeSlot.ATTACH_PREVIEW_ICON)
     private val imageCompressor by lazy { ImageCompressor(activity) }
 
     val attachments = mutableListOf<AttachmentSelection>()
@@ -120,14 +128,15 @@ class AttachmentsAdapter(
 
     private fun setupMediaPreview(binding: ItemAttachmentMediaPreviewBinding, attachment: AttachmentSelection) {
         binding.apply {
-            mediaAttachmentHolder.background.applyColorFilter(primaryColor.darkenColor())
+            mediaAttachmentHolder.background = activity.frameBox(previewGround)
+            mediaAttachmentHolder.foreground = activity.rippleDrawable(FRAME_RIPPLE_RADIUS_DP)
             mediaAttachmentHolder.setOnClickListener {
                 activity.launchViewIntent(attachment.uri, attachment.mimetype, attachment.filename)
             }
 
             removeAttachmentButtonHolder.removeAttachmentButton.apply {
                 beVisible()
-                background.applyColorFilter(primaryColor)
+                background = circleDrawable(previewIcon)
                 setOnClickListener {
                     removeAttachment(attachment)
                 }

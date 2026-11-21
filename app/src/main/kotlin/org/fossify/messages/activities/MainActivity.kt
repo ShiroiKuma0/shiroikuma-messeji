@@ -87,9 +87,16 @@ import org.fossify.messages.views.DayHeaderDecoration
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import org.fossify.commons.extensions.rippleDrawable
+import org.fossify.commons.extensions.circleDrawable
+import org.fossify.commons.extensions.getContrastColor
+import org.fossify.commons.extensions.getColoredDrawableWithColor
 
 private const val SEARCH_BAR_CORNER_RADIUS_DP = 16f
 private const val MILLIS_PER_SECOND = 1000L
+
+private const val PLACEHOLDER_RIPPLE_RADIUS_DP = 8f
+private const val SHORTCUT_PLUS_INSET_SHARE = 4
 
 class MainActivity : SimpleActivity() {
     override var isSearchBarEnabled = true
@@ -156,8 +163,8 @@ class MainActivity : SimpleActivity() {
         resumedBefore = true
 
         getOrCreateConversationsAdapter().apply {
-            if (storedTextColor != getProperTextColor()) {
-                updateTextColor(getProperTextColor())
+            if (storedTextColor != themeColor(ThemeSlot.LIST_TEXT)) {
+                updateTextColor(themeColor(ThemeSlot.LIST_TEXT))
             }
 
             if (storedFontSize != config.fontSize) {
@@ -174,14 +181,14 @@ class MainActivity : SimpleActivity() {
         binding.sentList.invalidateItemDecorations()
 
         updateTextColors(binding.mainCoordinator)
-        binding.searchHolder.setBackgroundColor(getProperBackgroundColor())
+        binding.searchHolder.setBackgroundColor(themeColor(ThemeSlot.SEARCH_GROUND))
 
-        val properPrimaryColor = getProperPrimaryColor()
-        binding.noConversationsPlaceholder2.setTextColor(properPrimaryColor)
+        binding.noConversationsPlaceholder2.setTextColor(themeColor(ThemeSlot.LINK))
         binding.noConversationsPlaceholder2.underlineText()
-        binding.conversationsFastscroller.updateColors(properPrimaryColor)
-        binding.conversationsProgressBar.setIndicatorColor(properPrimaryColor)
-        binding.conversationsProgressBar.trackColor = properPrimaryColor.adjustAlpha(LOWER_ALPHA)
+        binding.noConversationsPlaceholder2.background = rippleDrawable(PLACEHOLDER_RIPPLE_RADIUS_DP)
+        binding.conversationsFastscroller.updateColors(themeColor(ThemeSlot.FASTSCROLL_THUMB))
+        binding.conversationsProgressBar.setIndicatorColor(themeColor(ThemeSlot.PROGRESS))
+        binding.conversationsProgressBar.trackColor = themeColor(ThemeSlot.PROGRESS).adjustAlpha(LOWER_ALPHA)
         checkShortcut()
     }
 
@@ -297,7 +304,7 @@ class MainActivity : SimpleActivity() {
     }
 
     private fun storeStateVariables() {
-        storedTextColor = getProperTextColor()
+        storedTextColor = themeColor(ThemeSlot.LIST_TEXT)
         storedFontSize = config.fontSize
     }
 
@@ -657,12 +664,14 @@ class MainActivity : SimpleActivity() {
     @SuppressLint("NewApi")
     private fun getCreateNewContactShortcut(appIconColor: Int): ShortcutInfo {
         val newEvent = getString(R.string.new_conversation)
-        val drawable =
-            AppCompatResources.getDrawable(this, org.fossify.commons.R.drawable.shortcut_plus)
-
-        (drawable as LayerDrawable).findDrawableByLayerId(
-            org.fossify.commons.R.id.shortcut_plus_background
-        ).applyColorFilter(appIconColor)
+        // a disc in the app icon's colour with a plus in its contrast: built here, nothing pinned in XML
+        val plus = resources.getColoredDrawableWithColor(org.fossify.commons.R.drawable.ic_plus_vector, appIconColor.getContrastColor())
+        val size = resources.getDimensionPixelSize(org.fossify.commons.R.dimen.shortcut_size)
+        val inset = size / SHORTCUT_PLUS_INSET_SHARE
+        val drawable = LayerDrawable(arrayOf(circleDrawable(appIconColor), plus)).apply {
+            setLayerSize(0, size, size)
+            setLayerInset(1, inset, inset, inset, inset)
+        }
 
         val bmp = drawable.convertToBitmap()
 

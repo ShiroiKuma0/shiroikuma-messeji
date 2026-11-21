@@ -14,6 +14,8 @@ import org.fossify.messages.extensions.config
 import org.fossify.messages.helpers.MessagesImporter
 import org.fossify.messages.models.ImportResult
 import org.fossify.messages.models.MessagesBackup
+import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.themeColor
 
 class ImportMessagesDialog(
     private val activity: SimpleActivity,
@@ -29,7 +31,7 @@ class ImportMessagesDialog(
             importMmsCheckbox.isChecked = config.importMms
         }
 
-        binding.importProgress.setIndicatorColor(activity.getProperPrimaryColor())
+        binding.importProgress.setIndicatorColor(activity.themeColor(ThemeSlot.PROGRESS))
 
         activity.getAlertDialogBuilder()
             .setPositiveButton(org.fossify.commons.R.string.ok, null)

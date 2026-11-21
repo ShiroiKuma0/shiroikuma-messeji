@@ -26,6 +26,8 @@ import org.fossify.messages.models.Events
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.themeColor
 
 class ArchivedConversationsActivity : SimpleActivity() {
     private var bus: EventBus? = null
@@ -149,7 +151,7 @@ class ArchivedConversationsActivity : SimpleActivity() {
     private fun showOrHidePlaceholder(show: Boolean) {
         binding.conversationsFastscroller.beGoneIf(show)
         binding.noConversationsPlaceholder.beVisibleIf(show)
-        binding.noConversationsPlaceholder.setTextColor(getProperTextColor())
+        binding.noConversationsPlaceholder.setTextColor(themeColor(ThemeSlot.PLACEHOLDER))
         binding.noConversationsPlaceholder.text = getString(R.string.no_archived_conversations)
     }
 

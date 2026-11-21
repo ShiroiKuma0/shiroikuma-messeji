@@ -10,8 +10,6 @@
         android:id="@+id/media_attachment_holder"
         android:layout_width="@dimen/attachment_preview_size"
         android:layout_height="@dimen/attachment_preview_size"
-        android:background="@drawable/section_holder_stroke"
-        android:foreground="@drawable/ripple_all_corners"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0"

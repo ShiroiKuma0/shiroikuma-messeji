@@ -215,6 +215,8 @@ import org.fossify.messages.views.ComposeBarBackground
 import org.fossify.messages.helpers.MenuPills
 import org.fossify.messages.helpers.ROUTE_OFF
 import org.fossify.messages.helpers.Rindenwa
+import org.fossify.messages.helpers.setContactRoute
+import org.fossify.messages.helpers.contactRouteOf
 import org.fossify.messages.helpers.callByRoute
 import org.fossify.messages.helpers.effectiveRouteOf
 import org.fossify.messages.helpers.ownRouteOf
@@ -230,6 +232,8 @@ import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import org.joda.time.DateTime
 import java.io.File
+import org.fossify.messages.extensions.frameBox
+import org.fossify.commons.extensions.rippleDrawable
 
 class ThreadActivity : SimpleActivity() {
     private var threadId = 0L
@@ -314,7 +318,7 @@ class ThreadActivity : SimpleActivity() {
         setupTopAppBar(
             topAppBar = binding.threadAppbar,
             navigationIcon = NavigationIcon.Arrow,
-            topBarColor = getProperBackgroundColor()
+            topBarColor = themeColor(ThemeSlot.STATUS_BAR)
         )
         applyHeaderColor()
 
@@ -346,11 +350,11 @@ class ThreadActivity : SimpleActivity() {
         val bottomBarColor = getBottomBarColor()
         // Fork: the compose bar is a tinted band under a thin darker-accent line, its text field a squared box;
         // the same line closes the header at the top.
-        val background = themeColor(ThemeSlot.BACKGROUND)
-        val accent = themeColor(ThemeSlot.PRIMARY)
-        val line = MenuPills.divider(this)
-        binding.messageHolder.root.background = ComposeBarBackground(this, background, accent, line)
-        binding.messageHolder.threadTypeMessage.background = ComposeBarBackground.fieldBox(this, background, line)
+        binding.messageHolder.root.background =
+            ComposeBarBackground(this, themeColor(ThemeSlot.COMPOSE_BAND), themeColor(ThemeSlot.COMPOSE_LINE))
+        binding.messageHolder.threadTypeMessage.background = ComposeBarBackground.fieldBox(
+            this, themeColor(ThemeSlot.COMPOSE_FIELD_GROUND), themeColor(ThemeSlot.COMPOSE_FIELD_FRAME)
+        )
         binding.shortCodeHolder.root.setBackgroundColor(bottomBarColor)
 
         // reflect any per-element color/font changes made in Settings
@@ -398,19 +402,18 @@ class ThreadActivity : SimpleActivity() {
     // Fork: the floating header's parts — outlined in the accent on the background colour, so the
     // conversation scrolling beneath never shows through them. Everything in it is in the accent.
     private fun applyHeaderColor() {
-        val accent = themeColor(ThemeSlot.PRIMARY)
-        val background = themeColor(ThemeSlot.BACKGROUND)
+        val icons = themeColor(ThemeSlot.HEADER_ICON)
         val density = resources.displayMetrics.density
         fun plate() = GradientDrawable().apply {
             cornerRadius = HEADER_RADIUS_DP * density
-            setColor(background)
-            setStroke((HEADER_FRAME_DP * density).toInt().coerceAtLeast(1), accent)
+            setColor(themeColor(ThemeSlot.HEADER_GROUND))
+            setStroke((HEADER_FRAME_DP * density).toInt().coerceAtLeast(1), themeColor(ThemeSlot.HEADER_FRAME))
         }
         binding.apply {
             listOf(threadHeaderBack, threadHeaderPlate, threadHeaderCall, threadHeaderMore).forEach { it.background = plate() }
-            listOf(threadHeaderBack, threadHeaderCallIcon, threadHeaderMore).forEach { it.applyColorFilter(accent) }
-            threadHeaderTitle.setTextColor(accent)
-            threadHeaderNumber.setTextColor(accent)
+            listOf(threadHeaderBack, threadHeaderCallIcon, threadHeaderMore).forEach { it.applyColorFilter(icons) }
+            threadHeaderTitle.setTextColor(themeColor(ThemeSlot.HEADER_NAME))
+            threadHeaderNumber.setTextColor(themeColor(ThemeSlot.HEADER_NUMBER))
         }
         showCallRoute()
     }
@@ -491,13 +494,22 @@ class ThreadActivity : SimpleActivity() {
     /** A long-press on the call button: choose the route this contact is called by from now on. */
     private fun pickContactRoute() {
         val number = callNumber() ?: return
-        pickCallRoute(
-            title = getString(R.string.route_for_contact),
-            current = ownRouteOf(number),
-            noneLabel = getString(R.string.route_use_default),
-        ) { route ->
-            setOwnRoute(number, route)
-            refreshCallRoute()
+        // the contact's route lives in 白い熊 連絡先 where it has the route door: asked and stored off the main thread
+        ensureBackgroundThread {
+            val current = contactRouteOf(number)
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                pickCallRoute(
+                    title = getString(R.string.route_for_contact),
+                    current = current,
+                    noneLabel = getString(R.string.route_use_default),
+                ) { route ->
+                    ensureBackgroundThread {
+                        setContactRoute(number, route)
+                        runOnUiThread { refreshCallRoute() }
+                    }
+                }
+            }
         }
     }
 
@@ -1012,19 +1024,25 @@ class ThreadActivity : SimpleActivity() {
 
     private fun setupButtons() = binding.apply {
         updateTextColors(threadHolder)
-        val textColor = getProperTextColor()
+        val sendColor = themeColor(ThemeSlot.COMPOSE_SEND)
+        val dividerColor = themeColor(ThemeSlot.LIST_DIVIDER)
+        listOf(messageDividerOne, messageDividerTwo, messageHolder.attachmentPickerDivider).forEach { it.setBackgroundColor(dividerColor) }
+        val iconColor = themeColor(ThemeSlot.COMPOSE_ICON)
 
         binding.messageHolder.apply {
-            threadSendMessage.setTextColor(textColor)
+            threadSendMessage.setTextColor(sendColor)
             threadSendMessage.compoundDrawables.forEach {
-                it?.applyColorFilter(textColor)
+                it?.applyColorFilter(sendColor)
             }
 
-            confirmManageContacts.applyColorFilter(textColor)
-            threadAddAttachment.applyColorFilter(textColor)
+            confirmManageContacts.applyColorFilter(themeColor(ThemeSlot.NEWCONV_CONFIRM))
+            threadAddAttachment.applyColorFilter(iconColor)
+            // after updateTextColors, which paints every text view of the screen in the one text colour
+            threadTypeMessage.setTextColor(themeColor(ThemeSlot.COMPOSE_TEXT))
+            threadTypeMessage.setHintTextColor(themeColor(ThemeSlot.COMPOSE_HINT))
+            threadCharacterCounter.setTextColor(themeColor(ThemeSlot.COMPOSE_COUNTER))
 
-            val properPrimaryColor = getProperPrimaryColor()
-            threadMessagesFastscroller.updateColors(properPrimaryColor)
+            threadMessagesFastscroller.updateColors(themeColor(ThemeSlot.FASTSCROLL_THUMB))
 
             threadCharacterCounter.beVisibleIf(config.showCharacterCounter)
             threadCharacterCounter.setTextSize(TypedValue.COMPLEX_UNIT_PX, getTextSize())
@@ -1130,8 +1148,8 @@ class ThreadActivity : SimpleActivity() {
             scrollToBottomFab.setOnClickListener {
                 scrollToBottom()
             }
-            scrollToBottomFab.backgroundTintList = ColorStateList.valueOf(getBottomBarColor())
-            scrollToBottomFab.applyColorFilter(textColor)
+            scrollToBottomFab.backgroundTintList = ColorStateList.valueOf(themeColor(ThemeSlot.FAB_GROUND))
+            scrollToBottomFab.applyColorFilter(themeColor(ThemeSlot.FAB_ICON))
         }
 
         setupScheduleSendUi()
@@ -1209,7 +1227,7 @@ class ThreadActivity : SimpleActivity() {
             binding.messageHolder.threadTypeMessage.text?.clear()
             binding.messageHolder.root.beGone()
             binding.shortCodeHolder.root.beVisible()
-            val textColor = getProperTextColor()
+            val textColor = themeColor(ThemeSlot.PLACEHOLDER)
             binding.shortCodeHolder.replyDisabledText.setTextColor(textColor)
             binding.shortCodeHolder.replyDisabledInfo.apply {
                 applyColorFilter(textColor)
@@ -1326,7 +1344,7 @@ class ThreadActivity : SimpleActivity() {
 
     /** A SIM's badge look: real SIMs in the text colour; transports with their own fill, text and ring. */
     private fun badgeStyleOf(card: SIMCard) =
-        SimBadgeStyle(card.badge, card.color ?: getProperTextColor(), card.textColor, card.borderColor)
+        SimBadgeStyle(card.badge, card.color ?: themeColor(ThemeSlot.COMPOSE_ICON), card.textColor, card.borderColor)
 
     /**
      * Fork: size the selector per the 白い熊 メッセージ UI setting. At full size the SIM glyph is as tall
@@ -1353,7 +1371,7 @@ class ThreadActivity : SimpleActivity() {
 
     /** Fork: the SIM menu — every SIM and transport as its tinted glyph and badge plus its full name. */
     private fun showSimMenu(anchor: View, onPick: (Int) -> Unit) {
-        val textColor = getProperTextColor()
+        val textColor = themeColor(ThemeSlot.SIM_CHOICE_TEXT)
         val list = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             val pad = resources.getDimensionPixelSize(org.fossify.commons.R.dimen.medium_margin)
@@ -1361,7 +1379,7 @@ class ThreadActivity : SimpleActivity() {
         }
         val title = TextView(this).apply {
             text = getString(R.string.choose_sim)
-            setTextColor(getProperPrimaryColor())
+            setTextColor(themeColor(ThemeSlot.HEADING))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
             val pad = resources.getDimensionPixelSize(org.fossify.commons.R.dimen.activity_margin)
             setPadding(pad, 0, pad, resources.getDimensionPixelSize(org.fossify.commons.R.dimen.small_margin))
@@ -1379,9 +1397,9 @@ class ThreadActivity : SimpleActivity() {
             )
             row.simChoiceLabel.text = card.label
             val isCurrent = index == currentSIMCardIndex
-            row.simChoiceLabel.setTextColor(if (isCurrent) getProperPrimaryColor() else textColor)
+            row.simChoiceLabel.setTextColor(if (isCurrent) themeColor(ThemeSlot.SIM_CHOICE_CURRENT) else textColor)
             row.simChoiceLabel.setTypeface(null, if (isCurrent) Typeface.BOLD else Typeface.NORMAL)
-            row.root.background = pillBackground(themeColor(ThemeSlot.MENU_TEXT))
+            row.root.background = pillBackground(themeColor(ThemeSlot.MENU_FRAME))
             row.root.setOnClickListener {
                 popup.dismiss()
                 onPick(index)
@@ -1390,7 +1408,7 @@ class ThreadActivity : SimpleActivity() {
         }
         val background = GradientDrawable().apply {
             cornerRadius = SIM_MENU_CORNER_DP * resources.displayMetrics.density
-            setColor(getProperBackgroundColor())
+            setColor(themeColor(ThemeSlot.MENU_BACKGROUND))
         }
         popup.setBackgroundDrawable(withDialogBorder(background))
         popup.elevation = SIM_MENU_ELEVATION_DP * resources.displayMetrics.density
@@ -1529,23 +1547,20 @@ class ThreadActivity : SimpleActivity() {
     }
 
     private fun showSelectedContacts() {
-        val properPrimaryColor = getProperPrimaryColor()
+        val chipGround = themeColor(ThemeSlot.SELECTED_CHIP_GROUND)
+        val chipText = themeColor(ThemeSlot.SELECTED_CHIP_TEXT)
 
         val views = ArrayList<View>()
         participants.forEach { contact ->
             ItemSelectedContactBinding.inflate(layoutInflater).apply {
-                val selectedContactBg =
-                    AppCompatResources.getDrawable(
-                        this@ThreadActivity,
-                        R.drawable.item_selected_contact_background
-                    )
-                (selectedContactBg as LayerDrawable).findDrawableByLayerId(R.id.selected_contact_bg)
-                    .applyColorFilter(properPrimaryColor)
-                selectedContactHolder.background = selectedContactBg
+                selectedContactHolder.background = GradientDrawable().apply {
+                    cornerRadius = resources.getDimension(org.fossify.commons.R.dimen.material_button_corner_radius)
+                    setColor(chipGround)
+                }
 
                 selectedContactName.text = contact.name
-                selectedContactName.setTextColor(properPrimaryColor.getContrastColor())
-                selectedContactRemove.applyColorFilter(properPrimaryColor.getContrastColor())
+                selectedContactName.setTextColor(chipText)
+                selectedContactRemove.applyColorFilter(chipText)
 
                 selectedContactRemove.setOnClickListener {
                     if (contact.rawId != participants.first().rawId) {
@@ -2229,10 +2244,11 @@ class ThreadActivity : SimpleActivity() {
     }
 
     private fun setupScheduleSendUi() = binding.messageHolder.apply {
-        val textColor = getProperTextColor()
-        scheduledMessageHolder.background.applyColorFilter(getProperPrimaryColor().darkenColor())
+        val textColor = themeColor(ThemeSlot.SCHEDULED_TEXT)
+        scheduledMessageHolder.background = frameBox(themeColor(ThemeSlot.SCHEDULED_GROUND))
         scheduledMessageIcon.applyColorFilter(textColor)
         scheduledMessageButton.apply {
+            background = rippleDrawable()
             setTextColor(textColor)
             setOnClickListener {
                 launchScheduleSendDialog(scheduledDateTime)
@@ -2280,7 +2296,7 @@ class ThreadActivity : SimpleActivity() {
             R.drawable.ic_send_vector
         }
         ResourcesCompat.getDrawable(resources, drawableResId, theme)?.apply {
-            applyColorFilter(getProperTextColor())
+            applyColorFilter(themeColor(ThemeSlot.COMPOSE_SEND))
             binding.messageHolder.threadSendMessage.setCompoundDrawablesWithIntrinsicBounds(
                 null, this, null, null
             )
@@ -2316,7 +2332,7 @@ class ThreadActivity : SimpleActivity() {
         // Fork: each icon in the colour of what its tile does, inside an outlined ring — never a filled
         // disc in a decorative colour.
         val share = themeColor(ThemeSlot.MENU_ICON_SHARE)
-        val background = themeColor(ThemeSlot.BACKGROUND)
+        val background = themeColor(ThemeSlot.ATTACH_GROUND)
         val ringWidth = (ATTACHMENT_RING_DP * resources.displayMetrics.density).toInt().coerceAtLeast(1)
         listOf(
             choosePhotoIcon to share,
@@ -2336,7 +2352,7 @@ class ThreadActivity : SimpleActivity() {
             icon.applyColorFilter(color)
         }
 
-        val textColor = getProperTextColor()
+        val textColor = themeColor(ThemeSlot.ATTACH_LABEL)
         arrayOf(
             choosePhotoText,
             chooseVideoText,
@@ -2409,11 +2425,7 @@ class ThreadActivity : SimpleActivity() {
             .start()
     }
 
-    private fun getBottomBarColor() = if (isDynamicTheme()) {
-        resources.getColor(org.fossify.commons.R.color.you_bottom_bar_color)
-    } else {
-        getBottomNavigationBackgroundColor()
-    }
+    private fun getBottomBarColor() = themeColor(ThemeSlot.NAV_BAR)
 
     fun setupMessagingEdgeToEdge() {
         ViewCompat.setOnApplyWindowInsetsListener(

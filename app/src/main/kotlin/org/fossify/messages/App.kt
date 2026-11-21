@@ -15,6 +15,7 @@ import org.fossify.messages.extensions.syncFamilyLook
 import org.fossify.messages.extensions.rescheduleAllScheduledMessages
 import org.fossify.messages.extensions.seedBlackYellowThemeIfNeeded
 import org.fossify.messages.helpers.MessagingCache
+import org.fossify.messages.extensions.migrateSlotsToUiRolesIfNeeded
 
 class App : FossifyApp() {
     override val isAppLockFeatureAvailable = true
@@ -28,6 +29,7 @@ class App : FossifyApp() {
         // Frame every dialog in yellow (Commons' opt-in dialog border), once.
         seedDialogStyleIfNeeded()
         // Pill dialog buttons, outlined switches and floating button from Commons, in our colour roles.
+        migrateSlotsToUiRolesIfNeeded()
         syncFamilyLook()
         if (hasPermission(PERMISSION_READ_CONTACTS)) {
             listOf(

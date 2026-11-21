@@ -21,6 +21,12 @@ import android.text.style.StyleSpan
 import android.util.TypedValue
 import android.view.DragEvent
 import android.view.Gravity
+import org.fossify.messages.extensions.ownProfilePhotoUri
+import org.fossify.messages.dialogs.AvatarCropDialog
+import org.fossify.commons.extensions.applyColorFilter
+import com.bumptech.glide.request.RequestOptions
+import com.bumptech.glide.Glide
+import android.graphics.drawable.GradientDrawable
 import android.view.HapticFeedbackConstants
 import android.view.View
 import android.view.ViewGroup
@@ -68,7 +74,6 @@ import org.fossify.messages.extensions.ThemeSlot
 import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.alignThreadTextSizes
 import org.fossify.messages.extensions.clearOwnAvatar
-import org.fossify.messages.extensions.importOwnAvatar
 import org.fossify.messages.extensions.ownAvatarPath
 import org.fossify.messages.extensions.fontDisplayName
 import org.fossify.messages.extensions.importFont
@@ -77,7 +82,6 @@ import org.fossify.messages.extensions.resetThemeColor
 import org.fossify.messages.extensions.setThemeColor
 import org.fossify.messages.extensions.showFontSample
 import org.fossify.messages.extensions.themeColor
-import org.fossify.messages.helpers.EXIM_WARN_COLOR
 import org.fossify.messages.helpers.MenuPills
 import org.fossify.messages.helpers.ROUTE_RIN_PREFIX
 import org.fossify.messages.helpers.Rindenwa
@@ -93,10 +97,22 @@ import org.fossify.messages.helpers.TAB_TEXT_SCALE_CHOICES
 import org.fossify.messages.helpers.SwipeAction
 import org.fossify.messages.helpers.simSelectorSizeOf
 import org.fossify.messages.helpers.swipeActionOf
+import org.fossify.commons.extensions.circleDrawable
+import org.fossify.commons.helpers.resetAllUiColors
+import org.fossify.commons.helpers.UiRole
+import org.fossify.commons.helpers.UiRoleSection
+import org.fossify.commons.helpers.uiColor
+import org.fossify.commons.helpers.setUiColor
+import org.fossify.commons.helpers.resetUiColor
+import org.fossify.messages.extensions.unmappedUiRoles
+import org.fossify.commons.extensions.rippleDrawable
 
 // kxkb indent ladder: section headings at 36dp (in XML), their rows one step in at 72dp,
 // sub-headings at 54dp (in XML), their rows at 90dp — so rows sit at (base + level * step).
 private const val ROW_INDENT_BASE_DP = 54
+private const val OWN_AVATAR_PREVIEW_DP = 112f
+private const val OWN_AVATAR_RING_DP = 2f
+private const val OWN_AVATAR_RING_GAP_DP = 3f
 private const val ROW_INDENT_STEP_DP = 18
 
 // A row description: 85 % size, in the dim-gold note colour — never a faded text colour.
@@ -201,10 +217,8 @@ class ThemeActivity : SimpleActivity() {
     }
 
     private val ownAvatarPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            if (!importOwnAvatar(uri)) toast(CR.string.unknown_error_occurred)
-            buildRows()
-        }
+        // nothing is stored until the picture has been placed in its circle
+        if (uri != null) AvatarCropDialog(this, uri) { buildRows() }
     }
 
     // Export/Import panel plumbing: the SAF pickers live on the activity, the panel drives them.
@@ -263,7 +277,7 @@ class ThemeActivity : SimpleActivity() {
         sectionsFilled.clear()
         body = binding.themeHolder
 
-        val primaryColor = getProperPrimaryColor()
+        val primaryColor = themeColor(ThemeSlot.HEADING)
 
         // the link to the app's own settings: the page's first, thick pill; it is not a section
         addActionRow(getString(CR.string.settings), main = true, opens = true, indentLevel = -1, icon = RowIcon.SETTINGS) {
@@ -324,12 +338,12 @@ class ThemeActivity : SimpleActivity() {
             group.addView(TextView(this).apply {
                 text = section.title
                 tag = section.key
-                setTextColor(accent)
+                setTextColor(themeColor(ThemeSlot.CHIP_TEXT))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, INDEX_TEXT_SP)
                 val h = (INDEX_PAD_H_DP * density).toInt()
                 val v = (INDEX_PAD_V_DP * density).toInt()
                 setPadding(h, v, h, v)
-                background = pillBackground(accent)
+                background = pillBackground(themeColor(ThemeSlot.CHIP_FRAME))
                 setOnClickListener { jumpToSection(section.key) }
                 setOnLongClickListener { chip ->
                     chip.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
@@ -385,7 +399,7 @@ class ThemeActivity : SimpleActivity() {
         val wrapper = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         if (!first) {
             wrapper.addView(
-                View(this).apply { setBackgroundColor(MenuPills.divider(this@ThemeActivity)) },
+                View(this).apply { setBackgroundColor(themeColor(ThemeSlot.SECTION_DIVIDER)) },
                 LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1)
                     .apply { topMargin = (SECTION_GAP_DP * density).toInt() },
             )
@@ -402,7 +416,7 @@ class ThemeActivity : SimpleActivity() {
             addView(label, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
             // as wide as the column, which is as wide as the label's text
             addView(
-                View(this@ThemeActivity).apply { setBackgroundColor(accent) },
+                View(this@ThemeActivity).apply { setBackgroundColor(themeColor(ThemeSlot.HEADING_UNDERLINE)) },
                 LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (SECTION_UNDERLINE_DP * density).toInt())
                     .apply { topMargin = (SECTION_UNDERLINE_GAP_DP * density).toInt() },
             )
@@ -417,7 +431,7 @@ class ThemeActivity : SimpleActivity() {
             gravity = Gravity.CENTER_VERTICAL
             val v = (SECTION_HEADER_PAD_DP * density).toInt()
             setPaddingRelative((SECTION_START_DP * density).toInt(), v, margin, v)
-            setBackgroundResource(CR.drawable.ripple_background)
+            background = rippleDrawable()
             addView(labelColumn, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
             addView(View(this@ThemeActivity), LinearLayout.LayoutParams(0, 0, 1f))
             addView(chevron)
@@ -486,12 +500,55 @@ class ThemeActivity : SimpleActivity() {
             config.uiSectionOrder = ""
             buildRows()
         }
+        addActionRow(
+            label = getString(R.string.reset_all_colors),
+            description = getString(R.string.reset_all_colors_desc),
+            icon = RowIcon.REMOVE,
+            destructive = true,
+        ) {
+            ConfirmationDialog(this, getString(R.string.reset_all_colors_confirm), destructive = true) {
+                ThemeSlot.entries.forEach { resetThemeColor(it) }
+                resetAllUiColors()
+                recreate()
+            }
+        }
     }
 
     private fun addGroupSlots(group: ThemeGroup, indentLevel: Int) {
         ThemeSlot.entries.filter { it.group == group }.forEach { slot ->
             if (slot.hasFont) addTextSlot(slot, indentLevel) else addColorSlot(slot, indentLevel)
         }
+        // the roles of the commons' own widgets that no slot stands for, beside the slots of their surface
+        unmappedUiRoles().filter { uiRoleGroup(it.section) == group }.forEach { addUiRoleRow(it, indentLevel) }
+    }
+
+    private fun uiRoleGroup(section: UiRoleSection): ThemeGroup = when (section) {
+        UiRoleSection.FOUNDATION -> ThemeGroup.FOUNDATION
+        UiRoleSection.TEXT, UiRoleSection.FIELDS -> ThemeGroup.TEXTS
+        UiRoleSection.BUTTONS -> ThemeGroup.BUTTONS
+        UiRoleSection.DIALOGS, UiRoleSection.TOASTS -> ThemeGroup.DIALOGS
+        UiRoleSection.SWITCHES, UiRoleSection.MARKS -> ThemeGroup.SWITCHES
+        UiRoleSection.MENUS -> ThemeGroup.MENUS
+        UiRoleSection.LISTS -> ThemeGroup.LISTS
+        UiRoleSection.BARS -> ThemeGroup.BARS
+    }
+
+    // A swatch row for a commons role: a tap opens the picker, its Default button resets the role.
+    private fun addUiRoleRow(role: UiRole, indentLevel: Int) {
+        val row = ItemThemeColorBinding.inflate(layoutInflater, binding.themeHolder, false)
+        row.themeColorLabel.text = getString(role.labelRes)
+        row.themeColorLabel.setTextColor(themeColor(ThemeSlot.ROW_LABEL))
+        row.themeColorLabel.setRowIcon(RowIcon.COLOR)
+        row.themeColorPreview.background = circleDrawable(uiColor(role))
+        row.root.setOnClickListener {
+            AlphaColorPickerDialog(this, uiColor(role), addDefaultColorButton = true) { wasPositive, color ->
+                if (wasPositive) setUiColor(role, color) else resetUiColor(role)
+                row.themeColorPreview.background = circleDrawable(uiColor(role))
+                previews.forEach { (shown, view) -> view.background = circleDrawable(themeColor(shown)) }
+            }
+        }
+        indentRow(row.root, indentLevel)
+        body.addView(row.root)
     }
 
     // Export/Import of every settable item, the first section of the page. The row beneath the
@@ -502,7 +559,7 @@ class ThemeActivity : SimpleActivity() {
         addActionRow(
             label = getString(R.string.eim_row_label),
             description = status,
-            descriptionColor = if (isWarning) EXIM_WARN_COLOR else null,
+            descriptionColor = if (isWarning) themeColor(ThemeSlot.DIALOG_WARNING) else null,
             main = true,
             opens = true,
             icon = RowIcon.SHARE,
@@ -586,14 +643,14 @@ class ThemeActivity : SimpleActivity() {
     private fun addTokenRow() {
         val row = ItemThemeTokenBinding.inflate(layoutInflater, binding.themeHolder, false)
         row.themeTokenLabel.text = getString(R.string.automation_token)
-        row.themeTokenLabel.setTextColor(getProperTextColor())
+        row.themeTokenLabel.setTextColor(themeColor(ThemeSlot.ROW_LABEL))
         row.themeTokenLabel.setRowIcon(RowIcon.SECRET)
         row.themeTokenValue.text = abbreviateToken(config.automationToken)
-        row.themeTokenValue.setTextColor(getProperTextColor())
+        row.themeTokenValue.setTextColor(themeColor(ThemeSlot.ROW_VALUE))
         row.themeTokenRegenerate.text = getString(R.string.automation_token_regenerate)
-        row.themeTokenRegenerate.setTextColor(getProperPrimaryColor())
+        row.themeTokenRegenerate.setTextColor(themeColor(ThemeSlot.BUTTON_TEXT))
         // acts in place after its warning: a regular pill, no ›
-        row.themeTokenRegenerate.background = pillBackground(getProperPrimaryColor())
+        row.themeTokenRegenerate.background = pillBackground(themeColor(ThemeSlot.BUTTON_FRAME))
         row.root.setOnClickListener {
             // Not commons' copyToClipboard: that one toasts the value itself, which would put the
             // full secret back on screen right after we deliberately abbreviated it.
@@ -728,6 +785,7 @@ class ThemeActivity : SimpleActivity() {
         }
 
         val picked = ownAvatarPath().isNotEmpty()
+        addOwnAvatarPreview()
         addActionRow(
             label = getString(R.string.own_avatar_choose),
             description = getString(if (picked) R.string.own_avatar_set else R.string.own_avatar_unset),
@@ -745,6 +803,44 @@ class ThemeActivity : SimpleActivity() {
         }
     }
 
+    // The picture beside 白い熊's own messages, whole and large, in the ring it has in a conversation:
+    // the picked one, else the phone's own profile picture, else 人.
+    private fun addOwnAvatarPreview() {
+        val density = resources.displayMetrics.density
+        val ring = (OWN_AVATAR_RING_DP * density).toInt().coerceAtLeast(1)
+        val size = (OWN_AVATAR_PREVIEW_DP * density).toInt()
+        val image = ImageView(this).apply {
+            val inset = ring + (OWN_AVATAR_RING_GAP_DP * density).toInt()
+            setPadding(inset, inset, inset, inset)
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(themeColor(ThemeSlot.AVATAR_HALO))
+                setStroke(ring, themeColor(ThemeSlot.BUTTON_FRAME))
+            }
+        }
+        val row = LinearLayout(this).apply { addView(image, LinearLayout.LayoutParams(size, size)) }
+        indentRow(row, 1)
+        body.addView(row)
+
+        fun showPicture(source: String) {
+            if (isFinishing || isDestroyed) return
+            image.clearColorFilter()
+            Glide.with(this).load(source).apply(RequestOptions.circleCropTransform()).into(image)
+        }
+
+        val own = ownAvatarPath()
+        if (own.isNotEmpty()) {
+            showPicture(own)
+            return
+        }
+        image.setImageResource(R.drawable.ic_unknown_contact_round)
+        image.applyColorFilter(themeColor(ThemeSlot.AVATAR_GLYPH))
+        ensureBackgroundThread {
+            val profile = ownProfilePhotoUri()
+            if (profile.isNotEmpty()) runOnUiThread { showPicture(profile) }
+        }
+    }
+
     @Suppress("EmptyFunctionBlock", "LongParameterList") // SeekBar's start/stop-tracking callbacks are no-ops
     private fun addSlider(
         label: String,
@@ -757,9 +853,9 @@ class ThemeActivity : SimpleActivity() {
     ) {
         val row = ItemThemeSliderBinding.inflate(layoutInflater, binding.themeHolder, false)
         row.themeSliderLabel.text = label
-        row.themeSliderLabel.setTextColor(getProperTextColor())
+        row.themeSliderLabel.setTextColor(themeColor(ThemeSlot.ROW_LABEL))
         row.themeSliderLabel.setRowIcon(icon)
-        row.themeSliderValue.setTextColor(getProperTextColor())
+        row.themeSliderValue.setTextColor(themeColor(ThemeSlot.ROW_VALUE))
         row.themeSliderSeekbar.max = max
         row.themeSliderSeekbar.progress = value.coerceIn(0, max)
         row.themeSliderValue.text = valueLabel(row.themeSliderSeekbar.progress)
@@ -796,9 +892,9 @@ class ThemeActivity : SimpleActivity() {
     ) {
         val row = ItemThemeValueBinding.inflate(layoutInflater, binding.themeHolder, false)
         row.themeValueLabel.text = getString(labelRes)
-        row.themeValueLabel.setTextColor(getProperTextColor())
+        row.themeValueLabel.setTextColor(themeColor(ThemeSlot.ROW_LABEL))
         row.themeValueLabel.setRowIcon(icon)
-        row.themeValue.setTextColor(valueColor ?: getProperTextColor())
+        row.themeValue.setTextColor(valueColor ?: themeColor(ThemeSlot.ROW_VALUE))
         row.themeValue.text = value
         row.root.setOnClickListener { onClick(row.themeValue) }
         indentRow(row.root, indentLevel)
@@ -823,7 +919,8 @@ class ThemeActivity : SimpleActivity() {
         onClick: () -> Unit,
     ) {
         // a destructive action lends its red to frame and label, still unfilled
-        val accent = if (destructive) themeColor(ThemeSlot.MENU_WARNING) else getProperPrimaryColor()
+        val accent = themeColor(if (destructive) ThemeSlot.BUTTON_WARNING else ThemeSlot.BUTTON_TEXT)
+        val frame = themeColor(if (destructive) ThemeSlot.BUTTON_WARNING else ThemeSlot.BUTTON_FRAME)
         val row = ItemThemeActionBinding.inflate(layoutInflater, binding.themeHolder, false)
         row.themeActionLabel.text = label
         row.themeActionLabel.setTextColor(accent)
@@ -832,7 +929,7 @@ class ThemeActivity : SimpleActivity() {
         row.themeActionChevron.setTextColor(accent)
         row.themeActionChevron.setTypeface(null, if (main) Typeface.BOLD else Typeface.NORMAL)
         row.themeActionChevron.beGoneIf(!opens)
-        row.themeActionPill.background = pillBackground(accent, main)
+        row.themeActionPill.background = pillBackground(frame, main)
         row.themeActionPill.setOnClickListener { onClick() }
         row.themeActionDescription.beGoneIf(description == null)
         row.themeActionDescription.text = description
@@ -852,7 +949,7 @@ class ThemeActivity : SimpleActivity() {
         val row = ItemThemeSwitchBinding.inflate(layoutInflater, binding.themeHolder, false)
         val title = getString(labelRes)
         row.themeSwitchLabel.text = if (description == null) title else titleWithDescription(title, description)
-        row.themeSwitchLabel.setTextColor(getProperTextColor())
+        row.themeSwitchLabel.setTextColor(themeColor(ThemeSlot.ROW_LABEL))
         row.themeSwitchLabel.setRowIcon(icon)
         row.themeSwitch.minimumHeight = 0
         row.themeSwitch.minHeight = 0
@@ -881,16 +978,16 @@ class ThemeActivity : SimpleActivity() {
         val item = ItemThemeSubgroupBinding.inflate(layoutInflater, binding.themeHolder, false)
         item.themeSubgroupLabel.text = label
         item.themeSubgroupLabel.setTextColor(primaryColor)
-        item.themeSubgroupUnderline.setBackgroundColor(primaryColor)
+        item.themeSubgroupUnderline.setBackgroundColor(themeColor(ThemeSlot.HEADING_UNDERLINE))
         body.addView(item.root)
     }
 
     private fun addColorSlot(slot: ThemeSlot, indentLevel: Int) {
         val row = ItemThemeColorBinding.inflate(layoutInflater, binding.themeHolder, false)
         row.themeColorLabel.text = getString(slot.labelRes)
-        row.themeColorLabel.setTextColor(getProperTextColor())
+        row.themeColorLabel.setTextColor(themeColor(ThemeSlot.ROW_LABEL))
         row.themeColorLabel.setRowIcon(RowIcon.COLOR)
-        row.themeColorPreview.background.setTint(themeColor(slot))
+        row.themeColorPreview.background = circleDrawable(themeColor(slot))
         row.root.setOnClickListener { openColorPicker(slot) }
         indentRow(row.root, indentLevel)
         previews[slot] = row.themeColorPreview
@@ -899,7 +996,7 @@ class ThemeActivity : SimpleActivity() {
 
     @Suppress("EmptyFunctionBlock") // SeekBar's start/stop-tracking callbacks are intentionally no-ops
     private fun addTextSlot(slot: ThemeSlot, indentLevel: Int) {
-        val textColor = getProperTextColor()
+        val textColor = themeColor(ThemeSlot.ROW_LABEL)
         val b = ItemThemeTextBinding.inflate(layoutInflater, binding.themeHolder, false)
         b.themeTextLabel.text = getString(slot.labelRes)
         listOf(
@@ -911,7 +1008,7 @@ class ThemeActivity : SimpleActivity() {
         b.themeTextWeightTitle.setRowIcon(RowIcon.WEIGHT)
         b.themeTextSizeTitle.setRowIcon(RowIcon.SIZE)
 
-        b.themeTextColorPreview.background.setTint(themeColor(slot))
+        b.themeTextColorPreview.background = circleDrawable(themeColor(slot))
         b.themeTextFontValue.text = fontDisplayName(config.getFontFamily(slot.key))
         b.themeTextWeightValue.text = getString(FontWeightOption.fromValue(config.getFontWeight(slot.key)).labelRes)
         b.themeTextSizeSeekbar.max = MAX_FONT_SIZE_SP
@@ -1007,7 +1104,8 @@ class ThemeActivity : SimpleActivity() {
                 // foundation cascades into the chrome + every inheriting preview
                 recreate()
             } else {
-                previews[slot]?.background?.setTint(themeColor(slot))
+                // a role can be the default of others: every swatch is read again
+                previews.forEach { (shown, view) -> view.background = circleDrawable(themeColor(shown)) }
             }
         }
     }
@@ -1015,7 +1113,7 @@ class ThemeActivity : SimpleActivity() {
     private fun openTextColorPicker(slot: ThemeSlot, b: ItemThemeTextBinding) {
         AlphaColorPickerDialog(this, themeColor(slot), addDefaultColorButton = true) { wasPositive, color ->
             if (wasPositive) setThemeColor(slot, color) else resetThemeColor(slot)
-            b.themeTextColorPreview.background.setTint(themeColor(slot))
+            b.themeTextColorPreview.background = circleDrawable(themeColor(slot))
             refreshSample(b, slot)
         }
     }

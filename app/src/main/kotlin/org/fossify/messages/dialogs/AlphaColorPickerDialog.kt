@@ -21,6 +21,9 @@ import org.fossify.commons.extensions.setFillWithStroke
 import org.fossify.commons.extensions.setupDialogStuff
 import org.fossify.messages.databinding.DialogColorPickerAlphaBinding
 import org.fossify.messages.extensions.config
+import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.themeColor
+import org.fossify.commons.extensions.colorPickerRing
 
 private const val ALPHA_MAX = 255
 private const val HEX_LENGTH = 6
@@ -177,6 +180,7 @@ class AlphaColorPickerDialog(
         val x = currentColorHsv[1] * square.measuredWidth
         val y = (1f - currentColorHsv[2]) * square.measuredHeight
         val cursor = binding.colorPickerCursor
+        if (cursor.drawable == null) cursor.setImageDrawable(colorPickerRing(activity))
         cursor.x = square.left + x - cursor.width / 2f
         cursor.y = square.top + y - cursor.height / 2f
     }
@@ -206,7 +210,7 @@ class AlphaColorPickerDialog(
         }
 
         binding.recentColors.beVisible()
-        val backgroundColor = activity.getProperBackgroundColor()
+        val backgroundColor = activity.themeColor(ThemeSlot.DIALOG_GROUND)
         val size = activity.resources.getDimensionPixelSize(org.fossify.commons.R.dimen.colorpicker_hue_width)
         recentColors.take(RECENT_COLORS_NUMBER).forEach { recentColor ->
             val dot = ImageView(activity)

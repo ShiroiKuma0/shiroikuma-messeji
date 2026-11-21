@@ -34,6 +34,7 @@ import org.fossify.messages.extensions.themeColor
 import org.fossify.messages.helpers.Filing
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.models.Conversation
+import org.fossify.commons.extensions.circleDrawable
 
 @Suppress("LeakingThis")
 abstract class BaseConversationsAdapter(
@@ -248,7 +249,7 @@ abstract class BaseConversationsAdapter(
             view.isClickable = false
             return
         }
-        val color = activity.themeColor(ThemeSlot.PRIMARY)
+        val color = activity.themeColor(ThemeSlot.UNFILED_MARK)
         val density = activity.resources.displayMetrics.density
         view.setTextColor(color)
         view.background = GradientDrawable().apply {
@@ -273,8 +274,8 @@ abstract class BaseConversationsAdapter(
                     else -> count.toString()
                 }
                 val unreadColor = activity.themeColor(ThemeSlot.CONVERSATION_UNREAD)
-                setTextColor(unreadColor.getContrastColor())
-                background?.applyColorFilter(unreadColor)
+                setTextColor(activity.themeColor(ThemeSlot.CONVERSATION_UNREAD_TEXT))
+                background = circleDrawable(unreadColor)
             }
         }
     }

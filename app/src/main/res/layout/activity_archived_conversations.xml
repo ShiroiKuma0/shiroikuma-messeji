@@ -15,7 +15,6 @@
             android:id="@+id/archive_toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/color_primary"
             app:title="@string/archived_conversations"
             app:titleTextAppearance="@style/AppTheme.ActionBar.TitleTextStyle" />
 

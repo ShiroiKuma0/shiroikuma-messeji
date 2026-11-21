@@ -1,6 +1,10 @@
 package org.fossify.messages.extensions
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.ExifInterface
 import android.net.Uri
 import android.provider.ContactsContract
 import android.widget.ImageView
@@ -38,23 +42,58 @@ private const val OWN_AVATAR_PREFIX = "own_avatar_"
 /** The picture 白い熊 picked for their own bubbles, or "" when none is picked or its file is gone. */
 fun Context.ownAvatarPath(): String = config.ownAvatarPath.takeIf { it.isNotEmpty() && File(it).isFile }.orEmpty()
 
+private const val AVATAR_SOURCE_MAX_PX = 2048
+private const val QUARTER_TURN = 90f
+
 /**
- * Copy a picked image into the app's own storage and make it 白い熊's own picture. The file name
- * carries the time, so image caches never serve the previous picture. Returns false on failure.
+ * A picked image read for positioning: scaled down to at most [AVATAR_SOURCE_MAX_PX] a side and
+ * turned upright as its EXIF data says. Null when it cannot be read.
  */
-fun Context.importOwnAvatar(uri: Uri): Boolean = try {
+fun Context.decodeAvatarSource(uri: Uri): Bitmap? = try {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+    var sample = 1
+    while (maxOf(bounds.outWidth, bounds.outHeight) / sample > AVATAR_SOURCE_MAX_PX) sample *= 2
+    val options = BitmapFactory.Options().apply { inSampleSize = sample }
+    val decoded = contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }
+    val orientation = contentResolver.openInputStream(uri)?.use {
+        ExifInterface(it).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+    } ?: ExifInterface.ORIENTATION_NORMAL
+    val turn = Matrix().apply {
+        when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> postRotate(QUARTER_TURN)
+            ExifInterface.ORIENTATION_ROTATE_180 -> postRotate(2 * QUARTER_TURN)
+            ExifInterface.ORIENTATION_ROTATE_270 -> postRotate(3 * QUARTER_TURN)
+            ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> postScale(-1f, 1f)
+            ExifInterface.ORIENTATION_FLIP_VERTICAL -> postScale(1f, -1f)
+        }
+    }
+    if (decoded == null || turn.isIdentity) decoded else Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, turn, true)
+} catch (_: Exception) {
+    null
+} catch (_: OutOfMemoryError) {
+    null
+}
+
+/**
+ * Store a positioned picture in the app's own storage and make it 白い熊's own picture. The file
+ * name carries the time, so image caches never serve the previous picture. Returns false on failure.
+ */
+fun Context.saveOwnAvatar(picture: Bitmap): Boolean = try {
     val target = File(filesDir, "$OWN_AVATAR_PREFIX${System.currentTimeMillis()}")
-    val copied = contentResolver.openInputStream(uri)?.use { input ->
-        target.outputStream().use { input.copyTo(it) }
-    } != null
-    if (copied) {
+    val written = target.outputStream().use { picture.compress(Bitmap.CompressFormat.PNG, PNG_QUALITY, it) }
+    if (written) {
         clearOwnAvatarFiles(except = target)
         config.ownAvatarPath = target.absolutePath
+    } else {
+        target.delete()
     }
-    copied
+    written
 } catch (_: Exception) {
     false
 }
+
+private const val PNG_QUALITY = 100
 
 fun Context.clearOwnAvatar() {
     config.ownAvatarPath = ""

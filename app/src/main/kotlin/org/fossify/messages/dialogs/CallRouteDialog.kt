@@ -30,6 +30,7 @@ import org.fossify.messages.helpers.ROUTE_SIM2
 import org.fossify.messages.helpers.Rindenwa
 import org.fossify.messages.helpers.routeBadgeStyle
 import org.fossify.messages.helpers.showSimBadge
+import org.fossify.commons.extensions.rippleDrawable
 
 private const val PADDING_DP = 20
 private const val TITLE_GAP_DP = 12
@@ -102,7 +103,7 @@ private class CallRouteDialog(
             setPadding(pad, pad, pad, pad)
             addView(TextView(activity).apply {
                 text = title
-                setTextColor(activity.getProperTextColor())
+                setTextColor(activity.themeColor(ThemeSlot.DIALOG_TITLE))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, TITLE_SP)
                 setTypeface(typeface, Typeface.BOLD)
                 setPadding(0, 0, 0, dp(TITLE_GAP_DP))
@@ -114,7 +115,7 @@ private class CallRouteDialog(
             if (note != null) {
                 addView(TextView(activity).apply {
                     text = note
-                    setTextColor(activity.themeColor(ThemeSlot.SETTINGS_NOTE))
+                    setTextColor(activity.themeColor(ThemeSlot.DIALOG_NOTE))
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, NOTE_SP)
                     setPadding(0, dp(TITLE_GAP_DP), 0, 0)
                 })
@@ -142,7 +143,7 @@ private class CallRouteDialog(
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(0, dp(ROW_PAD_DP), 0, dp(ROW_PAD_DP))
-            setBackgroundResource(org.fossify.commons.R.drawable.ripple_background)
+            background = activity.rippleDrawable()
             isClickable = true
             setOnClickListener {
                 callback(line.route)
@@ -174,7 +175,7 @@ private class CallRouteDialog(
         row.addView(
             TextView(activity).apply {
                 text = line.label
-                setTextColor(activity.getProperTextColor())
+                setTextColor(activity.themeColor(ThemeSlot.DIALOG_TEXT))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, OPTION_SP)
             },
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(GAP_DP) }

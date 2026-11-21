@@ -95,6 +95,7 @@ import org.fossify.messages.models.Message
 import org.fossify.messages.models.ThreadItem
 import org.fossify.messages.models.ThreadItem.ThreadDateTime
 import org.joda.time.DateTime
+import org.fossify.commons.extensions.rowSelectorDrawable
 
 class ThreadAdapter(
     activity: SimpleActivity,
@@ -500,6 +501,7 @@ class ThreadAdapter(
     private fun setupView(holder: ViewHolder, view: View, message: Message) {
         ItemMessageBinding.bind(view).apply {
             val received = message.isReceivedMessage()
+            if (threadMessageHolder.foreground == null) threadMessageHolder.foreground = activity.rowSelectorDrawable()
             threadMessageHolder.isSelected = selectedKeys.contains(message.getSelectionKey())
             threadMessageBody.apply {
                 text = message.body
@@ -517,7 +519,7 @@ class ThreadAdapter(
 
             val state = bubbleState(message)
             val frameColor = when {
-                state == BubbleState.FAILED -> activity.themeColor(ThemeSlot.MENU_WARNING)
+                state == BubbleState.FAILED -> activity.themeColor(ThemeSlot.THREAD_FAILED)
                 received -> activity.themeColor(ThemeSlot.THREAD_RECEIVED_FRAME)
                 else -> activity.themeColor(ThemeSlot.THREAD_SENT_FRAME)
             }
@@ -594,7 +596,7 @@ class ThreadAdapter(
         binding.threadMessageBody.apply {
             if (received) {
                 setTextColor(activity.themeColor(ThemeSlot.THREAD_RECEIVED_TEXT))
-                setLinkTextColor(activity.themeColor(ThemeSlot.PRIMARY))
+                setLinkTextColor(activity.themeColor(ThemeSlot.LINK))
                 applyThemeFont(ThemeSlot.THREAD_RECEIVED_TEXT)
             } else {
                 val textColor = activity.themeColor(ThemeSlot.THREAD_SENT_TEXT)
@@ -621,7 +623,7 @@ class ThreadAdapter(
                 state == BubbleState.PENDING && !message.isScheduled -> activity.getString(R.string.sending)
                 else -> message.millis().formatMessageTimeOfDay(activity)
             }
-            setTextColor(activity.themeColor(if (failed) ThemeSlot.MENU_WARNING else ThemeSlot.THREAD_DATE))
+            setTextColor(activity.themeColor(if (failed) ThemeSlot.THREAD_FAILED else ThemeSlot.THREAD_DATE))
         }
         val lineHeight = threadMessageTime.lineHeight
 
@@ -681,7 +683,7 @@ class ThreadAdapter(
      */
     private fun setupAvatar(binding: ItemMessageBinding, message: Message, frameColor: Int) {
         val received = message.isReceivedMessage()
-        val background = activity.themeColor(ThemeSlot.BACKGROUND)
+        val background = activity.themeColor(ThemeSlot.AVATAR_HALO)
         binding.threadMessageSenderPhoto.apply {
             updateLayoutParams<FrameLayout.LayoutParams> {
                 gravity = (if (received) Gravity.START else Gravity.END) or Gravity.TOP
@@ -715,11 +717,11 @@ class ThreadAdapter(
                         }
                     }
                 }
-                loadAvatar(this, senderPhotoUri(message), message.senderName, frameColor)
+                loadAvatar(this, senderPhotoUri(message), message.senderName, activity.themeColor(ThemeSlot.AVATAR_GLYPH))
             } else {
                 setOnClickListener(null)
                 isClickable = false
-                loadAvatar(this, ownPhotoUri, activity.getString(R.string.me), frameColor)
+                loadAvatar(this, ownPhotoUri, activity.getString(R.string.me), activity.themeColor(ThemeSlot.AVATAR_GLYPH))
             }
         }
     }

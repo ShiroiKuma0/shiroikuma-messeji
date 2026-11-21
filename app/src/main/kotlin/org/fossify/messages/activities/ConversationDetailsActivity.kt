@@ -33,6 +33,8 @@ import org.fossify.messages.extensions.renameConversation
 import org.fossify.messages.extensions.startContactDetailsIntent
 import org.fossify.messages.helpers.THREAD_ID
 import org.fossify.messages.models.Conversation
+import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.themeColor
 
 class ConversationDetailsActivity : SimpleActivity() {
 
@@ -75,7 +77,7 @@ class ConversationDetailsActivity : SimpleActivity() {
         applyThemeChrome(binding.conversationDetailsToolbar)
         updateTextColors(binding.conversationDetailsHolder)
 
-        val primaryColor = getProperPrimaryColor()
+        val primaryColor = themeColor(ThemeSlot.HEADING)
         arrayOf(
             binding.notificationsHeading,
             binding.conversationNameHeading,
@@ -146,7 +148,7 @@ class ConversationDetailsActivity : SimpleActivity() {
                 org.fossify.commons.R.drawable.ic_edit_vector,
                 theme
             )?.apply {
-                applyColorFilter(getProperTextColor())
+                applyColorFilter(themeColor(ThemeSlot.LIST_ICON))
                 setCompoundDrawablesWithIntrinsicBounds(null, null, this, null)
             }
 

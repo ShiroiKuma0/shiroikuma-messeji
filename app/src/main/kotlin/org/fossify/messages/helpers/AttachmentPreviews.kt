@@ -12,6 +12,13 @@ import org.fossify.messages.databinding.ItemAttachmentDocumentPreviewBinding
 import org.fossify.messages.databinding.ItemAttachmentVcardBinding
 import org.fossify.messages.databinding.ItemAttachmentVcardPreviewBinding
 import org.fossify.messages.extensions.*
+import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.themeColor
+import org.fossify.messages.extensions.frameBox
+import org.fossify.commons.extensions.rippleDrawable
+import org.fossify.commons.extensions.circleDrawable
+
+private const val FRAME_RIPPLE_RADIUS_DP = 8f
 
 fun ItemAttachmentDocumentPreviewBinding.setupDocumentPreview(
     uri: Uri,
@@ -24,7 +31,7 @@ fun ItemAttachmentDocumentPreviewBinding.setupDocumentPreview(
     documentAttachmentHolder.setupDocumentPreview(uri, title, mimeType, onClick, onLongClick)
     removeAttachmentButtonHolder.removeAttachmentButton.apply {
         beVisible()
-        background.applyColorFilter(context.getProperPrimaryColor())
+        background = circleDrawable(context.themeColor(ThemeSlot.ATTACH_PREVIEW_ICON))
         if (onRemoveButtonClicked != null) {
             setOnClickListener {
                 onRemoveButtonClicked.invoke()
@@ -59,15 +66,16 @@ fun ItemAttachmentDocumentBinding.setupDocumentPreview(
         }
     }
 
-    val textColor = context.getProperTextColor()
-    val primaryColor = context.getProperPrimaryColor()
+    val textColor = context.themeColor(ThemeSlot.ATTACH_PREVIEW_TEXT)
+    val primaryColor = context.themeColor(ThemeSlot.ATTACH_PREVIEW_GROUND)
 
     filename.setTextColor(textColor)
     fileSize.setTextColor(textColor)
 
     icon.setImageResource(getIconResourceForMimeType(mimeType))
-    icon.background.setTint(primaryColor)
-    root.background.applyColorFilter(primaryColor.darkenColor())
+    icon.background = circleDrawable(context.themeColor(ThemeSlot.ATTACH_PREVIEW_ICON))
+    root.background = context.frameBox(primaryColor)
+    root.foreground = context.rippleDrawable(FRAME_RIPPLE_RADIUS_DP)
 
     root.setOnClickListener {
         onClick?.invoke()
@@ -91,7 +99,7 @@ fun ItemAttachmentVcardPreviewBinding.setupVCardPreview(
         vcardProgress.beGone()
         removeAttachmentButtonHolder.removeAttachmentButton.apply {
             beVisible()
-            background.applyColorFilter(activity.getProperPrimaryColor())
+            background = circleDrawable(activity.themeColor(ThemeSlot.ATTACH_PREVIEW_ICON))
             if (onRemoveButtonClicked != null) {
                 setOnClickListener {
                     onRemoveButtonClicked.invoke()
@@ -110,12 +118,14 @@ fun ItemAttachmentVcardBinding.setupVCardPreview(
     onVCardLoaded: (() -> Unit)? = null,
 ) {
     val context = root.context
-    val textColor = activity.getProperTextColor()
-    val primaryColor = activity.getProperPrimaryColor()
+    val textColor = activity.themeColor(ThemeSlot.ATTACH_PREVIEW_TEXT)
+    val primaryColor = activity.themeColor(ThemeSlot.ATTACH_PREVIEW_GROUND)
 
-    root.background.applyColorFilter(primaryColor.darkenColor())
+    root.background = context.frameBox(primaryColor)
+    root.foreground = context.rippleDrawable(FRAME_RIPPLE_RADIUS_DP)
     vcardTitle.setTextColor(textColor)
     vcardSubtitle.setTextColor(textColor)
+    viewContactDetails.setTextColor(activity.themeColor(ThemeSlot.LINK))
 
     arrayOf<View>(vcardPhoto, vcardTitle, vcardSubtitle, viewContactDetails).forEach {
         it.beGone()

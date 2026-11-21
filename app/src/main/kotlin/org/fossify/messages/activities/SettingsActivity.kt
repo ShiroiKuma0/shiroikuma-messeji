@@ -52,6 +52,8 @@ import org.fossify.messages.helpers.MessagesImporter
 import org.fossify.messages.helpers.refreshConversations
 import java.util.Locale
 import kotlin.system.exitProcess
+import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.themeColor
 
 class SettingsActivity : SimpleActivity() {
     private var blockedNumbersAtPause = -1
@@ -102,7 +104,6 @@ class SettingsActivity : SimpleActivity() {
         applyThemeChrome(binding.settingsToolbar)
 
         setupShiroikumaUi()
-        setupCustomizeColors()
         setupCustomizeNotifications()
         setupUseEnglish()
         setupLanguage()
@@ -133,7 +134,6 @@ class SettingsActivity : SimpleActivity() {
         }
 
         arrayOf(
-            binding.settingsColorCustomizationSectionLabel,
             binding.settingsGeneralSettingsLabel,
             binding.settingsOutgoingMessagesLabel,
             binding.settingsNotificationsLabel,
@@ -142,7 +142,7 @@ class SettingsActivity : SimpleActivity() {
             binding.settingsSecurityLabel,
             binding.settingsMigratingLabel
         ).forEach {
-            it.setTextColor(getProperPrimaryColor())
+            it.setTextColor(themeColor(ThemeSlot.HEADING))
         }
     }
 
@@ -168,12 +168,6 @@ class SettingsActivity : SimpleActivity() {
     private fun setupShiroikumaUi() {
         binding.settingsShiroikumaUiHolder.setOnClickListener {
             startActivity(Intent(this, ThemeActivity::class.java))
-        }
-    }
-
-    private fun setupCustomizeColors() = binding.apply {
-        settingsColorCustomizationHolder.setOnClickListener {
-            startCustomizationActivity()
         }
     }
 

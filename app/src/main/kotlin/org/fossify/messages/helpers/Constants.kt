@@ -100,7 +100,6 @@ const val DIALOG_STYLE_SEEDED = "dialog_style_seeded"
 const val DIALOG_BORDER_WIDTH_DEFAULT = 2 // dp
 
 // Export/Import: warning red for "no directory / no export yet" states
-const val EXIM_WARN_COLOR = 0xFFFF5252.toInt()
 
 // The 保存復元 state-export contract, for 白い熊 自由作業盤's one-run backup of every sister app
 // (see receivers/StateExportReceiver). Three exported, token-gated actions: a headless run of the very
@@ -154,8 +153,8 @@ const val AUTOMATION_REFUSAL_BAD_TOKEN = "ERROR:bad token"
 
 // Granular theming
 const val THEME_UNSET = Int.MIN_VALUE // a slot with this stored value follows its inherited default
-const val PALETTE_BLACK = 0xFF000000.toInt()
-const val PALETTE_YELLOW = 0xFFFFFF00.toInt()
+const val PALETTE_BLACK = org.fossify.commons.helpers.FAMILY_BLACK   // the two primaries are written once, in the commons role table
+const val PALETTE_YELLOW = org.fossify.commons.helpers.FAMILY_YELLOW
 const val PALETTE_YELLOW_LEGACY = 0xFFFFEB3B.toInt() // old material yellow, migrated once to PALETTE_YELLOW
 
 // Per-element fonts: one entry per text slot, keyed by the slot key.

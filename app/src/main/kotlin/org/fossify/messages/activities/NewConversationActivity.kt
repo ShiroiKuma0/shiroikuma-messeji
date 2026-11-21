@@ -50,6 +50,11 @@ import org.fossify.messages.helpers.THREAD_TITLE
 import org.fossify.messages.messaging.isShortCodeWithLetters
 import java.net.URLDecoder
 import java.util.Locale
+import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.themeColor
+import org.fossify.commons.extensions.rippleDrawable
+
+private const val PLACEHOLDER_RIPPLE_RADIUS_DP = 8f
 
 class NewConversationActivity : SimpleActivity() {
     private var allContacts = ArrayList<SimpleContact>()
@@ -82,9 +87,11 @@ class NewConversationActivity : SimpleActivity() {
         super.onResume()
         setupTopAppBar(binding.newConversationAppbar, NavigationIcon.Arrow)
         applyThemeChrome(binding.newConversationToolbar)
-        binding.noContactsPlaceholder2.setTextColor(getProperPrimaryColor())
+        binding.noContactsPlaceholder2.setTextColor(themeColor(ThemeSlot.LINK))
         binding.noContactsPlaceholder2.underlineText()
-        binding.suggestionsLabel.setTextColor(getProperPrimaryColor())
+        binding.noContactsPlaceholder2.background = rippleDrawable(PLACEHOLDER_RIPPLE_RADIUS_DP)
+        binding.addContactDivider.setBackgroundColor(themeColor(ThemeSlot.LIST_DIVIDER))
+        binding.suggestionsLabel.setTextColor(themeColor(ThemeSlot.NEWCONV_LABEL))
     }
 
     private fun initContacts() {
@@ -110,7 +117,7 @@ class NewConversationActivity : SimpleActivity() {
             binding.newConversationConfirm.beVisibleIf(searchString.length > 2)
         }
 
-        binding.newConversationConfirm.applyColorFilter(getProperTextColor())
+        binding.newConversationConfirm.applyColorFilter(themeColor(ThemeSlot.NEWCONV_CONFIRM))
         binding.newConversationConfirm.setOnClickListener {
             val number = binding.newConversationAddress.value
             if (isShortCodeWithLetters(number)) {
@@ -129,12 +136,12 @@ class NewConversationActivity : SimpleActivity() {
             }
         }
 
-        val properPrimaryColor = getProperPrimaryColor()
-        binding.contactsLetterFastscroller.textColor = getProperTextColor().getColorStateList()
-        binding.contactsLetterFastscroller.pressedTextColor = properPrimaryColor
+        val thumb = themeColor(ThemeSlot.FASTSCROLL_THUMB)
+        binding.contactsLetterFastscroller.textColor = themeColor(ThemeSlot.FASTSCROLL_TEXT).getColorStateList()
+        binding.contactsLetterFastscroller.pressedTextColor = thumb
         binding.contactsLetterFastscrollerThumb.setupWithFastScroller(binding.contactsLetterFastscroller)
-        binding.contactsLetterFastscrollerThumb.textColor = properPrimaryColor.getContrastColor()
-        binding.contactsLetterFastscrollerThumb.thumbColor = properPrimaryColor.getColorStateList()
+        binding.contactsLetterFastscrollerThumb.textColor = themeColor(ThemeSlot.FASTSCROLL_THUMB_TEXT)
+        binding.contactsLetterFastscrollerThumb.thumbColor = thumb.getColorStateList()
     }
 
     private fun isThirdPartyIntent(): Boolean {
@@ -229,7 +236,7 @@ class NewConversationActivity : SimpleActivity() {
                         val contact = it
                         ItemSuggestedContactBinding.inflate(layoutInflater).apply {
                             suggestedContactName.text = contact.name
-                            suggestedContactName.setTextColor(getProperTextColor())
+                            suggestedContactName.setTextColor(themeColor(ThemeSlot.NEWCONV_NAME))
 
                             if (!isDestroyed) {
                                 suggestedContactImage.loadContactPhotoOrUnknown(contact.photoUri, contact.name)

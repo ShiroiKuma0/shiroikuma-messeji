@@ -10,13 +10,17 @@ import android.view.Menu
 import androidx.annotation.StringRes
 import androidx.core.graphics.ColorUtils
 import org.fossify.commons.extensions.adjustAlpha
+import org.fossify.commons.extensions.darkenColor
 import org.fossify.commons.extensions.getContrastColor
 import org.fossify.commons.extensions.getProperBackgroundColor
 import org.fossify.commons.extensions.getProperPrimaryColor
 import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.withDialogBorder
+import org.fossify.commons.helpers.UiRole
+import org.fossify.commons.helpers.resetUiColor
+import org.fossify.commons.helpers.setUiColor
+import org.fossify.commons.helpers.uiColor
 import org.fossify.messages.helpers.DIALOG_BORDER_WIDTH_DEFAULT
-import org.fossify.messages.helpers.EXIM_WARN_COLOR
 import org.fossify.messages.R
 import org.fossify.messages.helpers.PALETTE_BLACK
 import org.fossify.messages.helpers.PALETTE_YELLOW
@@ -35,6 +39,8 @@ private const val MENU_BLUE = 0xFF4D94FF.toInt() // pure blue vanishes as a thin
 private const val MENU_CYAN = 0xFF00FFFF.toInt()
 private const val MENU_ORANGE = 0xFFFF8000.toInt()
 private const val MENU_MAGENTA = 0xFFFF00FF.toInt()
+private const val MENU_DIVIDER_BLEND = 0.7f // dividers: an opaque darker accent
+private const val COMPOSE_BAND_BLEND = 0.11f // the compose band: a faint tint of the accent
 private const val THREAD_DAY_DIVIDER_BLEND = 0.5f // the day divider: halfway from the background to the accent
 
 // Granular, per-element theming for 白い熊 メッセージ.
@@ -51,7 +57,15 @@ enum class ThemeSection(@StringRes val labelRes: Int) {
     CONVERSATIONS(R.string.theme_section_conversations),
     THREAD(R.string.theme_section_thread),
     SEARCH(R.string.theme_section_search),
+    NEW_CONVERSATION(R.string.theme_section_new_conversation),
     SETTINGS(R.string.theme_section_settings),
+    TEXTS(R.string.theme_section_texts),
+    BUTTONS(R.string.theme_section_buttons),
+    DIALOGS(R.string.theme_section_dialogs),
+    SWITCHES(R.string.theme_section_switches),
+    MENUS(R.string.theme_group_menus),
+    LISTS(R.string.theme_section_lists),
+    BARS(R.string.theme_section_bars),
 }
 
 // Subgroups within a section. A subgroup header is only drawn when its section has more than one
@@ -62,10 +76,22 @@ enum class ThemeGroup(val section: ThemeSection, @StringRes val labelRes: Int) {
     THREAD_RECEIVED(ThemeSection.THREAD, R.string.theme_group_thread_received),
     THREAD_SENT(ThemeSection.THREAD, R.string.theme_group_thread_sent),
     THREAD_META(ThemeSection.THREAD, R.string.theme_group_thread_meta),
+    THREAD_HEADER(ThemeSection.THREAD, R.string.theme_group_thread_header),
+    THREAD_AVATAR(ThemeSection.THREAD, R.string.theme_group_thread_avatar),
+    THREAD_COMPOSE(ThemeSection.THREAD, R.string.compose_section),
+    THREAD_ATTACH(ThemeSection.THREAD, R.string.theme_group_thread_attach),
     ROUTES(ThemeSection.THREAD, R.string.call_routes),
     SEARCH(ThemeSection.SEARCH, R.string.theme_section_search),
-    MENUS(ThemeSection.SEARCH, R.string.theme_group_menus),
+    NEW_CONVERSATION(ThemeSection.NEW_CONVERSATION, R.string.theme_section_new_conversation),
     SETTINGS(ThemeSection.SETTINGS, R.string.theme_section_settings),
+    UI_PAGE(ThemeSection.SETTINGS, R.string.theme_group_ui_page),
+    TEXTS(ThemeSection.TEXTS, R.string.theme_section_texts),
+    BUTTONS(ThemeSection.BUTTONS, R.string.theme_section_buttons),
+    DIALOGS(ThemeSection.DIALOGS, R.string.theme_section_dialogs),
+    SWITCHES(ThemeSection.SWITCHES, R.string.theme_section_switches),
+    MENUS(ThemeSection.MENUS, R.string.theme_group_menus),
+    LISTS(ThemeSection.LISTS, R.string.theme_section_lists),
+    BARS(ThemeSection.BARS, R.string.theme_section_bars),
 }
 
 enum class ThemeSlot(
@@ -83,8 +109,8 @@ enum class ThemeSlot(
     TEXT_SECONDARY("theme_text_secondary", ThemeGroup.FOUNDATION, R.string.theme_text_secondary),
 
     // The dim gold of explanations and of the rule beside them; a switch that is off (opaque, never faded)
-    SETTINGS_NOTE("theme_settings_note", ThemeGroup.FOUNDATION, R.string.theme_settings_note),
-    SWITCH_OFF("theme_switch_off", ThemeGroup.FOUNDATION, R.string.theme_switch_off),
+    SETTINGS_NOTE("theme_settings_note", ThemeGroup.UI_PAGE, R.string.theme_settings_note),
+    SWITCH_OFF("theme_switch_off", ThemeGroup.SWITCHES, R.string.theme_switch_off),
 
     // Conversation list
     CONVERSATION_NAME(
@@ -148,6 +174,7 @@ enum class ThemeSlot(
     ROUTE_RIN_TEXT("theme_route_rin_text", ThemeGroup.ROUTES, R.string.route_rin_text_color),
 
     // Search bar
+    SEARCH_GROUND("theme_search_ground", ThemeGroup.SEARCH, R.string.theme_search_ground),
     SEARCH_FILL("theme_search_fill", ThemeGroup.SEARCH, R.string.theme_search_fill),
     SEARCH_TEXT("theme_search_text", ThemeGroup.SEARCH, R.string.theme_search_text, hasFont = true),
     SEARCH_HINT("theme_search_hint", ThemeGroup.SEARCH, R.string.theme_search_hint),
@@ -170,10 +197,168 @@ enum class ThemeSlot(
     // Settings screen chrome
     SETTINGS_TITLE("theme_settings_title", ThemeGroup.SETTINGS, R.string.theme_settings_title),
     SETTINGS_BACK("theme_settings_back", ThemeGroup.SETTINGS, R.string.theme_settings_back),
+
+    // One role per item 白い熊 can see as a separate thing; each inherits a foundation colour until set.
+    BAR_GROUND("theme_bar_ground", ThemeGroup.BARS, R.string.theme_bar_ground),
+    STATUS_BAR("theme_status_bar", ThemeGroup.BARS, R.string.theme_status_bar),
+    NAV_BAR("theme_nav_bar", ThemeGroup.BARS, R.string.theme_nav_bar),
+    TAB_INK("theme_tab_ink", ThemeGroup.BARS, R.string.theme_tab_ink),
+    TAB_GROUND("theme_tab_ground", ThemeGroup.BARS, R.string.theme_tab_ground),
+    PROGRESS("theme_progress", ThemeGroup.BARS, R.string.theme_progress),
+    NOTIFICATION_ACCENT("theme_notification_accent", ThemeGroup.BARS, R.string.theme_notification_accent),
+    HEADING("theme_heading", ThemeGroup.TEXTS, R.string.theme_heading),
+    HEADING_UNDERLINE("theme_heading_underline", ThemeGroup.TEXTS, R.string.theme_heading_underline),
+    LINK("theme_link", ThemeGroup.TEXTS, R.string.theme_link),
+    PLACEHOLDER("theme_placeholder", ThemeGroup.TEXTS, R.string.theme_placeholder),
+    INPUT_TEXT("theme_input_text", ThemeGroup.TEXTS, R.string.theme_input_text),
+    INPUT_HINT("theme_input_hint", ThemeGroup.TEXTS, R.string.theme_input_hint),
+    INPUT_FRAME("theme_input_frame", ThemeGroup.TEXTS, R.string.theme_input_frame),
+    CURSOR("theme_cursor", ThemeGroup.TEXTS, R.string.theme_cursor),
+    BUTTON_TEXT("theme_button_text", ThemeGroup.BUTTONS, R.string.theme_button_text),
+    BUTTON_FRAME("theme_button_frame", ThemeGroup.BUTTONS, R.string.theme_button_frame),
+    BUTTON_GROUND("theme_button_ground", ThemeGroup.BUTTONS, R.string.theme_button_ground),
+    BUTTON_WARNING("theme_button_warning", ThemeGroup.BUTTONS, R.string.theme_button_warning),
+    FAB_ICON("theme_fab_icon", ThemeGroup.BUTTONS, R.string.theme_fab_icon),
+    FAB_FRAME("theme_fab_frame", ThemeGroup.BUTTONS, R.string.theme_fab_frame),
+    FAB_GROUND("theme_fab_ground", ThemeGroup.BUTTONS, R.string.theme_fab_ground),
+    DIALOG_GROUND("theme_dialog_ground", ThemeGroup.DIALOGS, R.string.theme_dialog_ground),
+    DIALOG_FRAME("theme_dialog_frame", ThemeGroup.DIALOGS, R.string.theme_dialog_frame),
+    DIALOG_TITLE("theme_dialog_title", ThemeGroup.DIALOGS, R.string.theme_dialog_title),
+    DIALOG_TEXT("theme_dialog_text", ThemeGroup.DIALOGS, R.string.theme_dialog_text),
+    DIALOG_NOTE("theme_dialog_note", ThemeGroup.DIALOGS, R.string.theme_dialog_note),
+    DIALOG_WARNING("theme_dialog_warning", ThemeGroup.DIALOGS, R.string.theme_dialog_warning),
+    SWITCH_ON("theme_switch_on", ThemeGroup.SWITCHES, R.string.theme_switch_on),
+    CHECKBOX("theme_checkbox", ThemeGroup.SWITCHES, R.string.theme_checkbox),
+    RADIO("theme_radio", ThemeGroup.SWITCHES, R.string.theme_radio),
+    MENU_FRAME("theme_menu_frame", ThemeGroup.MENUS, R.string.theme_menu_frame),
+    MENU_DIVIDER("theme_menu_divider", ThemeGroup.MENUS, R.string.theme_menu_divider),
+    LIST_TEXT("theme_list_text", ThemeGroup.LISTS, R.string.theme_list_text),
+    LIST_SECONDARY("theme_list_secondary", ThemeGroup.LISTS, R.string.theme_list_secondary),
+    LIST_ICON("theme_list_icon", ThemeGroup.LISTS, R.string.theme_list_icon),
+    LIST_DIVIDER("theme_list_divider", ThemeGroup.LISTS, R.string.theme_list_divider),
+    LIST_SELECTION("theme_list_selection", ThemeGroup.LISTS, R.string.theme_list_selection),
+    FASTSCROLL_TEXT("theme_fastscroll_text", ThemeGroup.LISTS, R.string.theme_fastscroll_text),
+    FASTSCROLL_THUMB("theme_fastscroll_thumb", ThemeGroup.LISTS, R.string.theme_fastscroll_thumb),
+    FASTSCROLL_THUMB_TEXT("theme_fastscroll_thumb_text", ThemeGroup.LISTS, R.string.theme_fastscroll_thumb_text),
+    CONVERSATION_UNREAD_TEXT("theme_conversation_unread_text", ThemeGroup.CONVERSATION, R.string.theme_conversation_unread_text),
+    UNDO_TEXT("theme_undo_text", ThemeGroup.CONVERSATION, R.string.theme_undo_text),
+    UNDO_FRAME("theme_undo_frame", ThemeGroup.CONVERSATION, R.string.theme_undo_frame),
+    UNDO_GROUND("theme_undo_ground", ThemeGroup.CONVERSATION, R.string.theme_undo_ground),
+    UNFILED_MARK("theme_unfiled_mark", ThemeGroup.CONVERSATION, R.string.theme_unfiled_mark),
+    SWIPE_FILL("theme_swipe_fill", ThemeGroup.CONVERSATION, R.string.theme_swipe_fill),
+    SWIPE_INK("theme_swipe_ink", ThemeGroup.CONVERSATION, R.string.theme_swipe_ink),
+    HEADER_GROUND("theme_header_ground", ThemeGroup.THREAD_HEADER, R.string.theme_header_ground),
+    HEADER_FRAME("theme_header_frame", ThemeGroup.THREAD_HEADER, R.string.theme_header_frame),
+    HEADER_NAME("theme_header_name", ThemeGroup.THREAD_HEADER, R.string.theme_header_name),
+    HEADER_NUMBER("theme_header_number", ThemeGroup.THREAD_HEADER, R.string.theme_header_number),
+    HEADER_ICON("theme_header_icon", ThemeGroup.THREAD_HEADER, R.string.theme_header_icon),
+    AVATAR_HALO("theme_avatar_halo", ThemeGroup.THREAD_AVATAR, R.string.theme_avatar_halo),
+    AVATAR_GLYPH("theme_avatar_glyph", ThemeGroup.THREAD_AVATAR, R.string.theme_avatar_glyph),
+    THREAD_FAILED("theme_thread_failed", ThemeGroup.THREAD_META, R.string.theme_thread_failed),
+    COMPOSE_BAND("theme_compose_band", ThemeGroup.THREAD_COMPOSE, R.string.theme_compose_band),
+    COMPOSE_LINE("theme_compose_line", ThemeGroup.THREAD_COMPOSE, R.string.theme_compose_line),
+    COMPOSE_FIELD_GROUND("theme_compose_field_ground", ThemeGroup.THREAD_COMPOSE, R.string.theme_compose_field_ground),
+    COMPOSE_FIELD_FRAME("theme_compose_field_frame", ThemeGroup.THREAD_COMPOSE, R.string.theme_compose_field_frame),
+    COMPOSE_TEXT("theme_compose_text", ThemeGroup.THREAD_COMPOSE, R.string.theme_compose_text),
+    COMPOSE_HINT("theme_compose_hint", ThemeGroup.THREAD_COMPOSE, R.string.theme_compose_hint),
+    COMPOSE_ICON("theme_compose_icon", ThemeGroup.THREAD_COMPOSE, R.string.theme_compose_icon),
+    COMPOSE_SEND("theme_compose_send", ThemeGroup.THREAD_COMPOSE, R.string.theme_compose_send),
+    COMPOSE_COUNTER("theme_compose_counter", ThemeGroup.THREAD_COMPOSE, R.string.theme_compose_counter),
+    ATTACH_GROUND("theme_attach_ground", ThemeGroup.THREAD_ATTACH, R.string.theme_attach_ground),
+    ATTACH_LABEL("theme_attach_label", ThemeGroup.THREAD_ATTACH, R.string.theme_attach_label),
+    ATTACH_PREVIEW_GROUND("theme_attach_preview_ground", ThemeGroup.THREAD_ATTACH, R.string.theme_attach_preview_ground),
+    ATTACH_PREVIEW_TEXT("theme_attach_preview_text", ThemeGroup.THREAD_ATTACH, R.string.theme_attach_preview_text),
+    ATTACH_PREVIEW_ICON("theme_attach_preview_icon", ThemeGroup.THREAD_ATTACH, R.string.theme_attach_preview_icon),
+    SCHEDULED_GROUND("theme_scheduled_ground", ThemeGroup.THREAD_ATTACH, R.string.theme_scheduled_ground),
+    SCHEDULED_TEXT("theme_scheduled_text", ThemeGroup.THREAD_ATTACH, R.string.theme_scheduled_text),
+    SIM_CHOICE_TEXT("theme_sim_choice_text", ThemeGroup.THREAD_ATTACH, R.string.theme_sim_choice_text),
+    SIM_CHOICE_CURRENT("theme_sim_choice_current", ThemeGroup.THREAD_ATTACH, R.string.theme_sim_choice_current),
+    NEWCONV_LABEL("theme_newconv_label", ThemeGroup.NEW_CONVERSATION, R.string.theme_newconv_label),
+    NEWCONV_CONFIRM("theme_newconv_confirm", ThemeGroup.NEW_CONVERSATION, R.string.theme_newconv_confirm),
+    NEWCONV_NAME("theme_newconv_name", ThemeGroup.NEW_CONVERSATION, R.string.theme_newconv_name),
+    NEWCONV_NUMBER("theme_newconv_number", ThemeGroup.NEW_CONVERSATION, R.string.theme_newconv_number),
+    SELECTED_CHIP_GROUND("theme_selected_chip_ground", ThemeGroup.NEW_CONVERSATION, R.string.theme_selected_chip_ground),
+    SELECTED_CHIP_TEXT("theme_selected_chip_text", ThemeGroup.NEW_CONVERSATION, R.string.theme_selected_chip_text),
+    ROW_LABEL("theme_row_label", ThemeGroup.UI_PAGE, R.string.theme_row_label),
+    ROW_VALUE("theme_row_value", ThemeGroup.UI_PAGE, R.string.theme_row_value),
+    CHIP_TEXT("theme_chip_text", ThemeGroup.UI_PAGE, R.string.theme_chip_text),
+    CHIP_FRAME("theme_chip_frame", ThemeGroup.UI_PAGE, R.string.theme_chip_frame),
+    SECTION_DIVIDER("theme_section_divider", ThemeGroup.UI_PAGE, R.string.theme_section_divider),
 }
 
+
+/**
+ * The commons role a slot stands for. Widgets and dialogs the commons draws read its roles (UiRole,
+ * stored under "ui_role_…"); a slot that names the same item keeps no value of its own and reads and
+ * writes that role, so one item has one colour whoever paints it.
+ */
+val ThemeSlot.uiRole: UiRole?
+    get() = when (this) {
+        ThemeSlot.LINK -> UiRole.TEXT_LINK
+        ThemeSlot.INPUT_TEXT -> UiRole.FIELD_TEXT
+        ThemeSlot.INPUT_HINT -> UiRole.FIELD_HINT
+        ThemeSlot.INPUT_FRAME -> UiRole.FIELD_LINE
+        ThemeSlot.CURSOR -> UiRole.FIELD_CURSOR
+        ThemeSlot.BUTTON_TEXT -> UiRole.BUTTON_TEXT
+        ThemeSlot.BUTTON_FRAME -> UiRole.BUTTON_FRAME
+        ThemeSlot.BUTTON_GROUND -> UiRole.BUTTON_GROUND
+        ThemeSlot.BUTTON_WARNING -> UiRole.BUTTON_DESTRUCTIVE
+        ThemeSlot.FAB_ICON -> UiRole.FAB_ICON
+        ThemeSlot.FAB_FRAME -> UiRole.FAB_FRAME
+        ThemeSlot.FAB_GROUND -> UiRole.FAB_GROUND
+        ThemeSlot.DIALOG_GROUND -> UiRole.DIALOG_GROUND
+        ThemeSlot.DIALOG_FRAME -> UiRole.DIALOG_FRAME
+        ThemeSlot.DIALOG_TITLE -> UiRole.DIALOG_TITLE
+        ThemeSlot.DIALOG_TEXT -> UiRole.DIALOG_TEXT
+        ThemeSlot.SWITCH_ON -> UiRole.SWITCH_ON_OUTLINE
+        ThemeSlot.SWITCH_OFF -> UiRole.SWITCH_OFF_OUTLINE
+        ThemeSlot.CHECKBOX -> UiRole.CHECK_ON
+        ThemeSlot.RADIO -> UiRole.RADIO_ON
+        ThemeSlot.MENU_BACKGROUND -> UiRole.MENU_GROUND
+        ThemeSlot.MENU_TEXT -> UiRole.MENU_LABEL
+        ThemeSlot.MENU_FRAME -> UiRole.MENU_ROW_FRAME
+        ThemeSlot.MENU_DIVIDER -> UiRole.MENU_DIVIDER
+        ThemeSlot.LIST_DIVIDER -> UiRole.LIST_DIVIDER
+        ThemeSlot.LIST_SELECTION -> UiRole.LIST_SELECTED
+        ThemeSlot.FASTSCROLL_THUMB -> UiRole.SCROLL_THUMB
+        ThemeSlot.FASTSCROLL_THUMB_TEXT -> UiRole.SCROLL_BUBBLE_TEXT
+        ThemeSlot.STATUS_BAR -> UiRole.STATUS_BAR
+        ThemeSlot.NAV_BAR -> UiRole.NAVIGATION_BAR
+        ThemeSlot.BAR_GROUND -> UiRole.TOOLBAR_GROUND
+        ThemeSlot.SETTINGS_TITLE -> UiRole.TOOLBAR_TITLE
+        ThemeSlot.SETTINGS_BACK -> UiRole.TOOLBAR_ICON
+        ThemeSlot.SEARCH_FILL -> UiRole.SEARCH_GROUND
+        ThemeSlot.SEARCH_BORDER -> UiRole.SEARCH_FRAME
+        ThemeSlot.SEARCH_TEXT -> UiRole.SEARCH_TEXT
+        ThemeSlot.SEARCH_HINT -> UiRole.SEARCH_HINT
+        ThemeSlot.SEARCH_ICON -> UiRole.SEARCH_ICON
+        else -> null
+    }
+
+/** Commons roles no slot stands for; the UI page lists them beside the slots of their surface. */
+fun unmappedUiRoles(): List<UiRole> {
+    val mapped = ThemeSlot.entries.mapNotNull { it.uiRole }.toSet()
+    return UiRole.entries.filter { !it.isFoundation && it !in mapped }
+}
+
+/** One-time: a colour 白い熊 set on a slot before it became a commons role moves to that role. */
+fun Context.migrateSlotsToUiRolesIfNeeded() {
+    if (config.getThemeOverride(UI_ROLES_MIGRATED_KEY) != THEME_UNSET) return
+    ThemeSlot.entries.forEach { slot ->
+        val role = slot.uiRole ?: return@forEach
+        val old = config.getThemeOverride(slot.key)
+        if (old != THEME_UNSET) {
+            setUiColor(role, old)
+            config.clearThemeOverride(slot.key)
+        }
+    }
+    config.setThemeOverride(UI_ROLES_MIGRATED_KEY, 1)
+}
+
+private const val UI_ROLES_MIGRATED_KEY = "ui_roles_migrated"
 /** The effective color for a slot: the user's override if set, otherwise its inherited default. */
 fun Context.themeColor(slot: ThemeSlot): Int {
+    if (!slot.isFoundation) slot.uiRole?.let { return uiColor(it) }
     val override = config.getThemeOverride(slot.key)
     return if (override != THEME_UNSET) override else themeDefault(slot)
 }
@@ -202,7 +387,7 @@ private fun Context.themeDefault(slot: ThemeSlot): Int = when (slot) {
     ThemeSlot.MENU_BACKGROUND -> themeColor(ThemeSlot.BACKGROUND)
     ThemeSlot.MENU_TEXT -> themeColor(ThemeSlot.TEXT)
     // Destructive menu rows (delete, empty): frame, icon and label
-    ThemeSlot.MENU_WARNING -> EXIM_WARN_COLOR
+    ThemeSlot.MENU_WARNING -> uiColor(UiRole.BUTTON_DESTRUCTIVE)
     ThemeSlot.MENU_ICON_CALL -> MENU_GREEN
     ThemeSlot.MENU_ICON_MESSAGE -> MENU_BLUE
     ThemeSlot.MENU_ICON_CONTACT -> MENU_CYAN
@@ -244,6 +429,93 @@ private fun Context.themeDefault(slot: ThemeSlot): Int = when (slot) {
     ThemeSlot.THREAD_DAY_DIVIDER -> ColorUtils.blendARGB(
         themeColor(ThemeSlot.BACKGROUND), themeColor(ThemeSlot.PRIMARY), THREAD_DAY_DIVIDER_BLEND
     )
+
+    ThemeSlot.BAR_GROUND -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.SEARCH_GROUND -> themeColor(ThemeSlot.BACKGROUND)
+    ThemeSlot.STATUS_BAR -> themeColor(ThemeSlot.BACKGROUND)
+    ThemeSlot.NAV_BAR -> themeColor(ThemeSlot.BACKGROUND)
+    ThemeSlot.TAB_INK -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.TAB_GROUND -> themeColor(ThemeSlot.BACKGROUND)
+    ThemeSlot.PROGRESS -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.NOTIFICATION_ACCENT -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.HEADING -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.HEADING_UNDERLINE -> themeColor(ThemeSlot.HEADING)
+    ThemeSlot.LINK -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.PLACEHOLDER -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.INPUT_TEXT -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.INPUT_HINT -> themeColor(ThemeSlot.TEXT).adjustAlpha(SEARCH_HINT_ALPHA)
+    ThemeSlot.INPUT_FRAME -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.CURSOR -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.BUTTON_TEXT -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.BUTTON_FRAME -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.BUTTON_GROUND -> themeColor(ThemeSlot.BACKGROUND)
+    ThemeSlot.BUTTON_WARNING -> themeColor(ThemeSlot.MENU_WARNING)
+    ThemeSlot.FAB_ICON -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.FAB_FRAME -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.FAB_GROUND -> themeColor(ThemeSlot.BACKGROUND)
+    ThemeSlot.DIALOG_GROUND -> themeColor(ThemeSlot.BACKGROUND)
+    ThemeSlot.DIALOG_FRAME -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.DIALOG_TITLE -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.DIALOG_TEXT -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.DIALOG_NOTE -> themeColor(ThemeSlot.SETTINGS_NOTE)
+    ThemeSlot.DIALOG_WARNING -> themeColor(ThemeSlot.MENU_WARNING)
+    ThemeSlot.SWITCH_ON -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.CHECKBOX -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.RADIO -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.MENU_FRAME -> themeColor(ThemeSlot.MENU_TEXT)
+    ThemeSlot.MENU_DIVIDER -> ColorUtils.blendARGB(themeColor(ThemeSlot.MENU_BACKGROUND), themeColor(ThemeSlot.MENU_TEXT), MENU_DIVIDER_BLEND)
+    ThemeSlot.LIST_TEXT -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.LIST_SECONDARY -> themeColor(ThemeSlot.TEXT_SECONDARY)
+    ThemeSlot.LIST_ICON -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.LIST_DIVIDER -> ColorUtils.blendARGB(themeColor(ThemeSlot.BACKGROUND), themeColor(ThemeSlot.PRIMARY), MENU_DIVIDER_BLEND)
+    ThemeSlot.LIST_SELECTION -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.FASTSCROLL_TEXT -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.FASTSCROLL_THUMB -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.FASTSCROLL_THUMB_TEXT -> themeColor(ThemeSlot.FASTSCROLL_THUMB).getContrastColor()
+    ThemeSlot.CONVERSATION_UNREAD_TEXT -> themeColor(ThemeSlot.CONVERSATION_UNREAD).getContrastColor()
+    ThemeSlot.UNDO_TEXT -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.UNDO_FRAME -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.UNDO_GROUND -> themeColor(ThemeSlot.BACKGROUND)
+    ThemeSlot.UNFILED_MARK -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.SWIPE_FILL -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.SWIPE_INK -> themeColor(ThemeSlot.SWIPE_FILL).getContrastColor()
+    ThemeSlot.HEADER_GROUND -> themeColor(ThemeSlot.BACKGROUND)
+    ThemeSlot.HEADER_FRAME -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.HEADER_NAME -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.HEADER_NUMBER -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.HEADER_ICON -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.AVATAR_HALO -> themeColor(ThemeSlot.BACKGROUND)
+    ThemeSlot.AVATAR_GLYPH -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.THREAD_FAILED -> themeColor(ThemeSlot.MENU_WARNING)
+    ThemeSlot.COMPOSE_BAND -> ColorUtils.blendARGB(themeColor(ThemeSlot.BACKGROUND), themeColor(ThemeSlot.PRIMARY), COMPOSE_BAND_BLEND)
+    ThemeSlot.COMPOSE_LINE -> ColorUtils.blendARGB(themeColor(ThemeSlot.BACKGROUND), themeColor(ThemeSlot.PRIMARY), MENU_DIVIDER_BLEND)
+    ThemeSlot.COMPOSE_FIELD_GROUND -> themeColor(ThemeSlot.BACKGROUND)
+    ThemeSlot.COMPOSE_FIELD_FRAME -> themeColor(ThemeSlot.COMPOSE_LINE)
+    ThemeSlot.COMPOSE_TEXT -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.COMPOSE_HINT -> themeColor(ThemeSlot.TEXT).adjustAlpha(SEARCH_HINT_ALPHA)
+    ThemeSlot.COMPOSE_ICON -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.COMPOSE_SEND -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.COMPOSE_COUNTER -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.ATTACH_GROUND -> themeColor(ThemeSlot.BACKGROUND)
+    ThemeSlot.ATTACH_LABEL -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.ATTACH_PREVIEW_GROUND -> themeColor(ThemeSlot.PRIMARY).darkenColor()
+    ThemeSlot.ATTACH_PREVIEW_TEXT -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.ATTACH_PREVIEW_ICON -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.SCHEDULED_GROUND -> themeColor(ThemeSlot.PRIMARY).darkenColor()
+    ThemeSlot.SCHEDULED_TEXT -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.SIM_CHOICE_TEXT -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.SIM_CHOICE_CURRENT -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.NEWCONV_LABEL -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.NEWCONV_CONFIRM -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.NEWCONV_NAME -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.NEWCONV_NUMBER -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.SELECTED_CHIP_GROUND -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.SELECTED_CHIP_TEXT -> themeColor(ThemeSlot.SELECTED_CHIP_GROUND).getContrastColor()
+    ThemeSlot.ROW_LABEL -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.ROW_VALUE -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.CHIP_TEXT -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.CHIP_FRAME -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.SECTION_DIVIDER -> ColorUtils.blendARGB(themeColor(ThemeSlot.BACKGROUND), themeColor(ThemeSlot.PRIMARY), MENU_DIVIDER_BLEND)
 }
 
 /**
@@ -266,21 +538,18 @@ fun Context.colorMenuTitles(menu: Menu) {
 fun Context.setThemeColor(slot: ThemeSlot, color: Int) {
     when (slot) {
         ThemeSlot.PRIMARY -> {
-            config.isSystemThemeEnabled = false
             config.primaryColor = color
         }
 
         ThemeSlot.BACKGROUND -> {
-            config.isSystemThemeEnabled = false
             config.backgroundColor = color
         }
 
         ThemeSlot.TEXT -> {
-            config.isSystemThemeEnabled = false
             config.textColor = color
         }
 
-        else -> config.setThemeOverride(slot.key, color)
+        else -> slot.uiRole?.let { setUiColor(it, color) } ?: config.setThemeOverride(slot.key, color)
     }
     syncFamilyLook()
 }
@@ -288,9 +557,10 @@ fun Context.setThemeColor(slot: ThemeSlot, color: Int) {
 /** Revert a slot to its default (palette for the editable foundation colors, inherited otherwise). */
 fun Context.resetThemeColor(slot: ThemeSlot) {
     when (slot) {
-        ThemeSlot.BACKGROUND -> setThemeColor(slot, PALETTE_BLACK)
-        ThemeSlot.PRIMARY, ThemeSlot.TEXT -> setThemeColor(slot, PALETTE_YELLOW)
-        else -> config.clearThemeOverride(slot.key)
+        ThemeSlot.BACKGROUND -> resetUiColor(UiRole.BACKGROUND)
+        ThemeSlot.PRIMARY -> resetUiColor(UiRole.ACCENT)
+        ThemeSlot.TEXT -> resetUiColor(UiRole.TEXT)
+        else -> slot.uiRole?.let { resetUiColor(it) } ?: config.clearThemeOverride(slot.key)
     }
     syncFamilyLook()
 }
@@ -303,8 +573,6 @@ fun Context.resetThemeColor(slot: ThemeSlot) {
  */
 fun Context.syncFamilyLook() {
     config.pillDialogButtons = true
-    config.dialogWarningColor = themeColor(ThemeSlot.MENU_WARNING)
-    config.switchOffColor = themeColor(ThemeSlot.SWITCH_OFF)
 }
 
 /** One-time seed of the default black/yellow look across the whole app (via the stock colors). */
@@ -312,8 +580,6 @@ fun Context.seedBlackYellowThemeIfNeeded() {
     if (config.themeV1Seeded) {
         return
     }
-
-    config.isSystemThemeEnabled = false
     config.backgroundColor = PALETTE_BLACK
     config.textColor = PALETTE_YELLOW
     config.primaryColor = PALETTE_YELLOW
@@ -331,7 +597,6 @@ fun Context.seedDialogStyleIfNeeded() {
         return
     }
 
-    config.dialogBorderColor = PALETTE_YELLOW
     config.dialogBorderWidth = DIALOG_BORDER_WIDTH_DEFAULT
     config.dialogStyleSeeded = true
 }
@@ -343,7 +608,7 @@ fun Context.seedDialogStyleIfNeeded() {
 fun Dialog.applyDialogBorder() {
     val background = GradientDrawable().apply {
         cornerRadius = DIALOG_CORNER_DP * context.resources.displayMetrics.density
-        setColor(context.getProperBackgroundColor())
+        setColor(context.themeColor(ThemeSlot.DIALOG_GROUND))
     }
     window?.setBackgroundDrawable(context.withDialogBorder(background))
 }
