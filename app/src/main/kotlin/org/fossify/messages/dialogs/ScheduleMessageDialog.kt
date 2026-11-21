@@ -24,6 +24,11 @@ import org.fossify.messages.extensions.config
 import org.fossify.messages.extensions.roundToClosestMultipleOf
 import org.joda.time.DateTime
 import java.util.Calendar
+import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.themeColor
+import android.widget.FrameLayout
+import org.fossify.commons.views.FamilyDatePicker
+import org.fossify.commons.views.FamilyTimePicker
 
 class ScheduleMessageDialog(
     private val activity: BaseSimpleActivity,
@@ -31,7 +36,7 @@ class ScheduleMessageDialog(
     private val callback: (dateTime: DateTime?) -> Unit
 ) {
     private val binding = ScheduleMessageDialogBinding.inflate(activity.layoutInflater)
-    private val textColor = activity.getProperTextColor()
+    private val textColor = activity.themeColor(ThemeSlot.DIALOG_TEXT)
 
     private var previewDialog: AlertDialog? = null
     private var previewShown = false
@@ -100,69 +105,37 @@ class ScheduleMessageDialog(
         val monthOfYear = dateTime?.monthOfYear?.minus(1) ?: calendar.get(Calendar.MONTH)
         val dayOfMonth = dateTime?.dayOfMonth ?: calendar.get(Calendar.DAY_OF_MONTH)
 
-        val dateSetListener = OnDateSetListener { _, y, m, d -> dateSet(y, m, d) }
-        DatePickerDialog(
-            activity,
-            activity.getDatePickerDialogTheme(),
-            dateSetListener,
-            year,
-            monthOfYear,
-            dayOfMonth
-        ).apply {
-            datePicker.minDate = System.currentTimeMillis()
-            show()
-            applyDialogBorder()
-            getButton(AlertDialog.BUTTON_NEGATIVE).apply {
-                text = activity.getString(org.fossify.commons.R.string.cancel)
-                setOnClickListener {
-                    dismiss()
-                }
-            }
+        // the commons' own month grid: every part of it follows a colour role, which the platform's cannot
+        val picker = FamilyDatePicker(activity).apply { updateDate(year, monthOfYear, dayOfMonth) }
+        val pad = activity.resources.getDimensionPixelSize(org.fossify.commons.R.dimen.activity_margin)
+        val holder = FrameLayout(activity).apply {
+            setPadding(pad, pad, pad, 0)
+            addView(picker)
         }
+        activity.getAlertDialogBuilder()
+            .setPositiveButton(org.fossify.commons.R.string.ok) { _, _ -> dateSet(picker.year, picker.month, picker.dayOfMonth) }
+            .setNegativeButton(org.fossify.commons.R.string.cancel, null)
+            .apply { activity.setupDialogStuff(holder, this) }
     }
 
     private fun showTimePicker() {
         val hourOfDay = dateTime?.hourOfDay ?: getNextHour()
         val minute = dateTime?.minuteOfHour ?: getNextMinute()
 
-        if (activity.isDynamicTheme()) {
-            val timeFormat = if (DateFormat.is24HourFormat(activity)) {
-                TimeFormat.CLOCK_24H
-            } else {
-                TimeFormat.CLOCK_12H
-            }
-
-            val timePicker = MaterialTimePicker.Builder()
-                .setTimeFormat(timeFormat)
-                .setHour(hourOfDay)
-                .setMinute(minute)
-                .build()
-
-            timePicker.addOnPositiveButtonClickListener {
-                timeSet(timePicker.hour, timePicker.minute)
-            }
-
-            timePicker.show(activity.supportFragmentManager, "")
-        } else {
-            val timeSetListener = OnTimeSetListener { _, hours, minutes -> timeSet(hours, minutes) }
-            TimePickerDialog(
-                activity,
-                activity.getDatePickerDialogTheme(),
-                timeSetListener,
-                hourOfDay,
-                minute,
-                DateFormat.is24HourFormat(activity)
-            ).apply {
-                show()
-                applyDialogBorder()
-                getButton(AlertDialog.BUTTON_NEGATIVE).apply {
-                    text = activity.getString(org.fossify.commons.R.string.cancel)
-                    setOnClickListener {
-                        dismiss()
-                    }
-                }
-            }
+        // the commons' own hour and minute columns: every part follows a colour role, which the platform's clock cannot
+        val picker = FamilyTimePicker(activity).apply {
+            is24HourView = DateFormat.is24HourFormat(activity)
+            setTime(hourOfDay, minute)
         }
+        val pad = activity.resources.getDimensionPixelSize(org.fossify.commons.R.dimen.activity_margin)
+        val holder = FrameLayout(activity).apply {
+            setPadding(pad, pad, pad, 0)
+            addView(picker)
+        }
+        activity.getAlertDialogBuilder()
+            .setPositiveButton(org.fossify.commons.R.string.ok) { _, _ -> timeSet(picker.hour, picker.minute) }
+            .setNegativeButton(org.fossify.commons.R.string.cancel, null)
+            .apply { activity.setupDialogStuff(holder, this) }
     }
 
     private fun dateSet(year: Int, monthOfYear: Int, dayOfMonth: Int) {

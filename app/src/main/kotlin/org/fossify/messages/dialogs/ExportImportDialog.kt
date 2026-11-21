@@ -21,7 +21,6 @@ import org.fossify.commons.helpers.ensureBackgroundThread
 import org.fossify.messages.R
 import org.fossify.messages.extensions.ThemeSlot
 import org.fossify.messages.extensions.themeColor
-import org.fossify.messages.helpers.EXIM_WARN_COLOR
 import org.fossify.messages.helpers.SettingsEximport
 
 private const val RIPPLE_ALPHA = 0x33000000
@@ -51,9 +50,9 @@ class ExportImportDialog(
     private val onPickImportFile: () -> Unit,
     private val onChainClosed: () -> Unit,
 ) {
-    private val accent = activity.themeColor(ThemeSlot.PRIMARY)
-    private val fill = activity.themeColor(ThemeSlot.BACKGROUND)
-    private val textColor = activity.themeColor(ThemeSlot.TEXT)
+    private val accent = activity.themeColor(ThemeSlot.DIALOG_FRAME)
+    private val fill = activity.themeColor(ThemeSlot.DIALOG_GROUND)
+    private val textColor = activity.themeColor(ThemeSlot.DIALOG_TEXT)
     private val density = activity.resources.displayMetrics.density
 
     private val checks = LinkedHashMap<SettingsEximport.Category, CheckBox>()
@@ -92,12 +91,12 @@ class ExportImportDialog(
         }
 
         content.addView(
-            text(activity.getString(R.string.eim_title), 18f, accent, bold = true).apply {
+            text(activity.getString(R.string.eim_title), 18f, activity.themeColor(ThemeSlot.DIALOG_TITLE), bold = true).apply {
                 textAlignment = TextView.TEXT_ALIGNMENT_CENTER
             }
         )
         content.addView(
-            text(activity.getString(R.string.eim_desc), 13f, activity.themeColor(ThemeSlot.SETTINGS_NOTE)).apply {
+            text(activity.getString(R.string.eim_desc), 13f, activity.themeColor(ThemeSlot.DIALOG_NOTE)).apply {
                 setPadding(0, dp(6), 0, dp(10))
             }
         )
@@ -114,7 +113,7 @@ class ExportImportDialog(
             }
             setOnClickListener { onPickDirectory() }
         }
-        dirBox.addView(text(activity.getString(R.string.eim_dir), 12f, accent))
+        dirBox.addView(text(activity.getString(R.string.eim_dir), 12f, activity.themeColor(ThemeSlot.HEADING)))
         dirValue = text("", 15f, textColor, bold = true)
         dirBox.addView(dirValue)
         content.addView(dirBox)
@@ -145,7 +144,7 @@ class ExportImportDialog(
         selectAll?.isChecked = checks.values.all { it.isChecked }
 
         // live done/total counter while an export or import runs (messages can be thousands)
-        progressLine = text("", 15f, accent, bold = true).apply {
+        progressLine = text("", 15f, activity.themeColor(ThemeSlot.PROGRESS), bold = true).apply {
             visibility = android.view.View.GONE
             setPadding(0, dp(8), 0, 0)
         }
@@ -167,7 +166,7 @@ class ExportImportDialog(
         isChecked = checked
         textSize = 15f
         setTextColor(textColor)
-        buttonTintList = ColorStateList.valueOf(accent)
+        buttonTintList = ColorStateList.valueOf(activity.themeColor(ThemeSlot.CHECKBOX))
         if (bold) setTypeface(typeface, Typeface.BOLD)
     }
 
@@ -176,7 +175,7 @@ class ExportImportDialog(
             topMargin = dp(10)
             bottomMargin = dp(4)
         }
-        setBackgroundColor(accent)
+        setBackgroundColor(activity.themeColor(ThemeSlot.LIST_DIVIDER))
     }
 
     // black rounded window with an accent border (Arcanechat's dialog chrome)
@@ -198,15 +197,15 @@ class ExportImportDialog(
         buttons.forEach { which ->
             val button: Button = dialog.getButton(which) ?: return@forEach
             val pill = GradientDrawable().apply {
-                setColor(fill)
+                setColor(activity.themeColor(ThemeSlot.BUTTON_GROUND))
                 cornerRadius = PILL_CORNER_DP * density
-                setStroke((PILL_STROKE_DP * density).toInt(), accent)
+                setStroke((PILL_STROKE_DP * density).toInt(), activity.themeColor(ThemeSlot.BUTTON_FRAME))
             }
             val ripple = RippleDrawable(
-                ColorStateList.valueOf((accent and RGB_MASK) or RIPPLE_ALPHA), pill, null
+                ColorStateList.valueOf((activity.themeColor(ThemeSlot.BUTTON_FRAME) and RGB_MASK) or RIPPLE_ALPHA), pill, null
             )
             button.background = ripple
-            button.setTextColor(accent)
+            button.setTextColor(activity.themeColor(ThemeSlot.BUTTON_TEXT))
             button.setPadding(dp(20), dp(6), dp(20), dp(6))
             (button.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
                 it.marginStart = dp(8)
@@ -219,10 +218,10 @@ class ExportImportDialog(
         val name = SettingsEximport.exportDir(activity)?.name
             ?: SettingsEximport.getDirUri(activity)?.lastPathSegment
         dirValue?.text = name ?: activity.getString(R.string.eim_dir_unset)
-        dirValue?.setTextColor(if (name == null) EXIM_WARN_COLOR else textColor)
+        dirValue?.setTextColor(if (name == null) activity.themeColor(ThemeSlot.DIALOG_WARNING) else textColor)
         val (message, isWarning) = SettingsEximport.lastExportStatus(activity)
         statusLine?.text = message
-        statusLine?.setTextColor(if (isWarning) EXIM_WARN_COLOR else textColor)
+        statusLine?.setTextColor(if (isWarning) activity.themeColor(ThemeSlot.DIALOG_WARNING) else textColor)
         statusLine?.alpha = if (isWarning) 1f else STATUS_ALPHA
     }
 
@@ -416,7 +415,7 @@ class ExportImportDialog(
         styleWindow(info)
         stylePills(info)
         info.findViewById<TextView>(android.R.id.message)?.setTextColor(textColor)
-        info.findViewById<TextView>(androidx.appcompat.R.id.alertTitle)?.setTextColor(accent)
+        info.findViewById<TextView>(androidx.appcompat.R.id.alertTitle)?.setTextColor(activity.themeColor(ThemeSlot.DIALOG_TITLE))
     }
 
     private fun closeChain() {

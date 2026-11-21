@@ -28,6 +28,11 @@ import org.fossify.messages.helpers.BlockedKeywordsExporter
 import org.fossify.messages.helpers.BlockedKeywordsImporter
 import java.io.FileOutputStream
 import java.io.OutputStream
+import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.themeColor
+import org.fossify.commons.extensions.rippleDrawable
+
+private const val PLACEHOLDER_RIPPLE_RADIUS_DP = 8f
 
 class ManageBlockedKeywordsActivity : SimpleActivity(), RefreshRecyclerViewListener {
 
@@ -48,7 +53,8 @@ class ManageBlockedKeywordsActivity : SimpleActivity(), RefreshRecyclerViewListe
 
         binding.manageBlockedKeywordsPlaceholder2.apply {
             underlineText()
-            setTextColor(getProperPrimaryColor())
+            background = rippleDrawable(PLACEHOLDER_RIPPLE_RADIUS_DP)
+            setTextColor(themeColor(ThemeSlot.LINK))
             setOnClickListener {
                 addOrEditBlockedKeyword()
             }

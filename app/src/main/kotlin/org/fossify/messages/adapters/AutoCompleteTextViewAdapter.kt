@@ -13,6 +13,8 @@ import org.fossify.commons.extensions.normalizeString
 import org.fossify.commons.models.SimpleContact
 import org.fossify.messages.activities.SimpleActivity
 import org.fossify.messages.extensions.loadContactPhotoOrUnknown
+import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.themeColor
 
 class AutoCompleteTextViewAdapter(val activity: SimpleActivity, val contacts: ArrayList<SimpleContact>) : ArrayAdapter<SimpleContact>(activity, 0, contacts) {
     var resultList = ArrayList<SimpleContact>()
@@ -32,10 +34,10 @@ class AutoCompleteTextViewAdapter(val activity: SimpleActivity, val contacts: Ar
                 isFocusable = false
             }
 
-            val backgroundColor = activity.getProperBackgroundColor()
+            val backgroundColor = activity.themeColor(ThemeSlot.DIALOG_GROUND)
             itemContactFrame.setBackgroundColor(backgroundColor.darkenColor())
-            itemContactName.setTextColor(backgroundColor.getContrastColor())
-            itemContactNumber.setTextColor(backgroundColor.getContrastColor())
+            itemContactName.setTextColor(activity.themeColor(ThemeSlot.NEWCONV_NAME))
+            itemContactNumber.setTextColor(activity.themeColor(ThemeSlot.NEWCONV_NUMBER))
 
             if (contact != null) {
                 itemContactName.text = contact.name

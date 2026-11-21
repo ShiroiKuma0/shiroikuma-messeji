@@ -21,6 +21,8 @@ import org.fossify.messages.activities.SimpleActivity
 import org.fossify.messages.databinding.DialogExportMessagesBinding
 import org.fossify.messages.extensions.config
 import org.fossify.messages.helpers.MessagesReader
+import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.themeColor
 
 class ExportMessagesDialog(
     private val activity: SimpleActivity,
@@ -76,7 +78,7 @@ class ExportMessagesDialog(
                 it.alpha = MEDIUM_ALPHA
             }
 
-            binding.exportProgress.setIndicatorColor(activity.getProperPrimaryColor())
+            binding.exportProgress.setIndicatorColor(activity.themeColor(ThemeSlot.PROGRESS))
             binding.exportProgress.post {
                 binding.exportProgress.show()
             }

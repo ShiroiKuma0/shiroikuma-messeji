@@ -30,8 +30,6 @@
             android:layout_width="@dimen/medium_icon_size"
             android:layout_height="@dimen/medium_icon_size"
             android:layout_gravity="center"
-            android:background="@drawable/circle_background"
-            android:backgroundTint="@color/colorPrimary"
             android:padding="@dimen/medium_margin"
             android:src="@drawable/ic_image_vector" />
 
@@ -43,7 +41,6 @@
             android:layout_marginTop="@dimen/medium_margin"
             android:text="@string/choose_photo"
             android:textAlignment="center"
-            android:textColor="@color/default_text_color"
             android:textSize="@dimen/normal_text_size" />
     </LinearLayout>
 
@@ -62,8 +59,6 @@
             android:layout_width="@dimen/medium_icon_size"
             android:layout_height="@dimen/medium_icon_size"
             android:layout_gravity="center"
-            android:background="@drawable/circle_background"
-            android:backgroundTint="@color/colorPrimary"
             android:padding="@dimen/medium_margin"
             android:src="@drawable/ic_video_camera_vector" />
 
@@ -75,7 +70,6 @@
             android:layout_marginTop="@dimen/medium_margin"
             android:text="@string/choose_video"
             android:textAlignment="center"
-            android:textColor="@color/default_text_color"
             android:textSize="@dimen/normal_text_size" />
     </LinearLayout>
 
@@ -94,8 +88,6 @@
             android:layout_width="@dimen/medium_icon_size"
             android:layout_height="@dimen/medium_icon_size"
             android:layout_gravity="center"
-            android:background="@drawable/circle_background"
-            android:backgroundTint="@color/colorPrimary"
             android:padding="@dimen/medium_margin"
             android:src="@drawable/ic_camera_vector" />
 
@@ -107,7 +99,6 @@
             android:layout_marginTop="@dimen/medium_margin"
             android:text="@string/take_photo"
             android:textAlignment="center"
-            android:textColor="@color/default_text_color"
             android:textSize="@dimen/normal_text_size" />
     </LinearLayout>
 
@@ -126,8 +117,6 @@
             android:layout_width="@dimen/medium_icon_size"
             android:layout_height="@dimen/medium_icon_size"
             android:layout_gravity="center"
-            android:background="@drawable/circle_background"
-            android:backgroundTint="@color/colorPrimary"
             android:padding="@dimen/medium_margin"
             android:src="@drawable/ic_videocam_vector" />
 
@@ -139,7 +128,6 @@
             android:layout_marginTop="@dimen/medium_margin"
             android:text="@string/record_video"
             android:textAlignment="center"
-            android:textColor="@color/default_text_color"
             android:textSize="@dimen/normal_text_size" />
     </LinearLayout>
 
@@ -158,8 +146,6 @@
             android:layout_width="@dimen/medium_icon_size"
             android:layout_height="@dimen/medium_icon_size"
             android:layout_gravity="center"
-            android:background="@drawable/circle_background"
-            android:backgroundTint="@color/colorPrimary"
             android:padding="@dimen/medium_margin"
             android:src="@drawable/ic_microphone_vector" />
 
@@ -171,7 +157,6 @@
             android:layout_marginTop="@dimen/medium_margin"
             android:text="@string/record_audio"
             android:textAlignment="center"
-            android:textColor="@color/default_text_color"
             android:textSize="@dimen/normal_text_size" />
     </LinearLayout>
 
@@ -183,16 +168,13 @@
         android:minHeight="@dimen/attachment_button_height"
         android:orientation="vertical"
         android:paddingHorizontal="@dimen/medium_margin"
-        android:paddingVertical="@dimen/medium_margin"
-        android:textColor="@color/default_text_color">
+        android:paddingVertical="@dimen/medium_margin">
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/pick_file_icon"
             android:layout_width="@dimen/medium_icon_size"
             android:layout_height="@dimen/medium_icon_size"
             android:layout_gravity="center"
-            android:background="@drawable/circle_background"
-            android:backgroundTint="@color/colorPrimary"
             android:padding="@dimen/medium_margin"
             android:src="@drawable/ic_document_vector" />
 
@@ -204,7 +186,6 @@
             android:layout_marginTop="@dimen/medium_margin"
             android:text="@string/choose_file"
             android:textAlignment="center"
-            android:textColor="@color/default_text_color"
             android:textSize="@dimen/normal_text_size" />
     </LinearLayout>
 
@@ -216,16 +197,13 @@
         android:minHeight="@dimen/attachment_button_height"
         android:orientation="vertical"
         android:paddingHorizontal="@dimen/medium_margin"
-        android:paddingVertical="@dimen/medium_margin"
-        android:textColor="@color/default_text_color">
+        android:paddingVertical="@dimen/medium_margin">
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/pick_contact_icon"
             android:layout_width="@dimen/medium_icon_size"
             android:layout_height="@dimen/medium_icon_size"
             android:layout_gravity="center"
-            android:background="@drawable/circle_background"
-            android:backgroundTint="@color/colorPrimary"
             android:padding="@dimen/medium_margin"
             android:src="@drawable/ic_person_vector" />
 
@@ -237,7 +215,6 @@
             android:layout_marginTop="@dimen/medium_margin"
             android:text="@string/choose_contact"
             android:textAlignment="center"
-            android:textColor="@color/default_text_color"
             android:textSize="@dimen/normal_text_size" />
     </LinearLayout>
 
@@ -256,8 +233,6 @@
             android:layout_width="@dimen/medium_icon_size"
             android:layout_height="@dimen/medium_icon_size"
             android:layout_gravity="center"
-            android:background="@drawable/circle_background"
-            android:backgroundTint="@color/colorPrimary"
             android:padding="@dimen/medium_margin"
             android:src="@drawable/ic_clock_vector" />
 
@@ -269,7 +244,6 @@
             android:layout_marginTop="@dimen/medium_margin"
             android:text="@string/schedule_message"
             android:textAlignment="center"
-            android:textColor="@color/default_text_color"
             android:textSize="@dimen/normal_text_size" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

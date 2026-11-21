@@ -30,8 +30,9 @@ class FontPickerDialog(
     private val binding = DialogFontPickerBinding.inflate(activity.layoutInflater)
 
     init {
-        val textColor = activity.getProperTextColor()
-        val primaryColor = activity.getProperPrimaryColor()
+        val textColor = activity.themeColor(ThemeSlot.DIALOG_TEXT)
+        val buttonText = activity.themeColor(ThemeSlot.BUTTON_TEXT)
+        val buttonFrame = activity.themeColor(ThemeSlot.BUTTON_FRAME)
 
         activity.availableFontOptions().forEach { option ->
             val row = ItemFontOptionBinding.inflate(activity.layoutInflater, binding.fontPickerHolder, false)
@@ -47,11 +48,11 @@ class FontPickerDialog(
 
         val addRow = ItemFontOptionBinding.inflate(activity.layoutInflater, binding.fontPickerHolder, false)
         addRow.fontOptionLabel.text = activity.getString(R.string.theme_add_font)
-        addRow.fontOptionLabel.setTextColor(primaryColor)
+        addRow.fontOptionLabel.setTextColor(buttonText)
         // the one action in a list of choices: an outlined pill with its icon, in the import/share colour
         addRow.fontOptionLabel.apply {
             val density = resources.displayMetrics.density
-            background = activity.pillBackground(primaryColor)
+            background = activity.pillBackground(buttonFrame)
             val icon = resources.getColoredDrawableWithColor(
                 org.fossify.commons.R.drawable.ic_plus_vector, activity.themeColor(ThemeSlot.MENU_ICON_SHARE)
             )

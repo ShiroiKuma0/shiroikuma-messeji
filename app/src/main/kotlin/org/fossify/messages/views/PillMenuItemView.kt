@@ -27,6 +27,8 @@ import org.fossify.messages.extensions.pillBackground
 import org.fossify.messages.helpers.MenuPills
 import kotlin.math.roundToInt
 import org.fossify.commons.R as CommonsR
+import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.themeColor
 
 /**
  * The row of every AppCompat popup menu — the toolbar and action-bar overflows, PopupMenu, submenus.
@@ -110,6 +112,8 @@ class PillMenuItemView @JvmOverloads constructor(
         if (!item.isEnabled && !header) {
             color = ColorUtils.setAlphaComponent(color, MenuPills.DISABLED_ALPHA)
         }
+        // the frame has a role of its own; a destructive or disabled row lends it the row's colour
+        val frame = if (destructive || !item.isEnabled) color else context.themeColor(ThemeSlot.MENU_FRAME)
 
         (content.layoutParams as MarginLayoutParams).let { params ->
             val side = dp(MenuPills.SIDE_MARGIN_DP)
@@ -119,7 +123,7 @@ class PillMenuItemView @JvmOverloads constructor(
             params.setMargins(side, vertical, side, vertical)
             content.layoutParams = params
         }
-        content.background = if (pill) context.pillBackground(color) else null
+        content.background = if (pill) context.pillBackground(frame) else null
         // the switch of a checkable row ends where the pills end
         content.setPaddingRelative(padStart, padTop, if (checkable) 0 else padEnd, padBottom)
 
@@ -156,7 +160,7 @@ class PillMenuItemView @JvmOverloads constructor(
             return
         }
         box.buttonDrawable = SwitchDrawable(
-            on = MenuPills.accent(context),
+            on = context.themeColor(ThemeSlot.SWITCH_ON),
             off = MenuPills.switchOff(context),
             width = dp(SWITCH_WIDTH_DP),
             height = dp(SWITCH_HEIGHT_DP),

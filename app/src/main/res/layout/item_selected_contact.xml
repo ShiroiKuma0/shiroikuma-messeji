@@ -3,8 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/selected_contact_holder"
     android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:background="@drawable/item_selected_contact_background">
+    android:layout_height="wrap_content">
 
     <TextView
         android:id="@+id/selected_contact_name"
@@ -13,7 +12,6 @@
         android:paddingStart="@dimen/normal_margin"
         android:paddingTop="@dimen/normal_margin"
         android:paddingBottom="@dimen/normal_margin"
-        android:textColor="@color/md_grey_white"
         android:textSize="@dimen/bigger_text_size"
         tools:text="John" />
 

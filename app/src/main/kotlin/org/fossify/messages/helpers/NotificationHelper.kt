@@ -26,6 +26,8 @@ import org.fossify.messages.messaging.isShortCodeWithLetters
 import org.fossify.messages.receivers.DeleteSmsReceiver
 import org.fossify.messages.receivers.DirectReplyReceiver
 import org.fossify.messages.receivers.MarkAsReadReceiver
+import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.themeColor
 
 class NotificationHelper(private val context: Context) {
 
@@ -144,7 +146,7 @@ class NotificationHelper(private val context: Context) {
                 }
             }
 
-            color = context.getProperPrimaryColor()
+            color = context.themeColor(ThemeSlot.NOTIFICATION_ACCENT)
             setSmallIcon(R.drawable.ic_messenger)
             setContentIntent(contentPendingIntent)
             priority = NotificationCompat.PRIORITY_MAX
@@ -217,7 +219,7 @@ class NotificationHelper(private val context: Context) {
         val builder = NotificationCompat.Builder(context, notificationChannelId)
             .setContentTitle(context.getString(R.string.message_not_sent_short))
             .setContentText(summaryText)
-            .setColor(context.getProperPrimaryColor())
+            .setColor(context.themeColor(ThemeSlot.NOTIFICATION_ACCENT))
             .setSmallIcon(R.drawable.ic_messenger)
             .setLargeIcon(largeIcon)
             .setStyle(NotificationCompat.BigTextStyle().bigText(summaryText))

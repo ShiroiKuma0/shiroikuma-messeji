@@ -49,6 +49,7 @@ import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import org.fossify.commons.helpers.UI_ROLE_PREFIX
 
 /**
  * Progress as real counts, never a percentage — [current]/[total] of [unit], plus the ready-made
@@ -151,7 +152,7 @@ object SettingsEximport {
         key in EXCLUDED_KEYS -> null
         key.endsWith("tree_uri_2") -> null
         FONT_PREFIXES.any { key.startsWith(it) } -> Category.FONTS
-        key in THEME_KEYS || key.startsWith("theme_") -> Category.THEME
+        key in THEME_KEYS || key.startsWith("theme_") || key.startsWith(UI_ROLE_PREFIX) -> Category.THEME
         key in FORMAT_KEYS -> Category.FORMATS
         key in CONVERSATION_KEYS || key.startsWith(USE_SIM_ID_PREFIX) -> Category.CONVERSATIONS
         key == BLOCKED_KEYWORDS -> Category.BLOCKED

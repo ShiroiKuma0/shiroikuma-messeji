@@ -17,6 +17,9 @@ import org.fossify.messages.databinding.ItemVcardContactBinding
 import org.fossify.messages.databinding.ItemVcardContactPropertyBinding
 import org.fossify.messages.models.VCardPropertyWrapper
 import org.fossify.messages.models.VCardWrapper
+import org.fossify.messages.extensions.ThemeSlot
+import org.fossify.messages.extensions.themeColor
+import org.fossify.commons.extensions.rowSelectorDrawable
 
 private const val TYPE_VCARD_CONTACT = 1
 private const val TYPE_VCARD_CONTACT_PROPERTY = 2
@@ -26,7 +29,7 @@ class VCardViewerAdapter(
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private var fontSize = activity.getTextSize()
-    private var textColor = activity.getProperTextColor()
+    private var textColor = activity.themeColor(ThemeSlot.LIST_TEXT)
     private val layoutInflater = activity.layoutInflater
 
     override fun getItemCount() = items.size
@@ -42,11 +45,11 @@ class VCardViewerAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
             TYPE_VCARD_CONTACT -> VCardContactViewHolder(
-                binding = ItemVcardContactBinding.inflate(layoutInflater, parent, false)
+                binding = ItemVcardContactBinding.inflate(layoutInflater, parent, false).apply { root.foreground = root.context.rowSelectorDrawable() }
             )
 
             TYPE_VCARD_CONTACT_PROPERTY -> VCardPropertyViewHolder(
-                binding = ItemVcardContactPropertyBinding.inflate(layoutInflater, parent, false)
+                binding = ItemVcardContactPropertyBinding.inflate(layoutInflater, parent, false).apply { root.foreground = root.context.rowSelectorDrawable() }
             )
 
             else -> throw IllegalArgumentException("Unexpected type: $viewType")

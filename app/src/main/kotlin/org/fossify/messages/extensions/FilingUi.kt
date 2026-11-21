@@ -62,7 +62,7 @@ fun Activity.showThemedPopupMenu(anchor: View, entries: List<MenuEntry>) {
         item.overflowMenuIcon.imageTintList = ColorStateList.valueOf(if (entry.destructive) warning else themeColor(entry.role))
         item.overflowMenuChevron.beGoneIf(!entry.opens)
         item.overflowMenuChevron.imageTintList = ColorStateList.valueOf(color)
-        item.root.background = pillBackground(color)
+        item.root.background = pillBackground(if (entry.destructive) warning else themeColor(ThemeSlot.MENU_FRAME))
         item.root.setOnClickListener {
             popup.dismiss()
             entry.action()

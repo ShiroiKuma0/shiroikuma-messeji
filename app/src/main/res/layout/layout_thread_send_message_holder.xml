@@ -14,7 +14,6 @@
         android:layout_marginStart="@dimen/normal_margin"
         android:layout_marginTop="@dimen/medium_margin"
         android:layout_marginEnd="@dimen/medium_margin"
-        android:background="@drawable/section_holder_stroke"
         android:orientation="horizontal"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/thread_attachments_recyclerview"
@@ -43,7 +42,6 @@
             android:layout_gravity="start"
             android:layout_toStartOf="@+id/discard_scheduled_message"
             android:layout_toEndOf="@+id/scheduled_message_icon"
-            android:background="@drawable/ripple_background"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center_vertical"
@@ -108,7 +106,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/small_margin"
         android:layout_marginEnd="@dimen/small_margin"
-        android:background="@android:color/transparent"
+        android:background="@null"
         android:gravity="center_vertical"
         android:hint="@string/type_a_message"
         android:inputType="textCapSentences|textMultiLine"
@@ -151,7 +149,6 @@
         app:layout_constraintStart_toStartOf="@id/thread_select_sim_icon"
         app:layout_constraintTop_toTopOf="@id/thread_select_sim_icon"
         tools:text="1"
-        tools:textColor="@color/dark_grey"
         tools:visibility="visible" />
 
     <org.fossify.commons.views.MyTextView
@@ -197,7 +194,6 @@
         android:layout_height="@dimen/divider_height"
         android:layout_alignParentStart="true"
         android:layout_alignParentEnd="true"
-        android:background="@color/divider_grey"
         android:importantForAccessibility="no"
         app:layout_constraintBottom_toTopOf="@id/attachment_picker_holder" />
 

@@ -35,3 +35,15 @@ fun Context.pillBackground(color: Int, main: Boolean = false): Drawable {
     val ripple = ColorUtils.setAlphaComponent(color, (Color.alpha(color) * PILL_RIPPLE_ALPHA).roundToInt())
     return RippleDrawable(ColorStateList.valueOf(ripple), frame, mask)
 }
+
+private const val FRAME_BOX_RADIUS_DP = 8f
+
+/** A thin rounded frame in [color] with nothing inside: the box round an attachment or a banner. */
+fun Context.frameBox(color: Int): Drawable {
+    val density = resources.displayMetrics.density
+    return GradientDrawable().apply {
+        cornerRadius = FRAME_BOX_RADIUS_DP * density
+        setColor(Color.TRANSPARENT)
+        setStroke(density.roundToInt().coerceAtLeast(1), color)
+    }
+}

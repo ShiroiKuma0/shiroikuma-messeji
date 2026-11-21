@@ -17,7 +17,6 @@ object MenuPills {
     const val TOGGLE_HEIGHT_DP = 36 // a checkable row: the switch and little more
     const val PILL_MARGIN_DP = 3 // above and below a pill
     const val SIDE_MARGIN_DP = 8 // between a pill and the menu's edge
-    private const val DIVIDER_BLEND = 0.7f
 
     private val icons = mapOf(
         R.id.empty_archive to CommonsR.drawable.ic_delete_vector,
@@ -87,9 +86,7 @@ object MenuPills {
     fun warning(context: Context) = context.themeColor(ThemeSlot.MENU_WARNING)
 
     /** The line between two groups: an opaque darker accent, quieter than a pill frame. */
-    fun divider(context: Context) = ColorUtils.blendARGB(
-        context.themeColor(ThemeSlot.MENU_BACKGROUND), accent(context), DIVIDER_BLEND
-    )
+    fun divider(context: Context) = context.themeColor(ThemeSlot.MENU_DIVIDER)
 
     /** A switch that is off: its own role, an opaque darker accent by default, never a faded one. */
     fun switchOff(context: Context) = context.themeColor(ThemeSlot.SWITCH_OFF)

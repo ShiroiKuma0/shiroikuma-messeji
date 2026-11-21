@@ -173,13 +173,72 @@ fun Context.setOwnRoute(number: String, route: String) {
     config.setRinAccount(number, if (rin) route.removePrefix(ROUTE_RIN_PREFIX).toIntOrNull() ?: RIN_ACCOUNT_SELECTED else RIN_ACCOUNT_SELECTED)
 }
 
+// ---- The route door of 白い熊 連絡先 (from 1.6.0+133): one route per number, kept there ----
+//
+// ContentResolver.call() on its contacts provider: "get_route" (arg = the number) answers
+// { result: "OK", route }, "set_route" (extras { number, route }) stores it; "off" is no route. An
+// older 連絡先 answers null, a missing one throws: both mean "no door", and the routes kept in this
+// app's own settings are used instead. Crosses processes: never on the main thread.
+
+private const val DOOR_GET = "get_route"
+private const val DOOR_SET = "set_route"
+private const val DOOR_ROUTE = "route"
+private const val DOOR_NUMBER = "number"
+
+@Suppress("TooGenericExceptionCaught", "SwallowedException") // 連絡先 missing or older is an answer
+private fun Context.doorCall(method: String, arg: String?, extras: Bundle?): Bundle? {
+    RENRAKUSAKI_AUTHORITIES.forEach { authority ->
+        val answer = try {
+            contentResolver.call(Uri.parse("content://$authority"), method, arg, extras)
+        } catch (ignored: Exception) {
+            null
+        }
+        if (answer?.getString(RESULT_KEY) == RESULT_OK) return answer
+    }
+    return null
+}
+
+/** The route 連絡先 holds for [number] ([ROUTE_OFF] = none), or null when it has no route door. */
+private fun Context.doorRouteOf(number: String): String? =
+    doorCall(DOOR_GET, number, null)?.let { it.getString(DOOR_ROUTE) ?: ROUTE_OFF }
+
+/** Stores [route] for [number] in 連絡先; false when it has no route door or refused. */
+private fun Context.doorSetRoute(number: String, route: String): Boolean {
+    val extras = Bundle().apply {
+        putString(DOOR_NUMBER, number)
+        putString(DOOR_ROUTE, route)
+    }
+    return doorCall(DOOR_SET, null, extras) != null
+}
+
 /**
- * The route a tap on the call button uses for [number]: the one chosen here; else the SIM 白い熊 連絡先
- * holds for the number (its door, the one 電話 reads too); else the UI page's default. A 臨 route
- * without Rindenwa installed counts as not set. Asks another app: never on the main thread.
+ * The route chosen for [number] itself, [ROUTE_OFF] when none: the one 連絡先 holds, where it has the
+ * route door; else the one kept here. A route set here before the door existed is handed to 連絡先
+ * the first time the number is asked for and it has none, and is then dropped here.
+ */
+fun Context.contactRouteOf(number: String): String {
+    val own = ownRouteOf(number)
+    val shared = doorRouteOf(number) ?: return own
+    if (shared == ROUTE_OFF && own != ROUTE_OFF && doorSetRoute(number, own)) {
+        setOwnRoute(number, ROUTE_OFF)
+        return own
+    }
+    if (own != ROUTE_OFF && shared != ROUTE_OFF) setOwnRoute(number, ROUTE_OFF) // 連絡先's word stands
+    return shared
+}
+
+/** Stores the route chosen for [number]: in 連絡先 where it has the door, else here. */
+fun Context.setContactRoute(number: String, route: String) {
+    if (doorSetRoute(number, route)) setOwnRoute(number, ROUTE_OFF) else setOwnRoute(number, route)
+}
+
+/**
+ * The route a tap on the call button uses for [number]: the contact's own ([contactRouteOf]); else,
+ * from an older 連絡先 without the route door, the SIM it holds for the number; else the UI page's
+ * default. A 臨 route without Rindenwa installed counts as not set. Asks another app: never on the main thread.
  */
 fun Context.effectiveRouteOf(number: String): String {
-    val candidates = listOf(ownRouteOf(number), renrakusakiSimRoute(number), config.defaultCallRoute)
+    val candidates = listOf(contactRouteOf(number), renrakusakiSimRoute(number), config.defaultCallRoute)
     return candidates.firstOrNull { it != ROUTE_OFF && (!isRinRoute(it) || Rindenwa.isInstalled(this)) } ?: ROUTE_OFF
 }
 

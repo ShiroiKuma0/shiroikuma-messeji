@@ -178,17 +178,16 @@ class ConversationsAdapter(
         hiddenThreadIds.add(conversation.threadId)
         submitList(currentList.toMutableList().apply { remove(conversation) })
 
-        val primary = activity.themeColor(ThemeSlot.PRIMARY)
         val density = resources.displayMetrics.density
         undoBar = Snackbar.make(recyclerView, R.string.conversation_deleted, UNDO_DELETE_MS).apply {
-            setTextColor(primary)
-            setActionTextColor(primary)
+            setTextColor(activity.themeColor(ThemeSlot.UNDO_TEXT))
+            setActionTextColor(activity.themeColor(ThemeSlot.UNDO_TEXT))
             // Material tints the bar's own background over anything set; drop the tint, then frame it
             view.backgroundTintList = null
             view.background = GradientDrawable().apply {
                 cornerRadius = UNDO_BAR_CORNER_DP * density
-                setColor(activity.themeColor(ThemeSlot.BACKGROUND))
-                setStroke((UNDO_BAR_BORDER_DP * density).toInt(), primary)
+                setColor(activity.themeColor(ThemeSlot.UNDO_GROUND))
+                setStroke((UNDO_BAR_BORDER_DP * density).toInt(), activity.themeColor(ThemeSlot.UNDO_FRAME))
             }
             // bottom right, just above the new-conversation button
             (view.layoutParams as? CoordinatorLayout.LayoutParams)?.let {

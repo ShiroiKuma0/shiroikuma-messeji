@@ -7,7 +7,6 @@ import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
-import androidx.core.graphics.ColorUtils
 
 /**
  * The compose bar's ground: a faintly accent-tinted band under a thin line in the darker accent, so the bar reads
@@ -16,13 +15,12 @@ import androidx.core.graphics.ColorUtils
  */
 class ComposeBarBackground(
     context: Context,
-    background: Int,
-    accent: Int,
+    band: Int,
     line: Int,
     private val lineOnly: Boolean = false,
 ) : Drawable() {
     private val lineHeight = LINE_DP * context.resources.displayMetrics.density
-    private val bandPaint = Paint().apply { color = ColorUtils.blendARGB(background, accent, BAND_BLEND) }
+    private val bandPaint = Paint().apply { color = band }
     private val linePaint = Paint().apply { color = line }
 
     override fun draw(canvas: Canvas) {
@@ -48,7 +46,6 @@ class ComposeBarBackground(
 
     companion object {
         const val LINE_DP = 1.25f // as thin, and in the same darker accent, as the text field's frame
-        private const val BAND_BLEND = 0.11f // how far the band is from the background towards the accent
         private const val FIELD_RADIUS_DP = 5f
         private const val FIELD_FRAME_DP = 1.25f
 

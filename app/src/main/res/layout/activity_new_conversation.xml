@@ -14,7 +14,6 @@
             android:id="@+id/new_conversation_toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@color/color_primary"
             app:title="@string/new_conversation"
             app:titleTextAppearance="@style/AppTheme.ActionBar.TitleTextStyle" />
 
@@ -33,7 +32,7 @@
             android:layout_marginStart="@dimen/activity_margin"
             android:layout_marginEnd="@dimen/activity_margin"
             android:layout_toStartOf="@+id/new_conversation_confirm"
-            android:background="@android:color/transparent"
+            android:background="@null"
             android:gravity="center_vertical"
             android:hint="@string/add_contact_or_number"
             android:inputType="textCapWords"
@@ -55,8 +54,7 @@
             android:id="@+id/add_contact_divider"
             android:layout_width="match_parent"
             android:layout_height="@dimen/divider_height"
-            android:layout_below="@+id/new_conversation_address"
-            android:background="@color/divider_grey" />
+            android:layout_below="@+id/new_conversation_address" />
 
         <org.fossify.commons.views.MyTextView
             android:id="@+id/no_contacts_placeholder"
@@ -80,7 +78,6 @@
             android:layout_height="wrap_content"
             android:layout_below="@+id/no_contacts_placeholder"
             android:layout_centerHorizontal="true"
-            android:background="@drawable/ripple_all_corners"
             android:gravity="center"
             android:padding="@dimen/activity_margin"
             android:text="@string/request_the_required_permissions"
