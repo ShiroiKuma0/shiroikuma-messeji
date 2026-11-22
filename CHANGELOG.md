@@ -4,6 +4,18 @@ This file carries **both** histories. The fork's own releases come first, newest
 from the second `# Changelog` heading downwards is Fossify's original changelog, kept byte-for-byte
 as upstream writes it so that a rebase merges it cleanly instead of conflicting.
 
+## 白い熊 メッセージ 1.10.3+002 — 2026-11-22
+
+Built on **Fossify Messages 1.10.3** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `7.1.3-sk1`** to build.
+
+## 📋 The conversation list, closer to 白い熊 臨電話's call history
+
+- **A thin line between two conversations of one day**: 1 dp, dim, stopping 16 dp short of both edges, exactly as two calls of one day are parted in 臨電話. The last conversation of a day has none — the day's own full-width line follows it.
+- **The 送信済み list carries the same line**, since both lists draw their day headers the same way.
+- **The line's colour is settable**: a new role, “Line between conversations of one day”, on the UI page. By default it is the accent dimmed 45 % towards the background.
+- **A smaller contact name**: 22 sp instead of 26.9 sp at the medium font size — the size 臨電話 gives a name in its call history. It still follows the app's font-size setting, and a size stored for the name on the UI page still overrides it.
+- **The avatar shrinks with the name**, as it spans the row's two text lines.
+
 ## 白い熊 メッセージ 1.10.3+001 — 2026-11-22
 
 Built on **Fossify Messages 1.10.3** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `7.1.3-sk1`** to build. The first build on the new upstream line.
