@@ -4,6 +4,19 @@ This file carries **both** histories. The fork's own releases come first, newest
 from the second `# Changelog` heading downwards is Fossify's original changelog, kept byte-for-byte
 as upstream writes it so that a rebase merges it cleanly instead of conflicting.
 
+## 白い熊 メッセージ 1.9.1+066 — 2026-11-22
+
+Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `6.1.6-sk19`** to build. Covers builds +065 and +066.
+
+## 📎 The attachment panel, rebuilt
+
+- **Eight framed tiles in two rows of four**: each action is a rounded frame around a large bare icon and its label, instead of a loose ringed icon over a label.
+- **Frame and icon take the colour of what the tile does**: orange for photos, videos, recordings and files, cyan for a contact, blue for scheduling. The ripple is in the same colour.
+- **The tile ground is a settable role of its own**, “Attachment panel button ground”, beside the other attachment roles on the UI page. It defaults to the background.
+- **A label breaks only between words, never inside one.** When the longest word of any label is wider than its tile, all eight labels shrink together until it fits.
+- **The panel is as tall as its tiles.** It used to be stretched to the keyboard's height, which left dead space beneath the buttons.
+- **The panel closes by itself** once a photo, video, recording, file or contact is attached, or a send time is set. It stays open when an attachment is refused or the schedule dialog is cancelled.
+
 ## 白い熊 メッセージ 1.9.1+064 — 2026-11-21
 
 Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `6.1.6-sk19`** to build. Covers builds +051 to +064.
