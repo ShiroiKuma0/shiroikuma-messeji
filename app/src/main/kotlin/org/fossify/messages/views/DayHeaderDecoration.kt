@@ -22,6 +22,9 @@ import org.fossify.messages.extensions.themeTypeface
  * [timeAt] gives a row's time in epoch millis, or null for a pinned conversation: those sit above the
  * dated rows under their own ピン留め header. Used by the conversation list and the 送信済み list.
  *
+ * Two rows of one day are parted by a thin, dim 1dp line that stops 16dp short of both edges, as two
+ * calls of one day are in 白い熊 臨電話; the last row of a day has none, the day's own line being right there.
+ *
  * Drawn as a decoration rather than list rows so selection, swipe and the adapter's positions stay
  * one row per conversation; a swiped row slides out from under its header, which stays put.
  */
@@ -33,6 +36,8 @@ class DayHeaderDecoration(
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val dividerPaint = Paint()
     private val underlinePaint = Paint()
+    private val rowDividerPaint = Paint()
+    private val rowDividerHeight = dp(ROW_DIVIDER_DP).toInt().coerceAtLeast(1)
     private var headerHeight = 0
 
     init {
@@ -60,6 +65,7 @@ class DayHeaderDecoration(
         textPaint.color = context.themeColor(ThemeSlot.CONVERSATION_DAY_DATE)
         dividerPaint.color = context.themeColor(ThemeSlot.CONVERSATION_DAY_DIVIDER)
         underlinePaint.color = context.themeColor(ThemeSlot.CONVERSATION_DATE_UNDERLINE)
+        rowDividerPaint.color = context.themeColor(ThemeSlot.CONVERSATION_ROW_DIVIDER)
         val metrics = textPaint.fontMetrics
         headerHeight = (dp(DIVIDER_DP + MARGIN_V_DP + GAP_DP + UNDERLINE_DP + MARGIN_V_DP) +
             (metrics.descent - metrics.ascent)).toInt()
@@ -80,18 +86,33 @@ class DayHeaderDecoration(
 
     override fun getItemOffsets(outRect: Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
         val position = parent.getChildAdapterPosition(view)
-        outRect.top = if (headerAt(position, itemCount(parent))) headerHeight else 0
+        val count = itemCount(parent)
+        outRect.top = if (headerAt(position, count)) headerHeight else 0
+        outRect.bottom = if (rowDividerBelow(position, count)) rowDividerHeight else 0
     }
+
+    // A thin line goes below every row that is followed by another row of the same day.
+    private fun rowDividerBelow(position: Int, itemCount: Int): Boolean =
+        position in 0..<itemCount - 1 && !headerAt(position + 1, itemCount)
 
     override fun onDraw(canvas: Canvas, parent: RecyclerView, state: RecyclerView.State) {
         val count = itemCount(parent)
         for (i in 0..<parent.childCount) {
             val child = parent.getChildAt(i)
             val position = parent.getChildAdapterPosition(child)
-            if (!headerAt(position, count)) {
-                continue
+            if (rowDividerBelow(position, count)) {
+                val top = child.bottom + child.translationY
+                canvas.drawRect(
+                    parent.paddingLeft + dp(MARGIN_H_DP),
+                    top,
+                    parent.width - parent.paddingRight - dp(MARGIN_H_DP),
+                    top + rowDividerHeight,
+                    rowDividerPaint,
+                )
             }
-            drawHeader(canvas, parent, child.top + child.translationY - headerHeight, label(timeAt(position)))
+            if (headerAt(position, count)) {
+                drawHeader(canvas, parent, child.top + child.translationY - headerHeight, label(timeAt(position)))
+            }
         }
     }
 
@@ -121,5 +142,6 @@ class DayHeaderDecoration(
         const val MARGIN_V_DP = 12f
         const val GAP_DP = 2f
         const val UNDERLINE_DP = 1f
+        const val ROW_DIVIDER_DP = 1f
     }
 }

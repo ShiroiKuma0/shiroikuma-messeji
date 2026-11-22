@@ -302,7 +302,8 @@ abstract class BaseConversationsAdapter(
 
     companion object {
         private const val MAX_UNREAD_BADGE_COUNT = 99
-        private const val NAME_SCALE = 1.2f * 1.4f    // fork: stock 1.2, made 40 % bigger
+        // Fork: 22 sp at the medium (16 sp) font size — the size 白い熊 臨電話 gives a name in its call history.
+        private const val NAME_SCALE = 22f / 16f
         private const val SNIPPET_SCALE = 0.9f * 1.4f // fork: stock 0.9, made 40 % bigger
         private const val UNFILED_CORNER_DP = 6f
         private const val UNFILED_BORDER_DP = 1.5f

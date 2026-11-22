@@ -278,6 +278,7 @@
     <string name="theme_conversation_day_date">日付見出し</string>
     <string name="theme_conversation_day_divider">日付の区切り線</string>
     <string name="theme_conversation_date_underline">日付見出しの下線</string>
+    <string name="theme_conversation_row_divider">同じ日の会話の間の線</string>
     <string name="day_header_today">今日</string>
     <string name="day_header_yesterday">昨日</string>
     <string name="day_header_pinned">ピン留め</string>

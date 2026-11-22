@@ -198,6 +198,7 @@
     <string name="theme_conversation_day_date">Day header</string>
     <string name="theme_conversation_day_divider">Day divider line</string>
     <string name="theme_conversation_date_underline">Day header underline</string>
+    <string name="theme_conversation_row_divider">Line between conversations of one day</string>
     <!-- the conversation list's day headers carry their Japanese words in every locale, like the tabs -->
     <string name="day_header_today">今日</string>
     <string name="day_header_yesterday">昨日</string>

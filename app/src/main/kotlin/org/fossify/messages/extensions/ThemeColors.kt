@@ -31,6 +31,7 @@ private const val SECONDARY_TEXT_ALPHA = 0.6f
 private const val SEARCH_HINT_ALPHA = 0.5f
 private const val DIALOG_CORNER_DP = 16f
 private const val SWITCH_OFF_BLEND = 0.55f // a switch that is off: this far from the background to the accent
+private const val ROW_DIVIDER_BLEND = 0.55f // the line between two rows of one day: dim, so the day's line stays the strong one
 private const val SETTINGS_NOTE_DIM_GOLD = 0xFFC8C800.toInt()
 private const val ROUTE_RED = 0xFFFF0000.toInt()
 private const val ROUTE_BLUE = 0xFF2962FF.toInt()
@@ -137,6 +138,10 @@ enum class ThemeSlot(
     ),
     CONVERSATION_DATE_UNDERLINE(
         "theme_conversation_date_underline", ThemeGroup.CONVERSATION, R.string.theme_conversation_date_underline
+    ),
+    // The thin line between two conversations of one day, as between two calls in 白い熊 臨電話
+    CONVERSATION_ROW_DIVIDER(
+        "theme_conversation_row_divider", ThemeGroup.CONVERSATION, R.string.theme_conversation_row_divider
     ),
 
     // Message thread — received bubbles
@@ -410,6 +415,9 @@ private fun Context.themeDefault(slot: ThemeSlot): Int = when (slot) {
     ThemeSlot.CONVERSATION_DAY_DATE -> themeColor(ThemeSlot.PRIMARY)
     ThemeSlot.CONVERSATION_DAY_DIVIDER -> themeColor(ThemeSlot.PRIMARY)
     ThemeSlot.CONVERSATION_DATE_UNDERLINE -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.CONVERSATION_ROW_DIVIDER -> ColorUtils.blendARGB(
+        themeColor(ThemeSlot.BACKGROUND), themeColor(ThemeSlot.PRIMARY), ROW_DIVIDER_BLEND
+    )
 
     // Message thread: bubbles are traced, never filled — the frame follows primary, the inside the
     // background, and both texts inherit foundation by default.
