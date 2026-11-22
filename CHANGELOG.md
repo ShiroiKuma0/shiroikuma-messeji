@@ -4,6 +4,35 @@ This file carries **both** histories. The fork's own releases come first, newest
 from the second `# Changelog` heading downwards is Fossify's original changelog, kept byte-for-byte
 as upstream writes it so that a rebase merges it cleanly instead of conflicting.
 
+## 白い熊 メッセージ 1.10.3+001 — 2026-11-22
+
+Built on **Fossify Messages 1.10.3** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `7.1.3-sk1`** to build. The first build on the new upstream line.
+
+## ⬆️ Rebased onto Fossify Messages 1.10.3
+
+Everything the fork adds is carried over unchanged. From upstream (1.9.2 – 1.10.3) it gains:
+
+- **An inline audio player for MMS attachments**: a play button, a seek bar and the running time, in the conversation and in the compose bar's attachment preview.
+- **Clearer error messages when a message fails to send**, MMS included.
+- **Deleting from a notification removes the right message**: the notification now knows whether it is an SMS or an MMS.
+- **MMS images sent together no longer stay on “Sending”**, and MMS image sending fails less often.
+- **Group message creation works on Xiaomi devices.**
+- **The action receivers are no longer exposed** to other apps.
+- **No startup crash on Android 11 and below.**
+- Updated translations.
+
+## 🎵 The audio player in the fork's colours
+
+- **The player is drawn in the attachment roles**, like the document and contact tiles: a framed box on the “attachment preview ground”, a play disc and seek bar in the preview icon colour, the time in the preview text colour.
+- **The remove button on an audio attachment** in the compose bar matches the one on the other attachment previews.
+
+## 📦 Commons 7
+
+- **Built on the patched Commons `7.1.3-sk1`**: every fork patch of `6.1.6-sk1` – `sk19` replayed onto Fossify Commons 7.1.3.
+- **No “feature locked” gate**: Commons 7 removed the Thank You locks, so blocking a number asks for confirmation directly.
+- **No timed donation or rating prompt**: Commons 7 added one; the fork leaves it out.
+- The `core` build flavour is gone upstream; the fork ships `foss` as before.
+
 ## 白い熊 メッセージ 1.9.1+066 — 2026-11-22
 
 Built on **Fossify Messages 1.9.1** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `6.1.6-sk19`** to build. Covers builds +065 and +066.
