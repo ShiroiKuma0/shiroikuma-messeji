@@ -399,6 +399,7 @@
     <string name="theme_compose_counter">文字数</string>
     <string name="theme_attach_ground">添付パネルのアイコンの背景</string>
     <string name="theme_attach_label">添付パネルの文字</string>
+    <string name="theme_attach_tile_ground">添付パネルのボタンの地</string>
     <string name="theme_attach_preview_ground">添付の背景</string>
     <string name="theme_attach_preview_text">添付の文字</string>
     <string name="theme_attach_preview_icon">添付のアイコン</string>
