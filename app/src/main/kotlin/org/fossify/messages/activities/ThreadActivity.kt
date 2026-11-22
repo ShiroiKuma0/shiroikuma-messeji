@@ -11,6 +11,7 @@ import android.content.res.ColorStateList
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
+import android.graphics.drawable.RippleDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.provider.ContactsContract
@@ -50,7 +51,6 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updateLayoutParams
 import androidx.documentfile.provider.DocumentFile
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -62,6 +62,7 @@ import org.fossify.commons.dialogs.PermissionRequiredDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
 import org.fossify.commons.extensions.addBlockedNumber
 import org.fossify.commons.extensions.addLockedLabelIfNeeded
+import org.fossify.commons.extensions.adjustAlpha
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.getColoredDrawableWithColor
 import org.fossify.commons.extensions.beGone
@@ -1794,6 +1795,8 @@ class ThreadActivity : SimpleActivity() {
         )
         adapter.addAttachment(attachment)
         checkSendMessageAvailability()
+        // Fork: the panel has done its job once something is attached.
+        closeAttachmentPicker()
     }
 
     private fun saveAttachments(resultData: Intent) {
@@ -2238,6 +2241,7 @@ class ThreadActivity : SimpleActivity() {
                 if (newDateTime != null) {
                     scheduledDateTime = newDateTime
                     showScheduleMessageDialog()
+                    closeAttachmentPicker()
                 }
             }
         }
@@ -2329,31 +2333,39 @@ class ThreadActivity : SimpleActivity() {
         .toArrayList()
 
     private fun setupAttachmentPickerView() = binding.messageHolder.attachmentPicker.apply {
-        // Fork: each icon in the colour of what its tile does, inside an outlined ring — never a filled
-        // disc in a decorative colour.
+        // Fork: each tile is a rounded frame round its icon and label — the frame and the bare icon in the
+        // colour of what the tile does, the ground and the label from their own roles.
         val share = themeColor(ThemeSlot.MENU_ICON_SHARE)
-        val background = themeColor(ThemeSlot.ATTACH_GROUND)
-        val ringWidth = (ATTACHMENT_RING_DP * resources.displayMetrics.density).toInt().coerceAtLeast(1)
+        val tileGround = themeColor(ThemeSlot.ATTACH_TILE_GROUND)
+        val density = resources.displayMetrics.density
+        val frameWidth = (ATTACHMENT_FRAME_DP * density).toInt().coerceAtLeast(1)
+        val radius = ATTACHMENT_RADIUS_DP * density
         listOf(
-            choosePhotoIcon to share,
-            chooseVideoIcon to share,
-            takePhotoIcon to share,
-            recordVideoIcon to share,
-            recordAudioIcon to share,
-            pickFileIcon to share,
-            pickContactIcon to themeColor(ThemeSlot.MENU_ICON_CONTACT),
-            scheduleMessageIcon to themeColor(ThemeSlot.MENU_ICON_MESSAGE),
-        ).forEach { (icon, color) ->
-            icon.background = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(background)
-                setStroke(ringWidth, color)
+            Triple(choosePhoto, choosePhotoIcon, share),
+            Triple(chooseVideo, chooseVideoIcon, share),
+            Triple(takePhoto, takePhotoIcon, share),
+            Triple(recordVideo, recordVideoIcon, share),
+            Triple(recordAudio, recordAudioIcon, share),
+            Triple(pickFile, pickFileIcon, share),
+            Triple(pickContact, pickContactIcon, themeColor(ThemeSlot.MENU_ICON_CONTACT)),
+            Triple(scheduleMessage, scheduleMessageIcon, themeColor(ThemeSlot.MENU_ICON_MESSAGE)),
+        ).forEach { (tile, icon, color) ->
+            val frame = GradientDrawable().apply {
+                cornerRadius = radius
+                setColor(tileGround)
+                setStroke(frameWidth, color)
             }
+            val mask = GradientDrawable().apply {
+                cornerRadius = radius
+                setColor(color)
+            }
+            tile.background = RippleDrawable(ColorStateList.valueOf(color.adjustAlpha(ATTACHMENT_RIPPLE_ALPHA)), frame, mask)
+            icon.background = null
             icon.applyColorFilter(color)
         }
 
         val textColor = themeColor(ThemeSlot.ATTACH_LABEL)
-        arrayOf(
+        val labels = arrayOf(
             choosePhotoText,
             chooseVideoText,
             takePhotoText,
@@ -2362,7 +2374,26 @@ class ThreadActivity : SimpleActivity() {
             pickFileText,
             pickContactText,
             scheduleMessageText
-        ).forEach { it.setTextColor(textColor) }
+        )
+        labels.forEach { it.setTextColor(textColor) }
+
+        // A label may break between its words, never inside one: when the longest word of any label is
+        // wider than its tile, all labels shrink together until it fits.
+        var fittedWidth = 0
+        root.addOnLayoutChangeListener { _, left, _, right, _, _, _, _, _ ->
+            val width = right - left
+            if (width == fittedWidth || width == 0) return@addOnLayoutChangeListener
+            fittedWidth = width
+            var scale = 1f
+            labels.forEach { label ->
+                val room = (label.width - label.paddingLeft - label.paddingRight).toFloat()
+                val widest = label.text.split(Regex("\\s+")).maxOfOrNull { label.paint.measureText(it) } ?: 0f
+                if (room > 0 && widest > room) scale = minOf(scale, room / widest)
+            }
+            if (scale < 1f) {
+                root.post { labels.forEach { it.setTextSize(TypedValue.COMPLEX_UNIT_PX, it.textSize * scale * ATTACHMENT_FIT_MARGIN) } }
+            }
+        }
 
         choosePhoto.setOnClickListener {
             launchGetContentIntent(arrayOf("image/*"), PICK_PHOTO_INTENT)
@@ -2408,13 +2439,17 @@ class ThreadActivity : SimpleActivity() {
 
     private fun hideAttachmentPicker() {
         binding.messageHolder.attachmentPickerDivider.beGone()
-        binding.messageHolder.attachmentPickerHolder.apply {
-            beGone()
-            updateLayoutParams<ConstraintLayout.LayoutParams> {
-                height = config.keyboardHeight
-            }
-        }
+        // Fork: the panel is as tall as its tiles — not stretched to the keyboard's height, which left
+        // dead space under them.
+        binding.messageHolder.attachmentPickerHolder.beGone()
         animateAttachmentButton(rotation = 0f)
+    }
+
+    private fun closeAttachmentPicker() {
+        if (binding.messageHolder.attachmentPickerHolder.isVisible()) {
+            isAttachmentPickerVisible = false
+            hideAttachmentPicker()
+        }
     }
 
     private fun animateAttachmentButton(rotation: Float) {
@@ -2457,7 +2492,10 @@ class ThreadActivity : SimpleActivity() {
         private const val HEADER_FRAME_DP = 1.25f
         private const val HEADER_BADGE_DP = 30f
         private const val HEADER_BADGE_TEXT_SHARE = 0.6f
-        private const val ATTACHMENT_RING_DP = 1.25f
+        private const val ATTACHMENT_FRAME_DP = 2f
+        private const val ATTACHMENT_RADIUS_DP = 16f
+        private const val ATTACHMENT_RIPPLE_ALPHA = 0.3f
+        private const val ATTACHMENT_FIT_MARGIN = 0.97f
         private const val TYPE_EDIT = 14
         private const val TYPE_SEND = 15
         private const val TYPE_DELETE = 16

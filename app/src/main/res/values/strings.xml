@@ -440,6 +440,7 @@
     <string name="theme_compose_counter">Character counter</string>
     <string name="theme_attach_ground">Attachment panel icon background</string>
     <string name="theme_attach_label">Attachment panel label</string>
+    <string name="theme_attach_tile_ground">Attachment panel button ground</string>
     <string name="theme_attach_preview_ground">Attachment background</string>
     <string name="theme_attach_preview_text">Attachment text</string>
     <string name="theme_attach_preview_icon">Attachment icon</string>

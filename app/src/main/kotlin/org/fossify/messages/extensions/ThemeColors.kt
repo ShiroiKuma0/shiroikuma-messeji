@@ -266,6 +266,7 @@ enum class ThemeSlot(
     COMPOSE_COUNTER("theme_compose_counter", ThemeGroup.THREAD_COMPOSE, R.string.theme_compose_counter),
     ATTACH_GROUND("theme_attach_ground", ThemeGroup.THREAD_ATTACH, R.string.theme_attach_ground),
     ATTACH_LABEL("theme_attach_label", ThemeGroup.THREAD_ATTACH, R.string.theme_attach_label),
+    ATTACH_TILE_GROUND("theme_attach_tile_ground", ThemeGroup.THREAD_ATTACH, R.string.theme_attach_tile_ground),
     ATTACH_PREVIEW_GROUND("theme_attach_preview_ground", ThemeGroup.THREAD_ATTACH, R.string.theme_attach_preview_ground),
     ATTACH_PREVIEW_TEXT("theme_attach_preview_text", ThemeGroup.THREAD_ATTACH, R.string.theme_attach_preview_text),
     ATTACH_PREVIEW_ICON("theme_attach_preview_icon", ThemeGroup.THREAD_ATTACH, R.string.theme_attach_preview_icon),
@@ -498,6 +499,7 @@ private fun Context.themeDefault(slot: ThemeSlot): Int = when (slot) {
     ThemeSlot.COMPOSE_COUNTER -> themeColor(ThemeSlot.TEXT)
     ThemeSlot.ATTACH_GROUND -> themeColor(ThemeSlot.BACKGROUND)
     ThemeSlot.ATTACH_LABEL -> themeColor(ThemeSlot.TEXT)
+    ThemeSlot.ATTACH_TILE_GROUND -> themeColor(ThemeSlot.BACKGROUND)
     ThemeSlot.ATTACH_PREVIEW_GROUND -> themeColor(ThemeSlot.PRIMARY).darkenColor()
     ThemeSlot.ATTACH_PREVIEW_TEXT -> themeColor(ThemeSlot.TEXT)
     ThemeSlot.ATTACH_PREVIEW_ICON -> themeColor(ThemeSlot.PRIMARY)
