@@ -9,12 +9,9 @@ import android.widget.SeekBar
 import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.commons.extensions.beGone
 import org.fossify.commons.extensions.beVisible
-import org.fossify.commons.extensions.darkenColor
 import org.fossify.commons.extensions.formatSize
 import org.fossify.commons.extensions.getColorStateList
 import org.fossify.commons.extensions.getContrastColor
-import org.fossify.commons.extensions.getProperPrimaryColor
-import org.fossify.commons.extensions.getProperTextColor
 import org.fossify.commons.extensions.toast
 import org.fossify.commons.helpers.SimpleContactsHelper
 import org.fossify.commons.helpers.ensureBackgroundThread
@@ -109,7 +106,7 @@ fun ItemAttachmentAudioPreviewBinding.setupAudioPreview(
     audioAttachmentHolder.setupAudio(uri, onOpenWith)
     removeAttachmentButtonHolder.removeAttachmentButton.apply {
         beVisible()
-        background.applyColorFilter(context.getProperPrimaryColor())
+        background = circleDrawable(context.themeColor(ThemeSlot.ATTACH_PREVIEW_ICON))
         if (onRemoveButtonClicked != null) {
             setOnClickListener {
                 onRemoveButtonClicked.invoke()
@@ -131,23 +128,25 @@ fun ItemAttachmentAudioBinding.setupAudio(
     (previousListener as? View.OnAttachStateChangeListener)?.let(root::removeOnAttachStateChangeListener)
 
     val context = root.context
-    val primaryColor = context.getProperPrimaryColor()
+    // the fork keeps no colour or shape in XML: frame, ripple and play disc are drawn here, in role colours
+    val iconColor = context.themeColor(ThemeSlot.ATTACH_PREVIEW_ICON)
     var totalDurationMs = 0
     val playIcon = org.fossify.commons.R.drawable.ic_play_vector
     val pauseIcon = org.fossify.commons.R.drawable.ic_pause_vector
 
-    duration.setTextColor(context.getProperTextColor())
+    duration.setTextColor(context.themeColor(ThemeSlot.ATTACH_PREVIEW_TEXT))
     duration.text = formatMs(0)
     playButton.apply {
         setImageResource(playIcon)
-        background.setTint(primaryColor)
-        applyColorFilter(primaryColor.getContrastColor())
+        background = circleDrawable(iconColor)
+        applyColorFilter(iconColor.getContrastColor())
         contentDescription = context.getString(R.string.play)
     }
     progressBar.progress = 0
-    progressBar.progressTintList = primaryColor.getColorStateList()
-    progressBar.thumbTintList = primaryColor.getColorStateList()
-    root.background.applyColorFilter(primaryColor.darkenColor())
+    progressBar.progressTintList = iconColor.getColorStateList()
+    progressBar.thumbTintList = iconColor.getColorStateList()
+    root.background = context.frameBox(context.themeColor(ThemeSlot.ATTACH_PREVIEW_GROUND))
+    root.foreground = context.rippleDrawable(FRAME_RIPPLE_RADIUS_DP)
 
     val audioListener = object : AudioPlayerManager.AudioPlayerListener, View.OnAttachStateChangeListener {
         override fun onPlaybackStateChanged(isPlaying: Boolean) {

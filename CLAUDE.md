@@ -41,7 +41,7 @@ source packages remain unchanged — only the installed package id differs.
 
 We base our version on upstream and add a fork increment (`BUILD_NUMBER`).
 
-- `VERSION_NAME` / `VERSION_CODE` in `gradle.properties` **track upstream** (currently `1.8.0` / `20`).
+- `VERSION_NAME` / `VERSION_CODE` in `gradle.properties` **track upstream** (currently `1.10.3` / `27`).
 - `BUILD_NUMBER` is **our** increment. It starts at `1` and bumps by `1` on every build with changes.
   It is stored bare in `gradle.properties` and **always rendered zero-padded to three digits** —
   `+001`, `+014`, `+011` — so `~/tmp`, the release page and the tag list keep sorting in build order
@@ -107,7 +107,7 @@ When the user says a new upstream version is out:
 ./gradlew lintFossRelease        # Run Android lint checks
 ```
 
-**Product flavors:** `core` (F-Droid), `foss`, `gplay` (Google Play). We ship `foss`.
+**Product flavors:** `foss`, `gplay` (Google Play). We ship `foss`. (Upstream dropped `core` with 1.10.)
 There are no unit or instrumented tests in this repository.
 
 ## Code Style
@@ -164,7 +164,7 @@ colors") whenever the installed app id is not `org.fossify.*` — always the cas
 - **Source:** the `shiroikuma-commons` fork (`~/git/shiroikuma-commons`, branch `custom`), which strips
   Commons' anti-tamper "fake version" / sideloading checks out entirely **and** carries fork-package
   fixes for spots where Commons hard-codes `org.fossify.*` (documented in that repo's CLAUDE.md).
-- **Delivery:** published to the local Maven repo, consumed as `commons = "6.1.6-sk19"` in
+- **Delivery:** published to the local Maven repo, consumed as `commons = "7.1.3-sk1"` in
   `gradle/libs.versions.toml` (`mavenLocal()` is already a repository in `settings.gradle.kts`).
 - Because Commons itself no longer nags, this app carries **no** in-app workaround — no `getPackageName`
   spoof, no `SIDELOADING_FALSE`, no `res/raw/keep.xml`.
@@ -172,6 +172,13 @@ colors") whenever the installed app id is not `org.fossify.*` — always the cas
 **Fork-package fix relevant here:** `MyContactsContentProvider` used to return an empty list for
 non-`org.fossify.*` consumers, hiding the Contacts app's shared private/local contacts from this app.
 Fixed in the commons fork as of `-sk2` — nothing to change in this repo beyond the pin.
+
+**Commons 7 (from 1.10.3):** upstream moved to Commons 7.x, which drops the "thank you" feature locks
+(`FeatureLockedDialog`, `isOrWasThankYouInstalled`, `addLockedLabelIfNeeded`) and adds a timed donation
+prompt. The fork was re-cut as `7.1.3-sk1` (all of `6.1.6-sk1`–`sk19` replayed; the new prompt is a
+no-op). **Upstream code that arrives with a rebase may reference Commons drawables or colours the fork
+removed** (`sk18`: no colour or shape in XML) — the build then fails at resource linking, and the fix is
+to draw that view in code in role colours, as `setupAudio` in `helpers/AttachmentPreviews.kt` does.
 
 **On a fresh machine, or after an upstream bump changes the Commons version — republish before building:**
 
@@ -181,7 +188,7 @@ git checkout <new-commons-tag>     # then re-apply all patches (anti-tamper stri
 JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :commons:publishToMavenLocal -PVERSION=<ver>-skN
 ```
 
-Then set this app's `commons` pin to the same `<ver>-skN` (currently `6.1.6-sk19`; `-skN` is our patch
+Then set this app's `commons` pin to the same `<ver>-skN` (currently `7.1.3-sk1`; `-skN` is our patch
 revision — see the commons fork's CLAUDE.md). The patched AAR lives only in `~/.m2`, not in the repo.
 
 ## Commit convention — no Claude attribution

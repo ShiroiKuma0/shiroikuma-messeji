@@ -18,7 +18,7 @@ upstream release, replay our `custom` customizations on top of it, and produce a
 - `BUILD_NUMBER` is **our** fork increment. It **resets to `1`** on each new upstream version.
 - Fork `versionName` = `"<VERSION_NAME>+<BUILD_NUMBER>"`, `versionCode` = `VERSION_CODE * 10000 + BUILD_NUMBER`.
 - This fork builds against our **patched Fossify Commons** (`commons = "<ver>-skN"` from `mavenLocal`,
-  currently `6.1.6-sk2`, the `~/git/shiroikuma-commons` fork, which both strips Commons' anti-tamper
+  currently `7.1.3-sk1`, the `~/git/shiroikuma-commons` fork, which both strips Commons' anti-tamper
   "fake version" / sideloading nags **and** carries fork-package fixes; `-skN` is our patch revision).
   When upstream bumps Commons, the patched fork must be re-cut at the new version — see step 4.
 
@@ -45,14 +45,14 @@ line's, keeping upgrades monotonic.
 
 4. **Update the patched Commons if upstream bumped it.** Check whether the rebase changed the Commons
    version in `gradle/libs.versions.toml` (our `custom` commit pins `commons = "<old>-skN"`; upstream may
-   have moved to a newer Commons, e.g. `6.1.6` → `6.2.0`). If the underlying Commons version changed:
+   have moved to a newer Commons, e.g. `7.1.3` → `7.2.0`). If the underlying Commons version changed:
    - In `~/git/shiroikuma-commons`: `git fetch upstream --tags`, check out the new tag onto `custom`,
      re-apply **all** patches (anti-tamper strip + fork-package fixes — see that repo's CLAUDE.md),
      then `JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :commons:publishToMavenLocal -PVERSION=<newver>-sk1`
      (the `-skN` counter restarts at `sk1` for a new Commons base).
    - Resolve the `commons` pin conflict in favour of **our `-sk1` suffix at the new version**
      (`<newver>-sk1`), never the bare upstream value.
-   If Commons is unchanged, keep the existing `<ver>-skN` pin (currently `6.1.6-sk2`; re-publish only if
+   If Commons is unchanged, keep the existing `<ver>-skN` pin (currently `7.1.3-sk1`; re-publish only if
    `~/.m2` was cleared).
 
 5. **Update versioning in `gradle.properties`:**
@@ -66,7 +66,7 @@ line's, keeping upgrades monotonic.
    | Installed app ID | `shiroikuma.messeji` | `gradle.properties` → `APP_ID` |
    | Code namespace | `org.fossify.messages` (unchanged from upstream) | `gradle.properties` → `APP_NAMESPACE` |
    | App launcher label | `白い熊 メッセージ` | `app_launcher_name` in `values/strings.xml` + `values-ja/strings.xml` |
-   | Patched Commons pin | `commons = "<ver>-skN"` (from `mavenLocal`; currently `6.1.6-sk2`) | `gradle/libs.versions.toml` |
+   | Patched Commons pin | `commons = "<ver>-skN"` (from `mavenLocal`; currently `7.1.3-sk1`) | `gradle/libs.versions.toml` |
    | Fork version logic | `forkVersionName` / `forkVersionCode` + `buildFoss` task | `app/build.gradle.kts` |
    | `namespace = APP_NAMESPACE` | not `APP_ID` | `app/build.gradle.kts` |
 
@@ -77,6 +77,9 @@ line's, keeping upgrades monotonic.
    (`JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew buildFoss < /dev/null`), then deliver it via
    the global **/after-build** skill (no transfer prompt). This is the first build of the new upstream line (`<newVersion>+1`). If the build can't
    resolve `org.fossify:commons:<ver>-skN`, publish the patched Commons first (step 4).
+   If it fails at resource linking on a `drawable/…` or `color/…` "not found", upstream added a layout
+   that leans on Commons resources the fork removed — strip them from the XML and draw the view in code
+   in role colours (see "Commons 7" in CLAUDE.md).
 
 8. **Stop.** Let the user test. Commit/push only on their explicit **"Push"** (force-push may be needed
    for `custom` since rebasing rewrites history: `git push --force-with-lease origin custom`; `main` is a
