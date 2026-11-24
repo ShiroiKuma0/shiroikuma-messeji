@@ -4,6 +4,54 @@ This file carries **both** histories. The fork's own releases come first, newest
 from the second `# Changelog` heading downwards is Fossify's original changelog, kept byte-for-byte
 as upstream writes it so that a rebase merges it cleanly instead of conflicting.
 
+## 白い熊 メッセージ 1.10.3+005 — 2026-11-24
+
+Built on **Fossify Messages 1.10.3** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `7.1.3-sk1`** to build. Covers builds +003 – +005.
+
+## 📨 A downloaded MMS is acknowledged to the operator
+
+- **The operator is told that an MMS arrived.** Neither the platform's download call nor the MMS library answers the operator's MMSC after a download, so the operator took every MMS for undelivered — O2 parked each one in its “MMS Album” and kept sending an SMS with a link for it. The app now answers itself.
+- **The answer the MMS standard asks for**: `M-NotifyResp.ind` (status Retrieved, with the notification's transaction id) after a download the push started by itself, `M-Acknowledge.ind` (with the transaction id of the retrieved message) after one that was requested by hand.
+- **On the SIM the notification came in on**: it goes out through the platform's own MMS sending for that subscription, over that operator's MMS connection — with WiFi on as well, and with no APN data of the app's own.
+- **A blocked message is acknowledged too**: an MMS dropped for a blocked sender or a blocked keyword was fetched all the same, and the operator hears so.
+- **To the address the operator wants**: where the carrier configuration says the answer belongs at the address the message was fetched from, it is sent there.
+- **No crash on an unreadable download**: a download the library could not parse is no longer screened for blocked senders, which used to fail.
+
+## 🩺 Diagnostics
+
+- **A new Diagnostics section**, last on the UI page: every diagnostic behind its own switch, off by default — nothing is recorded until a switch is on.
+- **“MMS transport”**: each finished MMS download (SIM, transaction id, size) and the acknowledgement sent for it, with the result the platform and the operator gave.
+- **Files in the app's own directory**, `Android/data/shiroikuma.messeji/files/diag/`, one per kind per day, as `.txt`.
+- **Recorded data**: what is stored, a keep-for-N-days slider, Export into a dated subdirectory of a directory you pick, Share, and Purge behind a warning that says exactly what goes.
+- **A notification while anything records**, with Mark (a numbered line in the files) and Turn all off.
+
+## 🖼️ A message without text says what it carries
+
+- **The conversation list no longer shows an empty preview** for an MMS that is only a picture: the line reads “Picture”, “3 pictures”, “Video”, “Audio”, “Contact card”, “File” or “2 attachments”.
+- **In italics**, so it is not read as the text of a message.
+
+## ✂️ Selecting text in a conversation
+
+- **A long-press on a word selects that word**, with the system's own bar — copy, select all, share — and handles to widen the selection.
+- **The whole message is still selected** by a long-press beside its text: on the frame, the time line or a picture.
+- **A selected message stays readable**: the opaque slab that covered it is replaced by a see-through veil. Its colour is a new settable role, “Veil over a selected message and behind selected text”.
+
+## 🎨 The UI page
+
+- **An icon on every section heading and every chip of the index**, the same on both, sized by its label.
+- **Seven colours by what a section is**: the base (yellow), controls (green), words (light blue), the frame (heavy blue), reaching out (orange), warning (red) and a brief flash (rose) — each a settable role under Settings screen → “Section icons of this page”.
+- **No two neighbouring sections share a colour** in the default order; Maintenance moved between Lists and Bars for that. An order you dragged is kept.
+- **Row icons follow the label**: 1.25 × its text size, never under 18 dp, centred on the label's first line.
+- **New default colours for four menu icon roles**: call heavy green `#00A550`, message heavy blue `#0066FF`, contact light blue `#00B0FF`, block rose `#FF3D7F` — off pure green, cyan and magenta. A colour you set yourself is untouched.
+
+## 💬 Long-press hints
+
+- **The hint of a bar icon is drawn in the app's colours**: a black box with a yellow frame and yellow text, in the toast roles, instead of the platform's light grey box.
+
+## 🇯🇵 Japanese
+
+- **Every new string is translated**, and the 54 strings that arrived with upstream 1.10.3 without a Japanese translation — the sending errors, the group message choice, the blocked-keyword export — are translated as well. The key sets of the two languages match.
+
 ## 白い熊 メッセージ 1.10.3+002 — 2026-11-22
 
 Built on **Fossify Messages 1.10.3** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `7.1.3-sk1`** to build.
