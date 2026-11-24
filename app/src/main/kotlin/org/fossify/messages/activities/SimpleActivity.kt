@@ -6,8 +6,15 @@ import org.fossify.commons.extensions.applyColorFilter
 import org.fossify.messages.R
 import org.fossify.messages.extensions.ThemeSlot
 import org.fossify.messages.extensions.themeColor
+import org.fossify.messages.helpers.Tooltips
 
 open class SimpleActivity : BaseSimpleActivity() {
+    override fun onPostCreate(savedInstanceState: android.os.Bundle?) {
+        super.onPostCreate(savedInstanceState)
+        // long-press hints of bar icons, drawn in our colours instead of the platform's grey box
+        Tooltips.watch(this)
+    }
+
     // Apply the configurable "Settings screen" header + back-arrow colours to a screen's toolbar.
     // Call after setupTopAppBar(). Skip on screens whose toolbar isn't on the primary colour (e.g. the thread).
     fun applyThemeChrome(toolbar: MaterialToolbar) {

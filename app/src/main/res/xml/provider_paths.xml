@@ -2,4 +2,6 @@
 <paths>
     <cache-path name="compressed_files" path="compressed/"/>
     <cache-path name="attachment_files" path="attachments/"/>
+    <!-- UI → Diagnostics → Share: the app's own diag directory -->
+    <external-files-path name="diag" path="diag/"/>
 </paths>

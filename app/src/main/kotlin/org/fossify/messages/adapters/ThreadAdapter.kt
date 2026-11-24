@@ -98,7 +98,16 @@ import org.fossify.messages.models.Message
 import org.fossify.messages.models.ThreadItem
 import org.fossify.messages.models.ThreadItem.ThreadDateTime
 import org.joda.time.DateTime
-import org.fossify.commons.extensions.rowSelectorDrawable
+import org.fossify.commons.extensions.applyFieldCursorRoles
+import org.fossify.commons.helpers.UiRole
+import org.fossify.commons.helpers.uiColor
+import android.content.res.ColorStateList
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.RippleDrawable
+import android.graphics.drawable.StateListDrawable
+import android.view.GestureDetector
+import android.widget.TextView
+import android.view.MotionEvent
 
 class ThreadAdapter(
     activity: SimpleActivity,
@@ -504,20 +513,14 @@ class ThreadAdapter(
     private fun setupView(holder: ViewHolder, view: View, message: Message) {
         ItemMessageBinding.bind(view).apply {
             val received = message.isReceivedMessage()
-            if (threadMessageHolder.foreground == null) threadMessageHolder.foreground = activity.rowSelectorDrawable()
+            // A selected message wears a see-through veil: what is selected must stay readable.
+            if (threadMessageHolder.foreground == null) threadMessageHolder.foreground = selectionVeil()
             threadMessageHolder.isSelected = selectedKeys.contains(message.getSelectionKey())
             threadMessageBody.apply {
                 text = message.body
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize)
                 beVisibleIf(message.body.isNotEmpty())
-                setOnLongClickListener {
-                    holder.viewLongClicked()
-                    true
-                }
-
-                setOnClickListener {
-                    holder.viewClicked(message)
-                }
+                makeSelectable(this) { holder.viewClicked(message) }
             }
 
             val state = bubbleState(message)
@@ -549,6 +552,53 @@ class ThreadAdapter(
                 threadMessageAttachmentsFrame.beGone()
                 threadMessagePlayOutline.beGone()
             }
+        }
+    }
+
+    /** Nothing at rest, the see-through selection veil when the message is selected, a ripple when pressed. */
+    private fun selectionVeil(): Drawable {
+        val veil = ColorDrawable(activity.themeColor(ThemeSlot.SELECTION_VEIL))
+        val states = StateListDrawable().apply {
+            addState(intArrayOf(android.R.attr.state_activated), veil)
+            addState(intArrayOf(android.R.attr.state_selected), veil)
+        }
+        val pressed = ColorStateList.valueOf(activity.uiColor(UiRole.LIST_PRESSED))
+        return RippleDrawable(pressed, states, ColorDrawable(activity.uiColor(UiRole.ACCENT)))
+    }
+
+    /**
+     * Fork: the text of a message can be selected like any text. A long-press on a word selects that
+     * word and brings the system's own bar — copy, select all, share — and its handles, to widen the
+     * selection from there. The message as a whole is still selected by a long-press anywhere else on
+     * it: the frame, the time line, the picture.
+     *
+     * A selectable text takes the first tap for its focus, so a tap is told by a detector of our own
+     * and handed to [onTap]; the selection ground is the see-through veil and the handles the cursor's colour.
+     */
+    @SuppressLint("ClickableViewAccessibility")
+    private fun makeSelectable(body: TextView, onTap: () -> Unit) {
+        // re-armed at every bind: a recycled text view otherwise refuses to start a selection
+        body.setTextIsSelectable(false)
+        body.setTextIsSelectable(true)
+        body.setOnLongClickListener(null)
+        body.setOnClickListener(null)
+        body.applyFieldCursorRoles()
+        body.highlightColor = activity.themeColor(ThemeSlot.SELECTION_VEIL)
+
+        val taps = object : GestureDetector.SimpleOnGestureListener() {
+            var onTap: () -> Unit = {}
+            override fun onSingleTapUp(e: MotionEvent): Boolean {
+                // a tap that ends a text selection is not a tap on the message
+                if (!body.hasSelection()) this.onTap()
+                return false
+            }
+        }
+        taps.onTap = onTap
+        val detector = GestureDetector(body.context, taps)
+        body.setTag(R.id.body_tap_detector, detector)
+        body.setOnTouchListener { _, event ->
+            detector.onTouchEvent(event)
+            false
         }
     }
 

@@ -1,6 +1,8 @@
 package org.fossify.messages.receivers
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import com.bumptech.glide.Glide
 import com.klinker.android.send_message.MmsReceivedReceiver
@@ -21,44 +23,82 @@ import org.fossify.messages.extensions.insertOrUpdateConversation
 import org.fossify.messages.extensions.shouldUnarchive
 import org.fossify.messages.extensions.showReceivedMessageNotification
 import org.fossify.messages.extensions.updateConversationArchivedStatus
+import org.fossify.messages.helpers.Diag
 import org.fossify.messages.helpers.ReceiverUtils.isMessageFilteredOut
 import org.fossify.messages.helpers.refreshConversations
 import org.fossify.messages.helpers.refreshMessages
+import org.fossify.messages.messaging.MmsAck
+import org.fossify.messages.messaging.MmsDownload
 import org.fossify.messages.models.Message
 
-class MmsReceiver : MmsReceivedReceiver() {
+/**
+ * The library's "download finished" broadcast lands here. Its own receiver ([MmsReceivedReceiver]) is
+ * `final` in `onReceive` and hands its callbacks nothing but an address or a stored message — so this
+ * class takes the broadcast first, keeps what it says about the download ([MmsDownload]), and passes
+ * it on to a [Stored] made for this one download. That is what lets the download be acknowledged to
+ * the operator ([MmsAck]) — also when the message is dropped as blocked and never stored.
+ */
+class MmsReceiver : BroadcastReceiver() {
 
-    override fun isAddressBlocked(context: Context, address: String): Boolean {
-        if (context.isNumberBlocked(address)) return true
-        if (context.baseConfig.blockUnknownNumbers) {
-            val privateCursor = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true)
-            val result = SimpleContactsHelper(context).existsSync(address, privateCursor)
-            return result == ContactLookupResult.NotFound
+    override fun onReceive(context: Context, intent: Intent) {
+        val download = MmsDownload.from(intent)
+        Diag.log(Diag.Kind.MMS) {
+            "download finished: sub=${download.subscriptionId} " +
+                "${if (download.byPush) "by push" else "on request"} tid=${download.transactionId} " +
+                "pdu=${if (download.size < 0) "unreadable" else "${download.size} bytes"} " +
+                "retrieve-tid=${MmsAck.printable(download.retrieveTransactionId)} location=${download.location}"
+        }
+        Stored(download).onReceive(context, intent)
+    }
+
+    /** The library's handling of one download: screen it, store it, show it — and acknowledge it. */
+    private class Stored(private val download: MmsDownload) : MmsReceivedReceiver() {
+
+        // The library passes null for a download it could not parse: such a message is not screened.
+        override fun isAddressBlocked(context: Context, address: String?): Boolean {
+            val blocked = address != null && isBlockedSender(context, address)
+            // Fetched and thrown away is still fetched: without the answer the operator keeps offering it.
+            if (blocked) MmsAck.send(context, download, "sender blocked, message dropped")
+            return blocked
         }
 
-        return false
-    }
+        private fun isBlockedSender(context: Context, address: String): Boolean {
+            if (context.isNumberBlocked(address)) return true
+            if (context.baseConfig.blockUnknownNumbers) {
+                val privateCursor = context.getMyContactsCursor(favoritesOnly = false, withPhoneNumbersOnly = true)
+                val result = SimpleContactsHelper(context).existsSync(address, privateCursor)
+                return result == ContactLookupResult.NotFound
+            }
 
-    override fun isContentBlocked(context: Context, content: String): Boolean {
-        return isMessageFilteredOut(context, content)
-    }
-
-    override fun onMessageReceived(context: Context, messageUri: Uri?) {
-        val mms = if (messageUri != null) {
-            context.getMMS(messageUri)
-        } else {
-            context.getLatestMMS()
-        } ?: return
-
-        val address = mms.getSender()?.phoneNumbers?.firstOrNull()?.normalizedNumber ?: mms.senderPhoneNumber
-        ensureBackgroundThread {
-            handleMmsMessage(context, mms, address)
-            Bridge.onReceived(context, "mms:${mms.id}", mms.subscriptionId, "mms")
+            return false
         }
-    }
 
-    override fun onError(context: Context, error: String) {
-        context.showErrorToast(context.getString(R.string.couldnt_download_mms))
+        override fun isContentBlocked(context: Context, content: String?): Boolean {
+            val blocked = content != null && isMessageFilteredOut(context, content)
+            if (blocked) MmsAck.send(context, download, "keyword blocked, message dropped")
+            return blocked
+        }
+
+        override fun onMessageReceived(context: Context, messageUri: Uri?) {
+            // stored: acknowledge first, whatever the reading back below makes of it
+            MmsAck.send(context, download, "stored as $messageUri")
+            val mms = if (messageUri != null) {
+                context.getMMS(messageUri)
+            } else {
+                context.getLatestMMS()
+            } ?: return
+
+            val address = mms.getSender()?.phoneNumbers?.firstOrNull()?.normalizedNumber ?: mms.senderPhoneNumber
+            ensureBackgroundThread {
+                handleMmsMessage(context, mms, address)
+                Bridge.onReceived(context, "mms:${mms.id}", mms.subscriptionId, "mms")
+            }
+        }
+
+        override fun onError(context: Context, error: String) {
+            Diag.log(Diag.Kind.MMS) { "download could not be stored, not acknowledged: $error" }
+            context.showErrorToast(context.getString(R.string.couldnt_download_mms))
+        }
     }
 
     companion object {

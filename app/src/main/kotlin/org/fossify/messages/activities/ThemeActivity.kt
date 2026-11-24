@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.provider.DocumentsContract
 import android.provider.Settings
 import android.text.SpannableStringBuilder
 import android.text.Spanned
@@ -35,7 +36,9 @@ import android.widget.ImageView
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import org.fossify.messages.extensions.setLabelIcon
 import org.fossify.commons.dialogs.ConfirmationDialog
 import org.fossify.commons.dialogs.RadioGroupDialog
 import com.google.android.material.chip.ChipGroup
@@ -82,7 +85,12 @@ import org.fossify.messages.extensions.resetThemeColor
 import org.fossify.messages.extensions.setThemeColor
 import org.fossify.messages.extensions.showFontSample
 import org.fossify.messages.extensions.themeColor
+import org.fossify.commons.extensions.formatSize
+import org.fossify.messages.helpers.Diag
 import org.fossify.messages.helpers.MenuPills
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import org.fossify.messages.helpers.ROUTE_RIN_PREFIX
 import org.fossify.messages.helpers.Rindenwa
 import org.fossify.messages.helpers.routeLabel
@@ -118,16 +126,15 @@ private const val ROW_INDENT_STEP_DP = 18
 // A row description: 85 % size, in the dim-gold note colour — never a faded text colour.
 private const val DESCRIPTION_TEXT_SCALE = 0.85f
 
+// A loose note under a section heading.
+private const val NOTE_TEXT_SP = 13f
+
 // Every row is only as tall as its content: no minimum height, this much above and below.
 private const val ROW_PADDING_VERTICAL_DP = 2
 
 // The rule down the left edge of a row that carries an explanation.
 private const val RULE_WIDTH_DP = 2f
 private const val RULE_GAP_DP = 10f
-
-// The icon before a row's label.
-private const val ROW_ICON_DP = 20
-private const val ROW_ICON_GAP_DP = 10
 
 // A folding section and the chip index above them.
 private const val SECTION_GAP_DP = 10
@@ -144,7 +151,17 @@ private const val INDEX_PAD_V_DP = 5
 private const val INDEX_DRAGGED_ALPHA = 0.3f
 
 /** A top-level section of the page: its stored [key] (never rename one), its heading, and what builds its rows. */
-private class UiSection(val key: String, val title: String, val fill: () -> Unit)
+private class UiSection(
+    val key: String,
+    val title: String,
+    @DrawableRes val icon: Int,
+    val role: ThemeSlot,
+    val fill: () -> Unit,
+)
+
+// A section's icon, on its heading and on its chip: this much of the label's text size.
+private const val SECTION_ICON_PER_TEXT = 1.25f
+private const val SECTION_ICON_GAP_PER_ICON = 0.4f
 
 /**
  * The icon a row of the page carries, coloured by what the row does. The colours are the menu icon
@@ -169,6 +186,7 @@ private enum class RowIcon(val res: Int, val role: ThemeSlot) {
     PICTURE(R.drawable.ic_image_vector, ThemeSlot.MENU_ICON_CONTACT),
     PERSON(CR.drawable.ic_person_vector, ThemeSlot.MENU_ICON_CONTACT),
     REMOVE(CR.drawable.ic_delete_vector, ThemeSlot.MENU_WARNING),
+    DIAG(CR.drawable.ic_info_vector, ThemeSlot.MENU_ICON_VIEW),
 }
 
 /** The thin rule down the left edge of a row that carries an explanation, [x] px in from its start. */
@@ -250,6 +268,20 @@ class ThemeActivity : SimpleActivity() {
         }
     }
 
+    // Diagnostics: the export's directory picker, and whether "keep for" changed (clean up on leaving).
+    private var diagCleanupDue = false
+    private val diagExportPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) runDiagExport(uri)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (diagCleanupDue) {
+            diagCleanupDue = false
+            ensureBackgroundThread { Diag.cleanup(applicationContext) }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         alignThreadTextSizes()
@@ -286,33 +318,69 @@ class ThemeActivity : SimpleActivity() {
 
         // The keys are stored (order and fold state): never rename one.
         val built = ArrayList<UiSection>()
-        built.add(UiSection("exim", getString(R.string.eim_section)) { addEximportSection(primaryColor) })
-        built.add(UiSection("format", getString(R.string.format_section)) { addFormatSection(primaryColor) })
-        built.add(UiSection("swipe", getString(R.string.swipe_section)) { addSwipeSection(primaryColor) })
-        built.add(UiSection("tabs", getString(R.string.tabs_section)) { addTabsSection(primaryColor) })
-        built.add(UiSection("bubbles", getString(R.string.bubbles_section)) { addBubblesSection(primaryColor) })
-        built.add(UiSection("compose", getString(R.string.compose_section)) { addComposeSection(primaryColor) })
-        built.add(UiSection("routes", getString(R.string.call_routes)) { addRoutesSection() })
+        // Each section carries its icon and the colour of what kind of thing it is (ThemeSlot.SECTION_*),
+        // for its heading and its chip alike. This default order keeps two of one colour apart.
+        fun section(key: String, @StringRes title: Int, @DrawableRes icon: Int, role: ThemeSlot, fill: () -> Unit) =
+            built.add(UiSection(key, getString(title), icon, role, fill))
+        section("exim", R.string.eim_section, CR.drawable.ic_share_vector, ThemeSlot.SECTION_REACH) { addEximportSection(primaryColor) }
+        section("format", R.string.format_section, CR.drawable.ic_clock_vector, ThemeSlot.SECTION_WORDS) { addFormatSection(primaryColor) }
+        section("swipe", R.string.swipe_section, R.drawable.ic_tune_vector, ThemeSlot.SECTION_CONTROLS) { addSwipeSection(primaryColor) }
+        section("tabs", R.string.tabs_section, CR.drawable.ic_label_vector, ThemeSlot.SECTION_FRAME) { addTabsSection(primaryColor) }
+        section("bubbles", R.string.bubbles_section, CR.drawable.ic_mail_vector, ThemeSlot.SECTION_BASE) { addBubblesSection(primaryColor) }
+        section("compose", R.string.compose_section, CR.drawable.ic_edit_vector, ThemeSlot.SECTION_WORDS) { addComposeSection(primaryColor) }
+        section("routes", R.string.call_routes, CR.drawable.ic_phone_vector, ThemeSlot.SECTION_CONTROLS) { addRoutesSection() }
         ThemeSection.entries.forEach { section ->
-            built.add(UiSection("theme_" + section.name.lowercase(java.util.Locale.ROOT), getString(section.labelRes)) {
+            // Maintenance stands between Lists and Bars, which are both "the frame"
+            if (section == ThemeSection.BARS) {
+                section(
+                    "maintenance", R.string.maintenance_section, CR.drawable.ic_reset_vector, ThemeSlot.SECTION_WARNING,
+                ) { addMaintenanceSection() }
+            }
+            val (icon, role) = sectionLook(section)
+            section("theme_" + section.name.lowercase(java.util.Locale.ROOT), section.labelRes, icon, role) {
                 val groups = ThemeGroup.entries.filter { it.section == section }
                 val showSubgroups = groups.size > 1
                 groups.forEach { group ->
                     if (showSubgroups) {
                         // subgroup header sits one level in; its rows another level in
                         addSubgroupHeader(getString(group.labelRes), primaryColor)
+                        if (group == ThemeGroup.SECTION_ICONS) addNoteRow(getString(R.string.theme_section_icons_note), 2)
                         addGroupSlots(group, indentLevel = 2)
                     } else {
                         addGroupSlots(group, indentLevel = 1)
                     }
                 }
-            })
+            }
         }
-        built.add(UiSection("maintenance", getString(R.string.maintenance_section)) { addMaintenanceSection() })
+        // Diagnostics — last, as in every sister app
+        section("diag", R.string.diag_title, CR.drawable.ic_info_vector, ThemeSlot.SECTION_WARNING) { addDiagnosticsSection(primaryColor) }
         sections = orderedSections(built)
 
         addSectionIndex(primaryColor)
         sections.forEachIndexed { index, section -> addSection(section, index == 0, primaryColor) }
+    }
+
+    // The icon of a colour section and what kind of thing the section is.
+    private fun sectionLook(section: ThemeSection): Pair<Int, ThemeSlot> = when (section) {
+        ThemeSection.FOUNDATION -> R.drawable.ic_palette_vector to ThemeSlot.SECTION_BASE
+        ThemeSection.CONVERSATIONS -> CR.drawable.ic_article_vector to ThemeSlot.SECTION_FRAME
+        ThemeSection.THREAD -> R.drawable.ic_send_vector to ThemeSlot.SECTION_BASE
+        ThemeSection.SEARCH -> CR.drawable.ic_search_vector to ThemeSlot.SECTION_WORDS
+        ThemeSection.NEW_CONVERSATION -> CR.drawable.ic_add_person_vector to ThemeSlot.SECTION_FRAME
+        ThemeSection.SETTINGS -> CR.drawable.ic_settings_cog_vector to ThemeSlot.SECTION_BASE
+        ThemeSection.TEXTS -> R.drawable.ic_text_fields_vector to ThemeSlot.SECTION_WORDS
+        ThemeSection.BUTTONS -> CR.drawable.ic_check_circle_vector to ThemeSlot.SECTION_CONTROLS
+        ThemeSection.DIALOGS -> CR.drawable.ic_info_outline_vector to ThemeSlot.SECTION_REACH
+        ThemeSection.SWITCHES -> CR.drawable.ic_minus_circle_vector to ThemeSlot.SECTION_CONTROLS
+        ThemeSection.MENUS -> CR.drawable.ic_three_dots_vector to ThemeSlot.SECTION_REACH
+        ThemeSection.LISTS -> CR.drawable.ic_sort_vector to ThemeSlot.SECTION_FRAME
+        ThemeSection.BARS -> CR.drawable.ic_drag_handle_vector to ThemeSlot.SECTION_FRAME
+    }
+
+    /** A section's icon in its colour, sized by the label it stands before: the same on heading and chip. */
+    private fun sectionIcon(section: UiSection, labelTextSizePx: Float): Drawable {
+        val size = (labelTextSizePx * SECTION_ICON_PER_TEXT).toInt()
+        return resources.getColoredDrawableWithColor(section.icon, themeColor(section.role)).apply { setBounds(0, 0, size, size) }
     }
 
     /** The stored order applied to [built]: stored keys first, then sections a later build added, at their built place. */
@@ -343,6 +411,11 @@ class ThemeActivity : SimpleActivity() {
                 val h = (INDEX_PAD_H_DP * density).toInt()
                 val v = (INDEX_PAD_V_DP * density).toInt()
                 setPadding(h, v, h, v)
+                gravity = Gravity.CENTER_VERTICAL
+                // the section's own icon in the section's own colour; the chip is as wide as icon + label
+                val icon = sectionIcon(section, textSize)
+                setCompoundDrawablesRelative(icon, null, null, null)
+                compoundDrawablePadding = (icon.bounds.width() * SECTION_ICON_GAP_PER_ICON).toInt()
                 background = pillBackground(themeColor(ThemeSlot.CHIP_FRAME))
                 setOnClickListener { jumpToSection(section.key) }
                 setOnLongClickListener { chip ->
@@ -432,6 +505,12 @@ class ThemeActivity : SimpleActivity() {
             val v = (SECTION_HEADER_PAD_DP * density).toInt()
             setPaddingRelative((SECTION_START_DP * density).toInt(), v, margin, v)
             background = rippleDrawable()
+            val icon = sectionIcon(section, label.textSize)
+            addView(
+                ImageView(this@ThemeActivity).apply { setImageDrawable(icon) },
+                LinearLayout.LayoutParams(icon.bounds.width(), icon.bounds.height())
+                    .apply { marginEnd = (icon.bounds.width() * SECTION_ICON_GAP_PER_ICON).toInt() },
+            )
             addView(labelColumn, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
             addView(View(this@ThemeActivity), LinearLayout.LayoutParams(0, 0, 1f))
             addView(chevron)
@@ -512,6 +591,155 @@ class ThemeActivity : SimpleActivity() {
                 recreate()
             }
         }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Diagnostics
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * Every diagnostic behind its own switch, off by default, in subsections by theme; then what is
+     * recorded and what can be done with it — keep-for, export, share, purge. The layout the
+     * diagnostics-ui-settings skill prescribes; the storage is [Diag].
+     */
+    private fun addDiagnosticsSection(primaryColor: Int) {
+        addNoteRow(getString(R.string.diag_note, Diag.dir(this)?.absolutePath ?: "?"), 1)
+        addNoteRow(getString(R.string.diag_notification_note), 1)
+
+        addSubgroupHeader(getString(R.string.diag_sub_transport), primaryColor)
+        Diag.Kind.entries.forEach { kind ->
+            addSwitchRow(kind.titleRes, Diag.isOn(kind), 2, getString(kind.descrRes), RowIcon.DIAG) {
+                Diag.set(this, kind, it)
+            }
+        }
+
+        addSubgroupHeader(getString(R.string.diag_sub_data), primaryColor)
+        // counted off the main thread: reading every file's first line must not slow the page down
+        val stored = addNoteRow(getString(R.string.diag_counting), 2)
+        ensureBackgroundThread {
+            val summary = Diag.summarize(applicationContext)
+            val text = if (summary.files == 0) {
+                getString(R.string.diag_stored_none)
+            } else {
+                getString(R.string.diag_stored, diagAmount(summary.files, summary.bytes), diagSpan(summary.first, summary.last))
+            }
+            runOnUiThread { stored.text = text }
+        }
+        addSlider(
+            label = getString(R.string.diag_keep),
+            value = Diag.getKeepDays(this),
+            max = Diag.MAX_KEEP_DAYS,
+            icon = RowIcon.TIME,
+            indentLevel = 2,
+            valueLabel = { if (it == 0) getString(R.string.diag_keep_all) else getString(R.string.diag_keep_days, it) },
+        ) {
+            Diag.setKeepDays(this, it)
+            diagCleanupDue = true
+        }
+        addNoteRow(getString(R.string.diag_keep_note), 2)
+
+        val lastTree = Diag.getExportTree(this)?.lastPathSegment?.substringAfter(':')?.let { "/sdcard/$it" } ?: "/sdcard/tmp"
+        addActionRow(
+            label = getString(R.string.diag_export),
+            description = getString(R.string.diag_export_descr, lastTree),
+            opens = true,
+            indentLevel = 2,
+            icon = RowIcon.DIRECTORY,
+        ) {
+            if (Diag.files(this).isEmpty()) {
+                toast(R.string.diag_nothing)
+            } else {
+                // first offered at /sdcard/tmp, afterwards where the last export went
+                val tree = Diag.getExportTree(this)
+                diagExportPicker.launch(
+                    if (tree != null) {
+                        DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
+                    } else {
+                        DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:tmp")
+                    }
+                )
+            }
+        }
+        addActionRow(
+            label = getString(R.string.diag_share),
+            description = getString(R.string.diag_share_descr),
+            opens = true,
+            indentLevel = 2,
+            icon = RowIcon.SHARE,
+        ) {
+            Diag.shareIntent(this)?.let(::startActivity) ?: toast(R.string.diag_nothing)
+        }
+        addActionRow(
+            label = getString(R.string.diag_purge),
+            description = getString(R.string.diag_purge_descr),
+            indentLevel = 2,
+            icon = RowIcon.REMOVE,
+            destructive = true,
+        ) {
+            confirmDiagPurge()
+        }
+    }
+
+    private fun runDiagExport(tree: Uri) {
+        runCatching {
+            contentResolver.takePersistableUriPermission(
+                tree, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+        }
+        ensureBackgroundThread {
+            val name = runCatching { Diag.exportTo(applicationContext, tree) }.getOrNull()
+            runOnUiThread {
+                toast(if (name != null) getString(R.string.diag_export_done, name) else getString(R.string.diag_export_failed))
+                buildRows()
+            }
+        }
+    }
+
+    // The warning says exactly what goes: how many files and how big, per kind, and each day's time span.
+    private fun confirmDiagPurge() {
+        ensureBackgroundThread {
+            val summary = Diag.summarize(applicationContext)
+            runOnUiThread {
+                if (summary.files == 0) {
+                    toast(R.string.diag_nothing)
+                    return@runOnUiThread
+                }
+                val total = diagAmount(summary.files, summary.bytes)
+                val kinds = summary.kinds.map { (kind, k) -> "$kind: ${diagAmount(k[0].toInt(), k[1])}, ${diagSpan(k[2], k[3])}" }
+                val clock = SimpleDateFormat("HH:mm", Locale.US)
+                val days = summary.days.map { (day, span) -> "$day  ${clock.format(Date(span[0]))} – ${clock.format(Date(span[1]))}" }
+                val message = getString(R.string.diag_purge_warning, total, (kinds + "" + days).joinToString("\n"))
+                ConfirmationDialog(
+                    this, message, positive = R.string.diag_purge_do, negative = CR.string.cancel, destructive = true,
+                ) {
+                    ensureBackgroundThread {
+                        Diag.purge(applicationContext)
+                        runOnUiThread {
+                            toast(getString(R.string.diag_purged, total))
+                            buildRows()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun diagAmount(files: Int, bytes: Long) =
+        "${resources.getQuantityString(R.plurals.diag_files, files, files)}, ${bytes.formatSize()}"
+
+    private fun diagSpan(first: Long, last: Long): String {
+        val format = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
+        return "${format.format(Date(first))} – ${format.format(Date(last))}"
+    }
+
+    /** A loose explanation that belongs to no single row: dim gold, small, no rule. */
+    private fun addNoteRow(text: String, indentLevel: Int): TextView = TextView(this).apply {
+        this.text = text
+        setTextColor(themeColor(ThemeSlot.SETTINGS_NOTE))
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, NOTE_TEXT_SP)
+        setPaddingRelative(0, 0, resources.getDimensionPixelSize(CR.dimen.activity_margin), 0)
+        indentRow(this, indentLevel)
+        body.addView(this)
     }
 
     private fun addGroupSlots(group: ThemeGroup, indentLevel: Int) {
@@ -1068,15 +1296,9 @@ class ThemeActivity : SimpleActivity() {
         }
     }
 
-    // The row's icon, before its label and in the colour of what the row does.
-    private fun TextView.setRowIcon(icon: RowIcon) {
-        val density = resources.displayMetrics.density
-        val size = (ROW_ICON_DP * density).toInt()
-        val drawable = resources.getColoredDrawableWithColor(icon.res, themeColor(icon.role))
-        drawable.setBounds(0, 0, size, size)
-        setCompoundDrawablesRelative(drawable, null, null, null)
-        compoundDrawablePadding = (ROW_ICON_GAP_DP * density).toInt()
-    }
+    // The row's icon, before its label and in the colour of what the row does: sized by the label
+    // (1.25 × its text, never under 18 dp) and centred on its first line — extensions/RowIcons.kt.
+    private fun TextView.setRowIcon(icon: RowIcon) = setLabelIcon(icon.res, themeColor(icon.role))
 
     // Indent a text element's font/weight/size/sample controls one full step past its name.
     private fun indentTextControls(b: ItemThemeTextBinding) {

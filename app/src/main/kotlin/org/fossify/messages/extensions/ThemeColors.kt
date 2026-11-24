@@ -35,11 +35,17 @@ private const val ROW_DIVIDER_BLEND = 0.55f // the line between two rows of one 
 private const val SETTINGS_NOTE_DIM_GOLD = 0xFFC8C800.toInt()
 private const val ROUTE_RED = 0xFFFF0000.toInt()
 private const val ROUTE_BLUE = 0xFF2962FF.toInt()
-private const val MENU_GREEN = 0xFF00FF00.toInt()
-private const val MENU_BLUE = 0xFF4D94FF.toInt() // pure blue vanishes as a thin glyph on black
-private const val MENU_CYAN = 0xFF00FFFF.toInt()
+// The menu icon defaults of 2026-11-23, off the colours 白い熊 cannot tell apart: no pure green, no
+// cyan, no magenta, and the two blues far apart. The same values colour the section icons of the UI page.
+private const val MENU_GREEN = 0xFF00A550.toInt() // heavy green
+private const val MENU_BLUE = 0xFF0066FF.toInt() // heavy blue; pure blue vanishes as a thin glyph on black
+private const val MENU_CYAN = 0xFF00B0FF.toInt() // light blue
 private const val MENU_ORANGE = 0xFFFF8000.toInt()
-private const val MENU_MAGENTA = 0xFFFF00FF.toInt()
+private const val MENU_MAGENTA = 0xFFFF3D7F.toInt() // rose
+private const val SECTION_RED = 0xFFFF0000.toInt()
+
+// How much of the selection colour lies over a selected message: the text under it stays readable.
+private const val SELECTION_VEIL_ALPHA = 0x48
 private const val MENU_DIVIDER_BLEND = 0.7f // dividers: an opaque darker accent
 private const val COMPOSE_BAND_BLEND = 0.11f // the compose band: a faint tint of the accent
 private const val THREAD_DAY_DIVIDER_BLEND = 0.5f // the day divider: halfway from the background to the accent
@@ -86,6 +92,7 @@ enum class ThemeGroup(val section: ThemeSection, @StringRes val labelRes: Int) {
     NEW_CONVERSATION(ThemeSection.NEW_CONVERSATION, R.string.theme_section_new_conversation),
     SETTINGS(ThemeSection.SETTINGS, R.string.theme_section_settings),
     UI_PAGE(ThemeSection.SETTINGS, R.string.theme_group_ui_page),
+    SECTION_ICONS(ThemeSection.SETTINGS, R.string.theme_sub_section_icons),
     TEXTS(ThemeSection.TEXTS, R.string.theme_section_texts),
     BUTTONS(ThemeSection.BUTTONS, R.string.theme_section_buttons),
     DIALOGS(ThemeSection.DIALOGS, R.string.theme_section_dialogs),
@@ -290,6 +297,18 @@ enum class ThemeSlot(
     CHIP_TEXT("theme_chip_text", ThemeGroup.UI_PAGE, R.string.theme_chip_text),
     CHIP_FRAME("theme_chip_frame", ThemeGroup.UI_PAGE, R.string.theme_chip_frame),
     SECTION_DIVIDER("theme_section_divider", ThemeGroup.UI_PAGE, R.string.theme_section_divider),
+
+    // The icon on each heading and chip of the UI page, coloured by what kind of thing its section is.
+    SECTION_BASE("theme_section_base", ThemeGroup.SECTION_ICONS, R.string.theme_section_base),
+    SECTION_CONTROLS("theme_section_controls", ThemeGroup.SECTION_ICONS, R.string.theme_section_controls),
+    SECTION_WORDS("theme_section_words", ThemeGroup.SECTION_ICONS, R.string.theme_section_words),
+    SECTION_FRAME("theme_section_frame", ThemeGroup.SECTION_ICONS, R.string.theme_section_frame),
+    SECTION_REACH("theme_section_reach", ThemeGroup.SECTION_ICONS, R.string.theme_section_reach),
+    SECTION_WARNING("theme_section_warning", ThemeGroup.SECTION_ICONS, R.string.theme_section_warning),
+    SECTION_FLASH("theme_section_flash", ThemeGroup.SECTION_ICONS, R.string.theme_section_flash),
+
+    // What lies over a selected message of a conversation, and behind selected text: see-through, never a slab.
+    SELECTION_VEIL("theme_selection_veil", ThemeGroup.LISTS, R.string.theme_selection_veil),
 }
 
 
@@ -525,6 +544,14 @@ private fun Context.themeDefault(slot: ThemeSlot): Int = when (slot) {
     ThemeSlot.ROW_VALUE -> themeColor(ThemeSlot.TEXT)
     ThemeSlot.CHIP_TEXT -> themeColor(ThemeSlot.PRIMARY)
     ThemeSlot.CHIP_FRAME -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.SECTION_BASE -> themeColor(ThemeSlot.PRIMARY)
+    ThemeSlot.SECTION_CONTROLS -> MENU_GREEN
+    ThemeSlot.SECTION_WORDS -> MENU_CYAN
+    ThemeSlot.SECTION_FRAME -> MENU_BLUE
+    ThemeSlot.SECTION_REACH -> MENU_ORANGE
+    ThemeSlot.SECTION_WARNING -> SECTION_RED
+    ThemeSlot.SECTION_FLASH -> MENU_MAGENTA
+    ThemeSlot.SELECTION_VEIL -> ColorUtils.setAlphaComponent(themeColor(ThemeSlot.PRIMARY), SELECTION_VEIL_ALPHA)
     ThemeSlot.SECTION_DIVIDER -> ColorUtils.blendARGB(themeColor(ThemeSlot.BACKGROUND), themeColor(ThemeSlot.PRIMARY), MENU_DIVIDER_BLEND)
 }
 

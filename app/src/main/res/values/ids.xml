@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- extensions/RowIcons.kt: the layout listener that keeps a label's icon sized by its text -->
+    <item name="row_icon_sizer" type="id" />
+    <!-- helpers/Tooltips.kt: the text of a tooltip the app draws itself -->
+    <item name="own_tooltip_text" type="id" />
+    <!-- adapters/ThreadAdapter.kt: the tap detector of a selectable message text -->
+    <item name="body_tap_detector" type="id" />
+    <!-- adapters/BaseConversationsAdapter.kt: which conversation a preview line is waiting to describe -->
+    <item name="attachment_note_key" type="id" />
+</resources>

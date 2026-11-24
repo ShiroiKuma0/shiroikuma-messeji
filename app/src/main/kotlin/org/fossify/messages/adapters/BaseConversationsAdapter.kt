@@ -1,5 +1,8 @@
 package org.fossify.messages.adapters
 
+import org.fossify.messages.R
+import android.util.LruCache
+import org.fossify.messages.extensions.describeLatestAttachments
 import android.annotation.SuppressLint
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -155,6 +158,24 @@ abstract class BaseConversationsAdapter(
         }
     }
 
+    // What the newest, text-less message of a conversation carries, by thread and date: looked up once.
+    private val attachmentNotes = LruCache<String, String>(ATTACHMENT_NOTES_KEPT)
+
+    /** The note for [conversation] when it is known; otherwise nothing yet, and [view] gets it when it is. */
+    private fun attachmentNote(view: TextView, conversation: Conversation): String {
+        val key = "${conversation.threadId}:${conversation.date}"
+        view.setTag(R.id.attachment_note_key, key)
+        attachmentNotes.get(key)?.let { return it }
+        ensureBackgroundThread {
+            val note = runCatching { activity.describeLatestAttachments(conversation.threadId, conversation.date) }.getOrDefault("")
+            attachmentNotes.put(key, note)
+            activity.runOnUiThread {
+                if (view.getTag(R.id.attachment_note_key) == key) view.text = note
+            }
+        }
+        return ""
+    }
+
     private fun fetchDrafts(drafts: HashMap<Long, String>) {
         drafts.clear()
         for ((threadId, draft) in activity.getAllDrafts()) {
@@ -184,8 +205,13 @@ abstract class BaseConversationsAdapter(
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * NAME_SCALE)
             }
 
+            // Fork: a conversation whose newest message has no text — an MMS that is only a picture —
+            // says what arrived instead of showing an empty line, in italics so it is not read as text.
+            val isAttachmentNote = smsDraft == null && conversation.snippet.isBlank()
+            val attachmentNote = if (isAttachmentNote) attachmentNote(conversationBodyShort, conversation) else null
+            if (!isAttachmentNote) conversationBodyShort.setTag(R.id.attachment_note_key, null)
             conversationBodyShort.apply {
-                text = smsDraft ?: conversation.snippet
+                text = smsDraft ?: attachmentNote ?: conversation.snippet
                 setTextSize(TypedValue.COMPLEX_UNIT_PX, fontSize * SNIPPET_SCALE)
             }
 
@@ -208,7 +234,9 @@ abstract class BaseConversationsAdapter(
                 if (conversation.isScheduled) Typeface.ITALIC else Typeface.NORMAL
             }
             conversationAddress.applyThemeFont(ThemeSlot.CONVERSATION_NAME, style)
-            conversationBodyShort.applyThemeFont(ThemeSlot.CONVERSATION_SNIPPET, style)
+            conversationBodyShort.applyThemeFont(
+                ThemeSlot.CONVERSATION_SNIPPET, if (isAttachmentNote) style or Typeface.ITALIC else style
+            )
             conversationDate.applyThemeFont(ThemeSlot.CONVERSATION_DATE, style)
 
             conversationAddress.setTextColor(activity.themeColor(ThemeSlot.CONVERSATION_NAME))
@@ -304,6 +332,7 @@ abstract class BaseConversationsAdapter(
         private const val MAX_UNREAD_BADGE_COUNT = 99
         // Fork: 22 sp at the medium (16 sp) font size — the size 白い熊 臨電話 gives a name in its call history.
         private const val NAME_SCALE = 22f / 16f
+        private const val ATTACHMENT_NOTES_KEPT = 200
         private const val SNIPPET_SCALE = 0.9f * 1.4f // fork: stock 0.9, made 40 % bigger
         private const val UNFILED_CORNER_DP = 6f
         private const val UNFILED_BORDER_DP = 1.5f

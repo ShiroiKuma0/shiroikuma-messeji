@@ -241,6 +241,17 @@
             android:exported="true"
             android:taskAffinity="com.klinker.android.messaging.MMS_RECEIVED" />
 
+        <!-- Fork: the platform's result for an MMS acknowledgement (messaging/MmsAck), reached only
+             through this app's own PendingIntent. -->
+        <receiver
+            android:name=".receivers.MmsAckReceiver"
+            android:exported="false" />
+
+        <!-- Fork: the two buttons of the diagnostics recording notification -->
+        <receiver
+            android:name=".receivers.DiagReceiver"
+            android:exported="false" />
+
         <!-- Fork: the three notification-action receivers are reached ONLY through this app's own
              notification PendingIntents, which name the component explicitly and run as this app — so
              they need not, and must not, be exported. Exported with no permission (upstream), any app

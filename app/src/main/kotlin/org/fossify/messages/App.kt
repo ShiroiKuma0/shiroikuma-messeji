@@ -14,6 +14,7 @@ import org.fossify.messages.extensions.seedDialogStyleIfNeeded
 import org.fossify.messages.extensions.syncFamilyLook
 import org.fossify.messages.extensions.rescheduleAllScheduledMessages
 import org.fossify.messages.extensions.seedBlackYellowThemeIfNeeded
+import org.fossify.messages.helpers.Diag
 import org.fossify.messages.helpers.MessagingCache
 import org.fossify.messages.extensions.migrateSlotsToUiRolesIfNeeded
 
@@ -31,6 +32,8 @@ class App : FossifyApp() {
         // Pill dialog buttons, outlined switches and floating button from Commons, in our colour roles.
         migrateSlotsToUiRolesIfNeeded()
         syncFamilyLook()
+        // Diagnostics: load the switches before the first receiver may want to write a line.
+        Diag.init(this)
         if (hasPermission(PERMISSION_READ_CONTACTS)) {
             listOf(
                 ContactsContract.Contacts.CONTENT_URI,

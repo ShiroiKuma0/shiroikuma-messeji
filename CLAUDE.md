@@ -134,6 +134,17 @@ There are no unit or instrumented tests in this repository.
 - `helpers/MessagesReader` / `MessagesWriter` read/write the system SMS/MMS content providers;
   `MessagesImporter` / `MessagesReader` handle backup/restore.
 
+- **A downloaded MMS is acknowledged by the app itself** (`messaging/MmsAck.kt`, from 1.10.3+003): neither
+  `downloadMultimediaMessage` nor the library does it, and an unanswered MMSC parks the message in the
+  operator's web album (O2's “MMS Album” SMS). `receivers/MmsReceiver` is therefore a plain
+  `BroadcastReceiver` that takes the library's result broadcast first and hands it to an inner
+  `MmsReceivedReceiver` made for that one download — the library's `onReceive` is `final` and gives its
+  callbacks no transaction id. The acknowledgement goes out through `SmsManager.sendMultimediaMessage` on
+  the notification's subscription; the result lands in `receivers/MmsAckReceiver`.
+- **Diagnostics** (`helpers/Diag.kt`, section “Diagnostics” on the UI page): every kind behind its own
+  switch, off by default, files in `Android/data/<app id>/files/diag/` as `.txt`. The one kind so far is
+  `mms` (“MMS transport”). Follows the global diagnostics-ui-settings skill.
+
 ### Persistence
 
 - Room database `databases/MessagesDatabase` (KSP-generated, schemas under `app/schemas`) caches
