@@ -4,6 +4,32 @@ This file carries **both** histories. The fork's own releases come first, newest
 from the second `# Changelog` heading downwards is Fossify's original changelog, kept byte-for-byte
 as upstream writes it so that a rebase merges it cleanly instead of conflicting.
 
+## 白い熊 メッセージ 1.10.3+006 — 2026-11-26
+
+Built on **Fossify Messages 1.10.3** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `7.1.3-sk4`** to build.
+
+## 🚫 The blocked-numbers screen, redrawn
+
+- **The list sits in an outlined box** headed “Blocked numbers (N)” and scrolls inside it, instead of filling the page with widely spaced lines.
+- **Rows as tall as their text**, every second row faintly tinted, a 1 px line between them; two columns from 520 dp of width — the unfolded screen.
+- **Numbers are shown grouped**, as +420-222-292-055. Copy still copies the number as it is stored.
+- **Both menus are full-width icon pills with ›**: the ⋮ of a number (copy, unblock) and the ⋮ of the bar (add, import, export).
+- **The two switch rows carry an icon** and are as tall as their content.
+
+## 🎨 One colour for one meaning
+
+- **Four menu colours are now shared with the screens the commons draws**: the icons for view, share and block, and the row that deletes. Set once on the UI page, they colour the app's own menus and the blocked-numbers screen alike — still one row each.
+- **A colour you had set for one of them is carried over** at the first start.
+- **Five new settable roles under Lists**: list text, secondary list text, every second row, the list box frame and the list box heading.
+
+## 📦 Settings export and import
+
+- **A theme from an older archive keeps all its colours**: a colour stored before its item became a shared role is moved to that role at the next start after an import. Before, such a colour was restored and then ignored.
+
+## 🇯🇵 Japanese
+
+- **The 16 strings Commons 7 added without a Japanese translation are translated.**
+
 ## 白い熊 メッセージ 1.10.3+005 — 2026-11-24
 
 Built on **Fossify Messages 1.10.3** · app id `shiroikuma.messeji`, so it installs side-by-side with the official build. Needs the patched **Commons `7.1.3-sk1`** to build. Covers builds +003 – +005.
