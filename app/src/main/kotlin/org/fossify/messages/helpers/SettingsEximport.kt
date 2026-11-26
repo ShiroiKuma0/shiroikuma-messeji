@@ -34,6 +34,7 @@ import org.fossify.commons.helpers.isQPlus
 import org.fossify.commons.helpers.isRPlus
 import org.fossify.commons.helpers.isUpsideDownCakePlus
 import org.fossify.messages.R
+import org.fossify.messages.extensions.UI_ROLES_MIGRATED_KEY
 import org.fossify.messages.models.MessagesBackup
 import org.fossify.messages.models.MmsBackup
 import org.fossify.messages.models.SmsBackup
@@ -133,6 +134,9 @@ object SettingsEximport {
         "last_exported_settings_folder", "last_exported_settings_file",
         "password_retry_count", "password_count_down_start_ms", "last_unlock_timestamp_ms",
         "initial_widget_height", "widget_id_to_measure",
+        // the flag of the slot-to-role move: an archive that carried it would stop the move from
+        // running over the very colours it brings
+        UI_ROLES_MIGRATED_KEY, "ui_roles_migrated",
     )
 
     private val THEME_KEYS = setOf(
@@ -486,6 +490,9 @@ object SettingsEximport {
             }
             count++
         }
+        // An archive written before a slot became a commons role still carries the colour under the
+        // slot's own key, which nothing reads any more: the next start moves it to the role again.
+        if (category == Category.THEME) editor.remove(UI_ROLES_MIGRATED_KEY)
         // commit(), NOT apply(): 応用管理 force-stops this app the instant an automation import
         // reports success — deliberately, because a process shutting down writes its cached prefs
         // back out and would undo the restore. That force-stop is a SIGKILL, so an apply() still in

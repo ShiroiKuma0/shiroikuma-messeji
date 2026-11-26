@@ -343,6 +343,10 @@ val ThemeSlot.uiRole: UiRole?
         ThemeSlot.MENU_TEXT -> UiRole.MENU_LABEL
         ThemeSlot.MENU_FRAME -> UiRole.MENU_ROW_FRAME
         ThemeSlot.MENU_DIVIDER -> UiRole.MENU_DIVIDER
+        ThemeSlot.MENU_WARNING -> UiRole.MENU_DESTRUCTIVE
+        ThemeSlot.MENU_ICON_VIEW -> UiRole.MENU_ICON_VIEW
+        ThemeSlot.MENU_ICON_SHARE -> UiRole.MENU_ICON_SHARE
+        ThemeSlot.MENU_ICON_BLOCK -> UiRole.MENU_ICON_BLOCK
         ThemeSlot.LIST_DIVIDER -> UiRole.LIST_DIVIDER
         ThemeSlot.LIST_SELECTION -> UiRole.LIST_SELECTED
         ThemeSlot.FASTSCROLL_THUMB -> UiRole.SCROLL_THUMB
@@ -366,7 +370,11 @@ fun unmappedUiRoles(): List<UiRole> {
     return UiRole.entries.filter { !it.isFoundation && it !in mapped }
 }
 
-/** One-time: a colour 白い熊 set on a slot before it became a commons role moves to that role. */
+/**
+ * One-time: a colour 白い熊 set on a slot before it became a commons role moves to that role. The key
+ * carries a number that goes up whenever further slots are mapped, so the move runs once more for them
+ * (2: the menu icons for view, share and block and the destructive menu row, Commons 7.1.3-sk4).
+ */
 fun Context.migrateSlotsToUiRolesIfNeeded() {
     if (config.getThemeOverride(UI_ROLES_MIGRATED_KEY) != THEME_UNSET) return
     ThemeSlot.entries.forEach { slot ->
@@ -380,7 +388,7 @@ fun Context.migrateSlotsToUiRolesIfNeeded() {
     config.setThemeOverride(UI_ROLES_MIGRATED_KEY, 1)
 }
 
-private const val UI_ROLES_MIGRATED_KEY = "ui_roles_migrated"
+const val UI_ROLES_MIGRATED_KEY = "ui_roles_migrated_2"
 /** The effective color for a slot: the user's override if set, otherwise its inherited default. */
 fun Context.themeColor(slot: ThemeSlot): Int {
     if (!slot.isFoundation) slot.uiRole?.let { return uiColor(it) }

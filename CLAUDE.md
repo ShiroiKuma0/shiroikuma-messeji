@@ -175,7 +175,7 @@ colors") whenever the installed app id is not `org.fossify.*` — always the cas
 - **Source:** the `shiroikuma-commons` fork (`~/git/shiroikuma-commons`, branch `custom`), which strips
   Commons' anti-tamper "fake version" / sideloading checks out entirely **and** carries fork-package
   fixes for spots where Commons hard-codes `org.fossify.*` (documented in that repo's CLAUDE.md).
-- **Delivery:** published to the local Maven repo, consumed as `commons = "7.1.3-sk1"` in
+- **Delivery:** published to the local Maven repo, consumed as `commons = "7.1.3-sk4"` in
   `gradle/libs.versions.toml` (`mavenLocal()` is already a repository in `settings.gradle.kts`).
 - Because Commons itself no longer nags, this app carries **no** in-app workaround — no `getPackageName`
   spoof, no `SIDELOADING_FALSE`, no `res/raw/keep.xml`.
@@ -191,6 +191,13 @@ no-op). **Upstream code that arrives with a rebase may reference Commons drawabl
 removed** (`sk18`: no colour or shape in XML) — the build then fails at resource linking, and the fix is
 to draw that view in code in role colours, as `setupAudio` in `helpers/AttachmentPreviews.kt` does.
 
+**Commons `7.1.3-sk4` (from 1.10.3+006):** the restyled blocked-numbers screen, and nine new `UiRole`s.
+The menu icon roles for view, share and block and `MENU_DESTRUCTIVE` are the same items as our
+`ThemeSlot.MENU_ICON_VIEW` / `_SHARE` / `_BLOCK` and `MENU_WARNING`, so those slots are mapped onto them
+in `ThemeSlot.uiRole` — one colour, one row. **Whenever a further slot is mapped, raise the number in
+`UI_ROLES_MIGRATED_KEY`** (`ui_roles_migrated_2` now) so the one-time move of stored colours runs again;
+the flag is kept out of settings archives, and a theme import clears it.
+
 **On a fresh machine, or after an upstream bump changes the Commons version — republish before building:**
 
 ```bash
@@ -199,7 +206,7 @@ git checkout <new-commons-tag>     # then re-apply all patches (anti-tamper stri
 JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 ./gradlew :commons:publishToMavenLocal -PVERSION=<ver>-skN
 ```
 
-Then set this app's `commons` pin to the same `<ver>-skN` (currently `7.1.3-sk1`; `-skN` is our patch
+Then set this app's `commons` pin to the same `<ver>-skN` (currently `7.1.3-sk4`; `-skN` is our patch
 revision — see the commons fork's CLAUDE.md). The patched AAR lives only in `~/.m2`, not in the repo.
 
 ## Commit convention — no Claude attribution
